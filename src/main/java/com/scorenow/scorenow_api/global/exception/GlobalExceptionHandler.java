@@ -22,11 +22,25 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler {
 
 	/**
+	 * 로그에 기록하기 전 사용자 입력 sanitize
+	 * CRLF 및 제어 문자 제거로 Log Injection 방지
+	 */
+	private String sanitizeForLogging(Object value) {
+		if (value == null) {
+			return "null";
+		}
+		String str = value.toString();
+		// CRLF 및 제어 문자 제거
+		return str.replaceAll("[\r\n\t]", "_")
+			.replaceAll("\\p{Cntrl}", "_");
+	}
+
+	/**
 	 * BusinessException 처리
 	 */
 	@ExceptionHandler(BusinessException.class)
 	public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e){
-		log.warn("BusinessException: {} - {}", e.getErrorCode().getCode(), e.getMessage());
+		log.warn("BusinessException: {}", e.getErrorCode().getCode());
 
 		ErrorCode errorCode = e.getErrorCode();
 		ApiResponse<Void> response = ApiResponse.error(
@@ -45,13 +59,12 @@ public class GlobalExceptionHandler {
 	 */
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e){
-		log.warn("Validation failed: {}", e.getMessage());
+		log.warn("Validation failed for {} fields", e.getBindingResult().getErrorCount());
 
 		Map<String, String> errors = new HashMap<>();
 		e.getBindingResult().getAllErrors().forEach(error -> {
-			String fieldName = ((FieldError)error).getField();
-			String errorMessage = error.getDefaultMessage();
-			errors.put(fieldName, errorMessage);
+			String fieldName = error instanceof FieldError ? ((FieldError) error).getField() : error.getObjectName();
+			errors.put(fieldName, error.getDefaultMessage());
 		});
 
 		ApiResponse<Void> response = ApiResponse.error(
@@ -89,10 +102,12 @@ public class GlobalExceptionHandler {
 	 */
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public ResponseEntity<ApiResponse<Void>> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
-		log.warn("Type mismatch: {} for parameter {}", e.getValue(), e.getName());
+		String expectedType = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown";
+		log.warn("Type mismatch for parameter {} (expected type: {})", e.getName(), expectedType);
 
+		String sanitizedValue = sanitizeForLogging(e.getValue());
 		String message = String.format("'%s' 파라미터의 값 '%s'이(가) 올바르지 않습니다",
-			e.getName(), e.getValue());
+			e.getName(), sanitizedValue);
 		ApiResponse<Void> response = ApiResponse.error(
 			ErrorCode.INVALID_PARAMETER.getCode(),
 			message

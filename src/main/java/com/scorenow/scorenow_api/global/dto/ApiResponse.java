@@ -36,26 +36,12 @@ public class ApiResponse<T>{
 
 	// 성공 응답(데이터 없음)
 	public static <T> ApiResponse<T> success(){
-		return ApiResponse.<T>builder()
-			.success(true)
-			.data(null)
-			.error(null)
-			.timestamp(LocalDateTime.now())
-			.build();
+		return  success(null);
 	}
 
 	// 에러 응답
 	public static <T> ApiResponse<T> error(String code, String message){
-		return ApiResponse.<T>builder()
-			.success(false)
-			.data(null)
-			.error(ErrorDetail.builder()
-				.code(code)
-				.message(message)
-				.details(null)
-				.build())
-			.timestamp(LocalDateTime.now())
-			.build();
+		return error(code, message, null);
 	}
 
 	// 에러응답(상세 정보 포함)
