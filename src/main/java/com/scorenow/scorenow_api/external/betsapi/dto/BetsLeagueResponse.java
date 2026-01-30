@@ -2,15 +2,18 @@ package com.scorenow.scorenow_api.external.betsapi.dto;
 
 import java.util.List;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class BetsLeagueResponse {
 	private int success;
 	private BetsPager pager;
 	private List<League> results;
 
-	@Data
+	@Getter
+	@Setter
 	public static class League{
 		private String id;
 		private String name;

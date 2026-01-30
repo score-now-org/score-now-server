@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -33,6 +34,17 @@ public class GlobalExceptionHandler {
 		// CRLF 및 제어 문자 제거
 		return str.replaceAll("[\r\n\t]", "_")
 			.replaceAll("\\p{Cntrl}", "_");
+	}
+
+	/**
+	 * 로그에 API 토큰 등 민감 정보가 포함되지 않도록 마스킹
+	 * (예: RestClientResponseException 메시지에 URL+token이 포함되는 경우)
+	 */
+	private String maskSensitiveMessage(String message) {
+		if (message == null) {
+			return null;
+		}
+		return message.replaceAll("token=[^&\\s]+", "token=***");
 	}
 
 	/**
@@ -136,11 +148,31 @@ public class GlobalExceptionHandler {
 	}
 
 	/**
+	 * RestTemplate 4xx/5xx 응답 시 발생.
+	 * 예외 메시지에 요청 URL(API 토큰 포함)이 들어갈 수 있으므로 로그에는 마스킹된 메시지만 기록.
+	 */
+	@ExceptionHandler(RestClientResponseException.class)
+	public ResponseEntity<ApiResponse<Void>> handleRestClientResponseException(RestClientResponseException e) {
+		String safeMessage = maskSensitiveMessage(e.getMessage());
+		log.warn("External API error: status={}, message={}", e.getStatusCode(), safeMessage);
+
+		ApiResponse<Void> response = ApiResponse.error(
+			"EXTERNAL_API_ERROR",
+			"외부 API 호출 중 오류가 발생했습니다."
+		);
+
+		return ResponseEntity
+			.status(e.getStatusCode())
+			.body(response);
+	}
+
+	/**
 	 * 그 외 모든 예외 처리
+	 * 로그 시 예외 메시지에 URL/토큰이 포함될 수 있으므로 마스킹 후 기록.
 	 */
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
-		log.error("Unexpected error occurred", e);
+		log.error("Unexpected error occurred: {}", maskSensitiveMessage(e.getMessage()), e);
 
 		ApiResponse<Void> response = ApiResponse.error(
 			ErrorCode.INTERNAL_SERVER_ERROR.getCode(),

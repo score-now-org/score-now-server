@@ -4,15 +4,18 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class BetsTeamResponse {
 	private int success;
 	private BetsPager pager;
 	private List<Team> results;
 
-	@Data
+	@Getter
+	@Setter
 	public static class Team{
 		private String id;
 		private String name;

@@ -13,5 +13,6 @@ import lombok.Setter;
 public class BetsApiProperties {
 	private String baseUrl;
 	private String token;
-	private int timeout;
+	private int connectTimeout;
+	private int readTimeout;
 }

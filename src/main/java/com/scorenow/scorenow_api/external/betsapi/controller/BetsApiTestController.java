@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.external.betsapi.controller;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -11,6 +12,7 @@ import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
+@Profile({"dev", "test"})
 @RestController
 @RequestMapping("/api/test/betsapi")
 @RequiredArgsConstructor
