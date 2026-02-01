@@ -70,7 +70,7 @@ public class BetsViewResponse {
         private Integer parse(List<String> list, int i) {
             try {
                 return (list != null && list.size() > i) ? Integer.parseInt(list.get(i)) : 0;
-            } catch (Exception e) { return 0; }
+            } catch (NumberFormatException e) { return 0; }
         }
 
         public Integer getHomeScore() {
