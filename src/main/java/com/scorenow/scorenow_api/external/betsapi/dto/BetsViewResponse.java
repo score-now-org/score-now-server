@@ -74,12 +74,24 @@ public class BetsViewResponse {
         }
 
         public Integer getHomeScore() {
-            return (ss != null && ss.contains("-")) ? Integer.parseInt(ss.split("-")[0]) : 0;
+    try {
+        if (ss != null) {
+            String[] parts = ss.split("-");
+            if (parts.length >= 1 && !parts[0].isEmpty()) return Integer.parseInt(parts[0]);
         }
+    } catch (Exception e) { }
+    return 0;
+}
 
-        public Integer getAwayScore() {
-            return (ss != null && ss.contains("-")) ? Integer.parseInt(ss.split("-")[1]) : 0;
+public Integer getAwayScore() {
+    try {
+        if (ss != null) {
+            String[] parts = ss.split("-");
+            if (parts.length >= 2 && !parts[1].isEmpty()) return Integer.parseInt(parts[1]);
         }
+    } catch (Exception e) { }
+    return 0;
+}
     }
 
     @Data
