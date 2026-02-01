@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
-import com.scorenow.scorenow_api.domain.match.repository.MatchLineupRepository;
+import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
 

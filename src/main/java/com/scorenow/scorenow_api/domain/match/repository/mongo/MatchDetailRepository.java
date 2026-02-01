@@ -1,4 +1,4 @@
-package com.scorenow.scorenow_api.domain.match.repository;
+package com.scorenow.scorenow_api.domain.match.repository.mongo;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import org.springframework.data.mongodb.repository.MongoRepository;
