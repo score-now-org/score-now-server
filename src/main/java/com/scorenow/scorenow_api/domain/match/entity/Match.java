@@ -8,8 +8,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,22 +50,8 @@ public class Match extends BaseEntity {
 	private String betsApiEventId;
 	private String bet365Id;
 
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
-
 	public static String generateMatchId(String sportId, String eventId) {
 		return "BETS" + sportId + eventId;
-	}
-
-	@PrePersist
-	public void prePersist() {
-		this.createdAt = LocalDateTime.now();
-		this.updatedAt = LocalDateTime.now();
-	}
-
-	@PreUpdate
-	public void preUpdate() {
-		this.updatedAt = LocalDateTime.now();
 	}
 }
 
