@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,10 @@ public class MatchSyncService {
 	 */
 	@Transactional
 	public int syncUpcomingMatches(String sportId, String day) {
+		if (day == null) {
+			day = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+		}
+
 		log.info("예정 경기 동기화 시작 - sportsId: {}, day: {}", sportId, day);
 
 		int totalSynced = 0;
@@ -99,6 +104,10 @@ public class MatchSyncService {
 	 */
 	@Transactional
 	public int syncEndedMatches(String sportId, String day) {
+		if (day == null) {
+			day = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+		}
+
 		log.info("종료 경기 동기화 시작 - sportId: {}, day: {}", sportId, day);
 
 		int totalSynced = 0;
@@ -193,13 +202,8 @@ public class MatchSyncService {
 	private void saveMatch(BetsEventResponse.Event event, String sportId) {
 		String matchId = Match.generateMatchId(sportId, event.getId());
 
-		Match match = matchRepository.findById(matchId).orElse(
-			Match.builder()
-				.id(matchId)
-				.betsApiEventId(event.getId())
-				.bet365Id(event.getBet365Id())
-				.build()
-		);
+		Match match = matchRepository.findById(matchId)
+			.orElse(Match.builder().id(matchId).betsApiEventId(event.getId()).bet365Id(event.getBet365Id()).build());
 
 		// 기본 정보 업데이트
 		match.setSportId(sportId);
@@ -211,10 +215,7 @@ public class MatchSyncService {
 		// 시작 시간
 		if (event.getTime() != null) {
 			long timestamp = Long.parseLong(event.getTime());
-			match.setStartAt(LocalDateTime.ofInstant(
-				Instant.ofEpochSecond(timestamp),
-				ZoneId.of("Asia/Seoul")
-			));
+			match.setStartAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("Asia/Seoul")));
 		}
 
 		// 스코어
