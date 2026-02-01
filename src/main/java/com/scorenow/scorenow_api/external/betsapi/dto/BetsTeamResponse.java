@@ -16,7 +16,7 @@ public class BetsTeamResponse {
 
 	@Getter
 	@Setter
-	public static class Team{
+	public static class Team {
 		private String id;
 		private String name;
 
