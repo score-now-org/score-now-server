@@ -1,43 +1,73 @@
 package com.scorenow.scorenow_api.domain.match.entity;
 
+import java.time.LocalDateTime;
+
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "matches")
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Match extends BaseEntity {
-    @Id
-    private String id; // BETS + sportId + eventId (예: BETS111275660)
+	@Id
+	private String id; // BETS + sportId + eventId (예: BETS111275660)
 
-    private String leagueId; // BETS + sportId + leagueId
-    private String sportId;
-    private String homeId;   // BETS + sportId + teamId
-    private String awayId;   // BETS + sportId + teamId
+	private String leagueId; // BETS + sportId + leagueId
+	private String sportId;
+	private String homeId;   // BETS + sportId + teamId
+	private String awayId;   // BETS + sportId + teamId
 
-    @Enumerated(EnumType.STRING)
-    private MatchStatus statusCode;
+	@Enumerated(EnumType.STRING)
+	private MatchStatus statusCode;
 
+	private Integer homeScore;
+	private Integer awayScore;
+	private LocalDateTime startAt;
 
-    private Integer homeScore;
-    private Integer awayScore;
-    private LocalDateTime startAt;
+	@Builder.Default
+	private String matchType = "A"; // 기본 A로 세팅
 
-    @Column(length = 10, columnDefinition = "VARCHAR(10) DEFAULT 'A'")
-    private String matchType = "A"; // 기본 A로 세팅
+	@Builder.Default
+	private boolean isManual = false;
 
-    @Column(columnDefinition = "TINYINT(1) DEFAULT 0")
-    private boolean isManual;
+	@Builder.Default
+	private boolean isActive = true;
 
-    @Column(columnDefinition = "TINYINT(1) DEFAULT 0")
-    private boolean isActive;
+	private String betsApiEventId;
+	private String bet365Id;
 
+	private LocalDateTime createdAt;
+	private LocalDateTime updatedAt;
+
+	public static String generateMatchId(String sportId, String eventId) {
+		return "BETS" + sportId + eventId;
+	}
+
+	@PrePersist
+	public void prePersist() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	public void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }
 
