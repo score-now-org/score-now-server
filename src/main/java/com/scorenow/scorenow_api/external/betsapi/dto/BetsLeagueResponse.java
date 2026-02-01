@@ -14,7 +14,7 @@ public class BetsLeagueResponse {
 
 	@Getter
 	@Setter
-	public static class League{
+	public static class League {
 		private String id;
 		private String name;
 		private String cc;
