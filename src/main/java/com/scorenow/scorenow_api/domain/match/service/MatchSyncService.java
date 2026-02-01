@@ -12,7 +12,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
-import com.scorenow.scorenow_api.domain.match.repository.MatchRepository;
+import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;

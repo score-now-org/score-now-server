@@ -2,7 +2,7 @@ package com.scorenow.scorenow_api.domain.match.scheduler;
 
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
-import com.scorenow.scorenow_api.domain.match.repository.MatchRepository;
+import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.MatchDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +20,7 @@ public class MatchDetailScheduler {
 
     @Scheduled(fixedDelay = 5000) // 일단 짧게 테스트
     public void syncInplayDetails() {
+        log.info(">>>>>> 스케줄러 실행 확인 <<<<<<");
         List<Match> inplayMatches = matchRepository.findByStatusCode(MatchStatus.IN_PLAY);
         log.info("조회된 In-play 경기 수: {}", inplayMatches.size());
 
