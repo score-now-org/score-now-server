@@ -53,7 +53,7 @@ public class BetsViewResponse {
             if (this.timer == null) return defaultExtraTime();
 
             return MatchDetailDocument.ExtraTime.builder()
-                    .firstHalf(this.timer.getTa() != null ? Integer.parseInt(String.valueOf(this.timer.getTa())) : 0)
+                    .firstHalf(this.timer.getTa() != null ? this.timer.getTa() : 0)
                     .secondHalf(0)
                     .overTime(0)
                     .build();
