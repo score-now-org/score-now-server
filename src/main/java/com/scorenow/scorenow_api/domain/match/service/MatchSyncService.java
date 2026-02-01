@@ -62,7 +62,7 @@ public class MatchSyncService {
 			}
 
 			// 다음 페이지 있는지 확인
-			if (response.getResults().size() < 50) {
+			if (response.getResults().size() < response.getPager().getPerPage()) {
 				break;
 			}
 			page++;
@@ -129,7 +129,7 @@ public class MatchSyncService {
 				}
 			}
 
-			if (response.getResults().size() < 50) {
+			if (response.getResults().size() < response.getPager().getPerPage()) {
 				break;
 			}
 			page++;
