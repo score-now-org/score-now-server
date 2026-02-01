@@ -1,13 +1,14 @@
 package com.scorenow.scorenow_api.external.betsapi;
 
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLeagueResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsTeamResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,13 +92,21 @@ public class BetsApiClient {
 	 */
 	public BetsViewResponse getEventView(String eventId) {
 		String url = buildUrl("/v1/event/view")
-				.queryParam("event_id", eventId)
-				.build().toUriString();
+			.queryParam("event_id", eventId)
+			.build().toUriString();
 
 		log.debug("BetsAPI 상세 호출: {}", maskToken(url));
 		return restTemplate.getForObject(url, BetsViewResponse.class);
 	}
 
+	public BetsLineupResponse getLineup(String eventId) {
+		String url = buildUrl("/v4/event/lineup")
+			.queryParam("event_id", eventId)
+			.build().toUriString();
+
+		log.debug("BetsAPI 호출: {}", maskToken(url));
+		return restTemplate.getForObject(url, BetsLineupResponse.class);
+	}
 
 	/**
 	 * URL 빌더(공통)
