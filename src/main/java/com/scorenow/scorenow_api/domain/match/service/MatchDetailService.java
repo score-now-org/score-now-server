@@ -19,8 +19,8 @@ public class MatchDetailService {
     private final BetsApiClient betsApiClient;
 
     @Transactional
-    public void updateInplayMatchDetail(String eventId) {
-        String pureId = eventId.replaceAll("[^0-9]", "");
+    public void updateInplayMatchDetail(com.scorenow.scorenow_api.domain.match.entity.Match match) {
+        String pureId = match.getId().replaceAll("[^0-9]", "");
         BetsViewResponse response = betsApiClient.getEventView(pureId);
 
         if (response == null || !response.hasResult()) {
@@ -29,12 +29,14 @@ public class MatchDetailService {
         }
 
         BetsViewResponse.ViewResult apiResult = response.getResults().get(0);
-        updateMySqlScore(eventId, apiResult);
 
-        MatchDetailDocument detail = response.toDocument(eventId);
+        match.setHomeScore(apiResult.getHomeScore());
+        match.setAwayScore(apiResult.getAwayScore());
+
+        MatchDetailDocument detail = response.toDocument(match.getId());
         matchDetailRepository.save(detail);
 
-        log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", eventId);
+        log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", match.getId());
     }
 
 
