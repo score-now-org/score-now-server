@@ -18,7 +18,7 @@ public class MatchDetailScheduler {
     private final MatchRepository matchRepository; // MySQL
     private final MatchDetailService matchDetailService;
 
-    @Scheduled(fixedRate = 5000) // 일단 짧게 테스트
+    @Scheduled(fixedDelay = 5000) // 일단 짧게 테스트
     public void syncInplayDetails() {
         List<Match> inplayMatches = matchRepository.findByStatusCode(MatchStatus.IN_PLAY);
         log.info("조회된 In-play 경기 수: {}", inplayMatches.size());
