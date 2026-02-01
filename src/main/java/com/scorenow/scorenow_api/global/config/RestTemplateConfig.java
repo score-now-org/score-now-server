@@ -14,8 +14,8 @@ public class RestTemplateConfig {
 	public RestTemplate restTemplate(RestTemplateBuilder builder,
 		com.scorenow.scorenow_api.external.betsapi.BetsApiProperties properties) {
 		return builder
-			.setConnectTimeout(Duration.ofSeconds(properties.getConnectTimeout()))
-			.setReadTimeout(Duration.ofSeconds(properties.getReadTimeout()))
-			.build();
+				.setConnectTimeout(Duration.ofSeconds(properties.getConnectTimeout()))
+				.setReadTimeout(Duration.ofSeconds(properties.getReadTimeout()))
+				.build();
 	}
 }

@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.external.betsapi;
 
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -84,6 +85,19 @@ public class BetsApiClient {
 		log.debug("BetsAPI 호출: {}", maskToken(url));
 		return restTemplate.getForObject(url, BetsTeamResponse.class);
 	}
+
+	/**
+	 * 경기 상세 정보 조회
+	 */
+	public BetsViewResponse getEventView(String eventId) {
+		String url = buildUrl("/v1/event/view")
+				.queryParam("event_id", eventId)
+				.build().toUriString();
+
+		log.debug("BetsAPI 상세 호출: {}", maskToken(url));
+		return restTemplate.getForObject(url, BetsViewResponse.class);
+	}
+
 
 	/**
 	 * URL 빌더(공통)
