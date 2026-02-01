@@ -10,22 +10,14 @@ import lombok.Getter;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ApiResponse<T>{
+public class ApiResponse<T> {
 	private final boolean success;
 	private final T data;
 	private final ErrorDetail error;
 	private final LocalDateTime timestamp;
 
-	@Getter
-	@Builder
-	public static class ErrorDetail{
-		private final String code;
-		private final String message;
-		private final Object details;
-	}
-
 	// 성공 응답(데이터 있음)
-	public static <T> ApiResponse<T> success(T data){
+	public static <T> ApiResponse<T> success(T data) {
 		return ApiResponse.<T>builder()
 			.success(true)
 			.data(data)
@@ -35,17 +27,17 @@ public class ApiResponse<T>{
 	}
 
 	// 성공 응답(데이터 없음)
-	public static <T> ApiResponse<T> success(){
-		return  success(null);
+	public static <T> ApiResponse<T> success() {
+		return success(null);
 	}
 
 	// 에러 응답
-	public static <T> ApiResponse<T> error(String code, String message){
+	public static <T> ApiResponse<T> error(String code, String message) {
 		return error(code, message, null);
 	}
 
 	// 에러응답(상세 정보 포함)
-	public static <T> ApiResponse<T> error(String code, String message, Object details){
+	public static <T> ApiResponse<T> error(String code, String message, Object details) {
 		return ApiResponse.<T>builder()
 			.success(false)
 			.data(null)
@@ -56,5 +48,13 @@ public class ApiResponse<T>{
 				.build())
 			.timestamp(LocalDateTime.now())
 			.build();
+	}
+
+	@Getter
+	@Builder
+	public static class ErrorDetail {
+		private final String code;
+		private final String message;
+		private final Object details;
 	}
 }

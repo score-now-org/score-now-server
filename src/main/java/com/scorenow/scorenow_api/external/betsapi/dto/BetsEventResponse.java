@@ -12,10 +12,11 @@ import lombok.Setter;
 public class BetsEventResponse {
 	private int success;
 	private BetsPager pager;
+	private List<Event> results;
 
 	@Getter
 	@Setter
-	public static class Event{
+	public static class Event {
 		private String id;
 
 		@JsonProperty("sport_id")
@@ -37,7 +38,7 @@ public class BetsEventResponse {
 
 	@Getter
 	@Setter
-	public static class League{
+	public static class League {
 		private String id;
 		private String name;
 		private String cc;
@@ -45,7 +46,7 @@ public class BetsEventResponse {
 
 	@Getter
 	@Setter
-	public static class Team{
+	public static class Team {
 		private String id;
 		private String name;
 

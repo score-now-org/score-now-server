@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
 	 * BusinessException 처리
 	 */
 	@ExceptionHandler(BusinessException.class)
-	public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e){
+	public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
 		log.warn("BusinessException: {}", e.getErrorCode().getCode());
 
 		ErrorCode errorCode = e.getErrorCode();
@@ -70,12 +70,12 @@ public class GlobalExceptionHandler {
 	 * Validation 예외 처리(@Valid)
 	 */
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e){
+	public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
 		log.warn("Validation failed for {} fields", e.getBindingResult().getErrorCount());
 
 		Map<String, String> errors = new HashMap<>();
 		e.getBindingResult().getAllErrors().forEach(error -> {
-			String fieldName = error instanceof FieldError ? ((FieldError) error).getField() : error.getObjectName();
+			String fieldName = error instanceof FieldError ? ((FieldError)error).getField() : error.getObjectName();
 			errors.put(fieldName, error.getDefaultMessage());
 		});
 
@@ -94,7 +94,8 @@ public class GlobalExceptionHandler {
 	 * 필수 파라미터 누락 처리
 	 */
 	@ExceptionHandler(MissingServletRequestParameterException.class)
-	public ResponseEntity<ApiResponse<Void>> handleMissingParameterException(MissingServletRequestParameterException e){
+	public ResponseEntity<ApiResponse<Void>> handleMissingParameterException(
+		MissingServletRequestParameterException e) {
 		log.warn("Missing parameter: {}", e.getParameterName());
 
 		Map<String, String> details = Map.of(e.getParameterName(), "필수 파라미터가 누락되었습니다.");
@@ -134,7 +135,8 @@ public class GlobalExceptionHandler {
 	 * 지원하지 않는 HTTP Method 처리
 	 */
 	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-	public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+	public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(
+		HttpRequestMethodNotSupportedException e) {
 		log.warn("Method not supported: {}", e.getMethod());
 
 		ApiResponse<Void> response = ApiResponse.error(

@@ -11,7 +11,8 @@ import org.springframework.web.client.RestTemplate;
 public class RestTemplateConfig {
 
 	@Bean
-	public RestTemplate restTemplate(RestTemplateBuilder builder, com.scorenow.scorenow_api.external.betsapi.BetsApiProperties properties){
+	public RestTemplate restTemplate(RestTemplateBuilder builder,
+		com.scorenow.scorenow_api.external.betsapi.BetsApiProperties properties) {
 		return builder
 			.setConnectTimeout(Duration.ofSeconds(properties.getConnectTimeout()))
 			.setReadTimeout(Duration.ofSeconds(properties.getReadTimeout()))
