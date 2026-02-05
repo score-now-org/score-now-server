@@ -2,7 +2,7 @@ package com.scorenow.scorenow_api.global.constant;
 
 import java.util.Set;
 
-public class AllowLeagues {
+public final class AllowLeagues {
 
 	// 허용된 리그 ID 목록
 	public static final Set<String> IDS = Set.of(
@@ -99,8 +99,4 @@ public class AllowLeagues {
 		"14180",  // 코파아메리카
 		"473"     // 월드컵 남미예선
 	);
-
-	public static boolean isAllowed(String leagueId) {
-		return IDS.contains(leagueId);
-	}
 }
