@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
@@ -17,6 +17,7 @@ import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
+import com.scorenow.scorenow_api.global.constant.AllowLeagues;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MatchSyncService {
 
-	private static final int MAX_SYNC_PAGES = 10;
-	private static final int PER_PAGE_SIZE = 50;
 	private static final String TEAM_IMAGE_BASE_URL = "https://assets.b365api.com/images/team/m/";
 	private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of("Asia/Seoul");
 
@@ -42,8 +41,11 @@ public class MatchSyncService {
 	 */
 	@Transactional
 	public int syncUpcomingMatches(String sportId, String day) {
-		return syncMatchesWithPagination(sportId, day, "예정",
-			(normalizedDay, page) -> betsApiClient.getUpcomingEvents(sportId, normalizedDay, page));
+		final String normalizedDay = (day == null) 
+			? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+			: day;
+		return syncEventsByLeagues("예정", sportId, normalizedDay,
+			leagueId -> betsApiClient.getUpcomingEvents(sportId, leagueId, normalizedDay));
 	}
 
 	/**
@@ -51,26 +53,8 @@ public class MatchSyncService {
 	 */
 	@Transactional
 	public int syncInplayMatches(String sportId) {
-		log.info("진행 중 경기 동기화 시작 - sportId: {}", sportId);
-
-		BetsEventResponse response = betsApiClient.getInplayEvents(sportId);
-
-		if (response == null || response.getResults() == null) {
-			return 0;
-		}
-
-		int totalSynced = 0;
-		for (BetsEventResponse.Event event : response.getResults()) {
-			try {
-				syncEvent(event, sportId);
-				totalSynced++;
-			} catch (Exception e) {
-				log.error("경기 동기화 실패 - eventId: {}, error: {}", event.getId(), e.getMessage());
-			}
-		}
-
-		log.info("진행 중 경기 동기화 완료 - 총 {}건", totalSynced);
-		return totalSynced;
+		return syncEventsByLeagues("진행중", sportId, null,
+			leagueId -> betsApiClient.getInplayEvents(sportId, leagueId));
 	}
 
 	/**
@@ -78,45 +62,41 @@ public class MatchSyncService {
 	 */
 	@Transactional
 	public int syncEndedMatches(String sportId, String day) {
-		return syncMatchesWithPagination(sportId, day, "종료",
-			(normalizedDay, page) -> betsApiClient.getEndedEvents(sportId, normalizedDay, page));
+		final String normalizedDay = (day == null)
+			? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+			: day;
+		return syncEventsByLeagues("종료", sportId, normalizedDay,
+			leagueId -> betsApiClient.getEndedEvents(sportId, leagueId, normalizedDay));
 	}
 
 	/**
-	 * 페이지네이션 기반 경기 동기화 공통 로직.
-	 * fetchPage: (sportId, day, page) -> BetsEventResponse 형태로 API를 호출하는 함수.
+	 * AllowLeagues 기준 리그별 이벤트를 가져와 동기화
+	 * fetchEvents: leagueId만 받아서 BetsEventResponse 반환 (sportId, day는 호출부에서 람다로 캡처)
 	 */
-	private int syncMatchesWithPagination(String sportId, String day, String logLabel,
-		BiFunction<String, Integer, BetsEventResponse> fetchPage) {
-		if (day == null) {
-			day = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+	private int syncEventsByLeagues(String logLabel, String sportId, String day,
+			Function<String, BetsEventResponse> fetchEvents) {
+		if (day != null) {
+			log.info("{} 경기 동기화 시작 - sportId: {}, day: {}", logLabel, sportId, day);
+		} else {
+			log.info("{} 경기 동기화 시작 - sportId: {}", logLabel, sportId);
 		}
 
-		log.info("{} 경기 동기화 시작 - sportId: {}, day: {}", logLabel, sportId, day);
-
 		int totalSynced = 0;
-		int page = 1;
-
-		while (page <= MAX_SYNC_PAGES) {
-			BetsEventResponse response = fetchPage.apply(day, page);
-
-			if (response == null || response.getResults() == null || response.getResults().isEmpty()) {
-				break;
-			}
-
-			for (BetsEventResponse.Event event : response.getResults()) {
-				try {
-					syncEvent(event, sportId);
-					totalSynced++;
-				} catch (Exception e) {
-					log.error("경기 동기화 실패 - eventId: {}, error: {}", event.getId(), e.getMessage());
+		for (String leagueId : AllowLeagues.IDS) {
+			try {
+				BetsEventResponse response = fetchEvents.apply(leagueId);
+				if (response != null && response.getResults() != null) {
+					for (BetsEventResponse.Event event : response.getResults()) {
+						syncEvent(event, sportId);
+						totalSynced++;
+					}
+					if (!response.getResults().isEmpty()) {
+						log.debug("리그 {} 동기화: {}건", leagueId, response.getResults().size());
+					}
 				}
+			} catch (Exception e) {
+				log.error("리그 {} 동기화 실패: {}", leagueId, e.getMessage());
 			}
-
-			if (response.getResults().size() < PER_PAGE_SIZE) {
-				break;
-			}
-			page++;
 		}
 
 		log.info("{} 경기 동기화 완료 - 총 {}건", logLabel, totalSynced);

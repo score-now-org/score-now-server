@@ -26,17 +26,18 @@ public class BetsApiTestController {
 	@GetMapping("/upcoming")
 	public ApiResponse<BetsEventResponse> testUpcoming(
 		@RequestParam(defaultValue = "1") String sportId,
-		@RequestParam(required = false) String day,
-		@RequestParam(defaultValue = "1") int page) {
+		@RequestParam(required = false) String leagueId,
+		@RequestParam(required = false) String day) {
 
-		return ApiResponse.success(betsApiClient.getUpcomingEvents(sportId, day, page));
+		return ApiResponse.success(betsApiClient.getUpcomingEvents(sportId, leagueId, day));
 	}
 
 	@GetMapping("/inplay")
 	public ApiResponse<BetsEventResponse> testInplay(
-		@RequestParam(defaultValue = "1") String sportId) {
+		@RequestParam(defaultValue = "1") String sportId,
+		@RequestParam(required = false) String leagueId) {
 
-		return ApiResponse.success(betsApiClient.getInplayEvents(sportId));
+		return ApiResponse.success(betsApiClient.getInplayEvents(sportId, leagueId));
 	}
 
 	@PostMapping("/sync/upcoming")

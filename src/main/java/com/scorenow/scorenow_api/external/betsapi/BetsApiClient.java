@@ -24,11 +24,11 @@ public class BetsApiClient {
 	/**
 	 * 예정 경기 조회
 	 */
-	public BetsEventResponse getUpcomingEvents(String sportId, String day, int page) {
+	public BetsEventResponse getUpcomingEvents(String sportId, String leagueId, String day) {
 		String url = buildUrl("/v3/events/upcoming")
 			.queryParam("sport_id", sportId)
+			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(leagueId))
 			.queryParamIfPresent("day", java.util.Optional.ofNullable(day))
-			.queryParam("page", page)
 			.build().toUriString();
 
 		log.debug("BetsAPI 호출: {}", maskToken(url));
@@ -38,9 +38,10 @@ public class BetsApiClient {
 	/**
 	 * 진행 중 경기 조회
 	 */
-	public BetsEventResponse getInplayEvents(String sportId) {
+	public BetsEventResponse getInplayEvents(String sportId, String leagueId) {
 		String url = buildUrl("/v3/events/inplay")
 			.queryParam("sport_id", sportId)
+			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(leagueId))
 			.build().toUriString();
 
 		log.debug("BetsAPI 호출: {}", maskToken(url));
@@ -50,11 +51,11 @@ public class BetsApiClient {
 	/**
 	 * 종료 경기 조회
 	 */
-	public BetsEventResponse getEndedEvents(String sportId, String day, int page) {
+	public BetsEventResponse getEndedEvents(String sportId, String leagueId, String day) {
 		String url = buildUrl("/v3/events/ended")
 			.queryParam("sport_id", sportId)
+			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(leagueId))
 			.queryParamIfPresent("day", java.util.Optional.ofNullable(day))
-			.queryParam("page", page)
 			.build().toUriString();
 
 		log.debug("BetsAPI 호출: {}", maskToken(url));
