@@ -26,7 +26,7 @@ public class MatchLineupController {
 	 */
 	@PostMapping("/save")
 	public ApiResponse<MatchLineupDocument> saveLineup(@RequestParam String eventId) {
-		return ApiResponse.success(matchLineupSvc.fetchAndSaveByEventId(eventId));
+		return ApiResponse.success(matchLineupSvc.fetchAndSaveByMatchId(eventId));
 	}
 
 	/**

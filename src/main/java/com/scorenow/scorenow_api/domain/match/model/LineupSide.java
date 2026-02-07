@@ -18,6 +18,8 @@ import lombok.Setter;
 public class LineupSide {
 
 	private String teamId;
+	private String teamEname;
+
 	private String formation;
 	private String uniformColor;
 

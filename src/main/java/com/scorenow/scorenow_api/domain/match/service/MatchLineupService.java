@@ -27,12 +27,12 @@ public class MatchLineupService {
 	 * matchId 예: BETS1 + eventId
 	 */
 	@Transactional
-	public MatchLineupDocument fetchAndSaveByEventId(String eventId) {
-		if (eventId == null || eventId.isBlank()) {
-			throw new IllegalArgumentException("eventId is blank");
+	public MatchLineupDocument fetchAndSaveByMatchId(String matchId) {
+		if (matchId == null || matchId.isBlank()) {
+			throw new IllegalArgumentException("matchId is blank");
 		}
 
-		String matchId = "BETS1" + eventId;
+		String eventId = extractEventId(matchId);
 
 		BetsLineupResponse response = betsApiClient.getLineup(eventId);
 		validateResponse(response, eventId);
@@ -130,7 +130,6 @@ public class MatchLineupService {
 		};
 	}
 
-	/* TODO: matchId를 입력으로 받을 때 사용 */
 	private String extractEventId(String matchId) {
 		if (!matchId.startsWith("BETS")) {
 			throw new IllegalArgumentException("Invalid matchId format: " + matchId);
