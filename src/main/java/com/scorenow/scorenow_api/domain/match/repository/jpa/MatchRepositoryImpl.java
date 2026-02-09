@@ -2,6 +2,8 @@ package com.scorenow.scorenow_api.domain.match.repository.jpa;
 
 import static com.scorenow.scorenow_api.domain.league.entity.QLeague.*;
 import static com.scorenow.scorenow_api.domain.match.entity.QMatch.*;
+import static com.scorenow.scorenow_api.domain.sport.entity.QSport.*;
+import static com.scorenow.scorenow_api.domain.team.entity.QTeam.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,7 +37,10 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 	public Page<Match> searchMatches(MatchSearchCondition condition, Pageable pageable){
 		List<Match> content = queryFactory
 			.selectFrom(match)
-			.leftJoin(league).on(match.leagueId.eq(league.id))
+			.leftJoin(match.league, league).fetchJoin()
+			.leftJoin(match.sport, sport).fetchJoin()
+			.leftJoin(match.homeTeam).fetchJoin()
+			.leftJoin(match.awayTeam).fetchJoin()
 			.where(
 				sportIdEq(condition.getSportId()),
 				leagueIdEq(condition.getLeagueId()),

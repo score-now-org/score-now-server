@@ -21,6 +21,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+                        // Admin API 접근 허용 (개발 환경)
+                        .requestMatchers("/api/admin/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

@@ -3,12 +3,18 @@ package com.scorenow.scorenow_api.domain.match.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,6 +54,23 @@ public class Match extends BaseEntity {
 
 	private String betsApiEventId;
 	private String bet365Id;
+
+	// JPA 관계 추가 (Fetch join용)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "leagueId", insertable = false, updatable = false)
+	private League league;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "sportId", insertable = false, updatable = false)
+	private Sport sport;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "homeId", insertable = false, updatable = false)
+	private Team homeTeam;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "awayId", insertable = false, updatable = false)
+	private Team awayTeam;
 
 	public static String generateMatchId(String sportId, String eventId) {
 		return "BETS" + sportId + eventId;

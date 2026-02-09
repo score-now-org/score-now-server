@@ -1,12 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -49,32 +43,10 @@ public class MatchAdminService {
 	 */
 	public Page<MatchListResponse> getMatches(MatchSearchCondition condition, Pageable pageable) {
 		Page<Match> matches = matchRepository.searchMatches(condition, pageable);
-		List<Match> matchList = matches.getContent();
 
-		// ID 일괄 수집
-		Set<String> leagueIds = matchList.stream()
-			.map(Match::getLeagueId)
-			.filter(Objects::nonNull)
-			.collect(Collectors.toSet());
-		Set<String> teamIds = matchList.stream()
-			.flatMap(m -> Stream.of(m.getHomeId(), m.getAwayId()))
-			.filter(Objects::nonNull)
-			.collect(Collectors.toSet());
-		Set<String> sportIds = matchList.stream()
-			.map(Match::getSportId)
-			.filter(Objects::nonNull)
-			.collect(Collectors.toSet());
-
-		// 일괄 조회
-		Map<String, League> leagueMap = leagueRepository.findAllById(leagueIds).stream()
-			.collect(Collectors.toMap(League::getId, Function.identity()));
-		Map<String, Team> teamMap = teamRepository.findAllById(teamIds).stream()
-			.collect(Collectors.toMap(Team::getId, Function.identity()));
-		Map<String, Sport> sportMap = sportRepository.findAllById(sportIds).stream()
-			.collect(Collectors.toMap(Sport::getId, Function.identity()));
-
-		List<MatchListResponse> content = matchList.stream()
-			.map(match -> toListResponse(match, leagueMap, teamMap, sportMap))
+		// Fetch 조인 적용
+		List<MatchListResponse> content = matches.getContent().stream()
+			.map(this::toListResponseWithFetch)
 			.toList();
 
 		return new PageImpl<>(content, pageable, matches.getTotalElements());
@@ -207,17 +179,31 @@ public class MatchAdminService {
 	// ======================== 응답 변환 메서드 ========================
 
 	/**
-	 * Match -> MatchListResponse 변환 (리스트 조회용, 일괄 조회된 Map 사용)
+	 * Match -> MatchListResponse 변환
 	 */
-	private MatchListResponse toListResponse(Match match,
-		Map<String, League> leagueMap, Map<String, Team> teamMap, Map<String, Sport> sportMap) {
+	private MatchListResponse toListResponseWithFetch(Match match) {
 
-		League leagueEntity = match.getLeagueId() != null ? leagueMap.get(match.getLeagueId()) : null;
-		Team homeTeam = match.getHomeId() != null ? teamMap.get(match.getHomeId()) : null;
-		Team awayTeam = match.getAwayId() != null ? teamMap.get(match.getAwayId()) : null;
-		Sport sportEntity = match.getSportId() != null ? sportMap.get(match.getSportId()) : null;
-
-		return buildMatchResponse(match, leagueEntity, homeTeam, awayTeam, sportEntity);
+		return MatchListResponse.builder()
+			.id(match.getId())
+			.sportId(match.getSportId())
+			.sportName(match.getSport() != null ? match.getSport().getEName() : "")
+			.leagueId(match.getLeagueId())
+			.leagueName(match.getLeague() != null ? match.getLeague().getEName() : "")
+			.matchType(match.getMatchType())
+			.startAt(match.getStartAt())
+			.statusCode(match.getStatusCode().name())
+			.statusName(match.getStatusCode().getDescription())
+			.homeId(match.getHomeId())
+			.homeName(match.getHomeTeam() != null ? match.getHomeTeam().getEName() : "")
+			.homeImageUrl(match.getHomeTeam() != null ? match.getHomeTeam().getImageUrl() : null)
+			.homeScore(match.getHomeScore())
+			.awayId(match.getAwayId())
+			.awayName(match.getAwayTeam() != null ? match.getAwayTeam().getEName() : "")
+			.awayImageUrl(match.getAwayTeam() != null ? match.getAwayTeam().getImageUrl() : null)
+			.awayScore(match.getAwayScore())
+			.isManual(match.isManual())
+			.isActive(match.isActive())
+			.build();
 	}
 
 	/**
