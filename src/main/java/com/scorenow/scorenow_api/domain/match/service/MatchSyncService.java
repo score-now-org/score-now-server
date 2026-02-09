@@ -175,24 +175,24 @@ public class MatchSyncService {
 			.orElse(Match.builder().id(matchId).betsApiEventId(event.getId()).bet365Id(event.getBet365Id()).build());
 
 		// 기본 정보 업데이트
-		match.setSportId(sportId);
-		match.setLeagueId(League.generateLeagueId(sportId, event.getLeague().getId()));
-		match.setHomeId(Team.generateId(sportId, event.getHome().getId()));
-		match.setAwayId(Team.generateId(sportId, event.getAway().getId()));
-		match.setStatusCode(MatchStatus.fromCode(event.getTimeStatus()));
+		match.updateSportId(sportId);
+		match.updateLeagueId(League.generateLeagueId(sportId, event.getLeague().getId()));
+		match.updateHomeId(Team.generateId(sportId, event.getHome().getId()));
+		match.updateAwayId(Team.generateId(sportId, event.getAway().getId()));
+		match.updateStatus(MatchStatus.fromCode(event.getTimeStatus()));
 
 		// 시작 시간
 		if (event.getTime() != null) {
 			long timestamp = Long.parseLong(event.getTime());
-			match.setStartAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), DEFAULT_ZONE_ID));
+			match.updateStartAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), DEFAULT_ZONE_ID));
 		}
 
 		// 스코어
 		if (event.getSs() != null && event.getSs().contains("-")) {
 			String[] scores = event.getSs().split("-");
 			if (scores.length == 2) {
-				match.setHomeScore(Integer.parseInt(scores[0].trim()));
-				match.setAwayScore(Integer.parseInt(scores[1].trim()));
+				match.updateHomeScore(Integer.parseInt(scores[0].trim()));
+				match.updateAwayScore(Integer.parseInt(scores[1].trim()));
 			}
 		}
 

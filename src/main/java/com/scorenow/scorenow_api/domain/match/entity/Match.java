@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.entity;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
@@ -13,12 +14,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "matches")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -52,6 +51,47 @@ public class Match extends BaseEntity {
 
 	public static String generateMatchId(String sportId, String eventId) {
 		return "BETS" + sportId + eventId;
+	}
+
+	public static String generateManualId(String sportId) {
+		String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+		return String.format("MANUAL%s%s", sportId, uuid);
+	}
+
+	public void updateSportId(String sportId) {
+		this.sportId = sportId;
+	}
+
+	public void updateLeagueId(String leagueId) {
+		this.leagueId = leagueId;
+	}
+
+	public void updateHomeId(String homeId) {
+		this.homeId = homeId;
+	}
+
+	public void updateAwayId(String awayId) {
+		this.awayId = awayId;
+	}
+
+	public void updateStartAt(LocalDateTime startAt) {
+		this.startAt = startAt;
+	}
+
+	public void updateStatus(MatchStatus statusCode) {
+		this.statusCode = statusCode;
+	}
+
+	public void updateHomeScore(Integer homeScore) {
+		this.homeScore = homeScore;
+	}
+
+	public void updateAwayScore(Integer awayScore) {
+		this.awayScore = awayScore;
+	}
+
+	public void updateIsActive(boolean isActive) {
+		this.isActive = isActive;
 	}
 }
 
