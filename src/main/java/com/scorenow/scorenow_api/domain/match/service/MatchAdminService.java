@@ -12,6 +12,7 @@ import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.entity.MatchType;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
@@ -87,6 +88,11 @@ public class MatchAdminService {
 	// === Validation Methods ===
 
 	private void validateMatchCreateRequest(MatchCreateRequest request) {
+		try{
+			MatchType.fromCode(request.getMatchType());
+		} catch (Exception e) {
+			throw new BusinessException(ErrorCode.MATCH_INVALID_TYPE);
+		}
 		if (!leagueRepository.existsById(request.getLeagueId())) {
 			throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
 		}

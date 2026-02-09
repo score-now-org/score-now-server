@@ -5,12 +5,11 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class MatchUpdateRequest {
-
-	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-	private LocalDateTime startAt;
 
 	private String statusCode; // NOT_STARTED, INPLAY, ENDED
 
@@ -19,6 +18,7 @@ public class MatchUpdateRequest {
 	private Integer awayScore;
 
 	private Boolean isActive;
+
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+	private LocalDateTime startAt;
 }
-
-

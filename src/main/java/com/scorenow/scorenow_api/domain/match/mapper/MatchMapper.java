@@ -52,6 +52,13 @@ public class MatchMapper {
 			.build();
 	}
 
+	private String generateMatchId(String sportId, boolean isManual){
+		if(isManual){
+			return Match.generateManualId(sportId);
+		}
+		return Match.generateManualId(sportId);
+	}
+
 	private String getSportName(Sport sport) {
 		return sport != null ? sport.getEName() : "";
 	}
