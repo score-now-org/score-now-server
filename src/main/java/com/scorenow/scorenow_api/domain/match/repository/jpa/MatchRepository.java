@@ -10,7 +10,7 @@ import com.scorenow.scorenow_api.domain.match.dto.InplayMatchDetectionDto;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 
-public interface MatchRepository extends JpaRepository<Match, String> {
+public interface MatchRepository extends JpaRepository<Match, String>, MatchRepositoryCustom {
 	List<Match> findByStatusCode(MatchStatus statusCode);
 
 	@Query("""

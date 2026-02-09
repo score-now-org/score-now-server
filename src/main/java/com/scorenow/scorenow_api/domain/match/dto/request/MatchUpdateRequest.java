@@ -1,0 +1,24 @@
+package com.scorenow.scorenow_api.domain.match.dto.request;
+
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import lombok.Getter;
+
+@Getter
+public class MatchUpdateRequest {
+
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+	private LocalDateTime startAt;
+
+	private String statusCode; // NOT_STARTED, INPLAY, ENDED
+
+	private Integer homeScore;
+
+	private Integer awayScore;
+
+	private Boolean isActive;
+}
+
+
