@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,8 +25,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "matches")
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class Match extends BaseEntity {
 	@Id
@@ -116,5 +117,11 @@ public class Match extends BaseEntity {
 	public void updateIsActive(boolean isActive) {
 		this.isActive = isActive;
 	}
+
+	public boolean isDeletable() {
+		return this.isManual;
+	}
+
+
 }
 

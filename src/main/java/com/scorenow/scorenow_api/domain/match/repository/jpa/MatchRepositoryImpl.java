@@ -3,13 +3,13 @@ package com.scorenow.scorenow_api.domain.match.repository.jpa;
 import static com.scorenow.scorenow_api.domain.league.entity.QLeague.*;
 import static com.scorenow.scorenow_api.domain.match.entity.QMatch.*;
 import static com.scorenow.scorenow_api.domain.sport.entity.QSport.*;
-import static com.scorenow.scorenow_api.domain.team.entity.QTeam.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -70,6 +70,23 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 
 		return new PageImpl<>(content, pageable, total != null ? total: 0L);
 	}
+
+	@Override
+	public Optional<Match> findByIdWithRelations(String id){
+		Match result = queryFactory
+			.selectFrom(match)
+			.leftJoin(match.sport, sport).fetchJoin()
+			.leftJoin(match.league, league).fetchJoin()
+			.leftJoin(match.homeTeam).fetchJoin()
+			.leftJoin(match.awayTeam).fetchJoin()
+			.where(match.id.eq(id))
+			.fetchOne();
+
+		return Optional.ofNullable(result);
+	}
+
+
+	// === Private Helper Methods ===
 
 	private BooleanExpression sportIdEq(String sportId){
 		return sportId != null ? match.sportId.eq(sportId) : null;
