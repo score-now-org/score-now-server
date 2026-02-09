@@ -20,7 +20,7 @@ public class LeagueCacheService {
 	private static final String CACHE_PREFIX = "league:";
 	private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 	private final RedisTemplate<String, Object> redisTemplate;
-	private final LeagueRepository leaguerepository;
+	private final LeagueRepository leagueRepository;
 
 	/**
 	 * 리그 조회
@@ -39,7 +39,7 @@ public class LeagueCacheService {
 
 		// 2. DB 조회
 		log.debug("Cache MISS - League: {}", leagueId);
-		Optional<League> league = leaguerepository.findById(leagueId);
+		Optional<League> league = leagueRepository.findById(leagueId);
 
 		// 3. 캐시 저장
 		league.ifPresent(l -> {
