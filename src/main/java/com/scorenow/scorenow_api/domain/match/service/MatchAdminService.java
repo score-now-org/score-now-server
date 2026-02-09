@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,12 +52,18 @@ public class MatchAdminService {
 		List<Match> matchList = matches.getContent();
 
 		// ID 일괄 수집
-		Set<String> leagueIds = matchList.stream().map(Match::getLeagueId).filter(id -> id != null).collect(Collectors.toSet());
+		Set<String> leagueIds = matchList.stream()
+			.map(Match::getLeagueId)
+			.filter(Objects::nonNull)
+			.collect(Collectors.toSet());
 		Set<String> teamIds = matchList.stream()
 			.flatMap(m -> Stream.of(m.getHomeId(), m.getAwayId()))
-			.filter(id -> id != null)
+			.filter(Objects::nonNull)
 			.collect(Collectors.toSet());
-		Set<String> sportIds = matchList.stream().map(Match::getSportId).filter(id -> id != null).collect(Collectors.toSet());
+		Set<String> sportIds = matchList.stream()
+			.map(Match::getSportId)
+			.filter(Objects::nonNull)
+			.collect(Collectors.toSet());
 
 		// 일괄 조회
 		Map<String, League> leagueMap = leagueRepository.findAllById(leagueIds).stream()
@@ -67,45 +74,24 @@ public class MatchAdminService {
 			.collect(Collectors.toMap(Sport::getId, Function.identity()));
 
 		List<MatchListResponse> content = matchList.stream()
-			.map(match -> toListResponse(match, false, leagueMap, teamMap, sportMap))
+			.map(match -> toListResponse(match, leagueMap, teamMap, sportMap))
 			.toList();
 
 		return new PageImpl<>(content, pageable, matches.getTotalElements());
 	}
 
-	/**
-	 * 경기 상세 조회
-	 */
-	public MatchListResponse getMatch(String matchId) {
-		Match match = matchRepository.findById(matchId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
-
-		League leagueEntity = match.getLeagueId() != null ? leagueRepository.findById(match.getLeagueId()).orElse(null) : null;
-		Team homeTeam = match.getHomeId() != null ? teamRepository.findById(match.getHomeId()).orElse(null) : null;
-		Team awayTeam = match.getAwayId() != null ? teamRepository.findById(match.getAwayId()).orElse(null) : null;
-		Sport sportEntity = match.getSportId() != null ? sportRepository.findById(match.getSportId()).orElse(null) : null;
-
-		return toListResponse(match, true, leagueEntity, homeTeam, awayTeam, sportEntity);
-	}
 
 	/**
 	 * 경기 수동 등록
 	 */
 	@Transactional
 	public MatchListResponse createMatch(MatchCreateRequest request) {
-		// 리그 존재 확인
-		if (!leagueRepository.existsById(request.getLeagueId())) {
-			throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
-		}
-
-		// 홈팀 존재 확인
-		if (!teamRepository.existsById(request.getHomeId())) {
-			throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "홈팀을 찾을 수 없습니다.");
-		}
-
-		// 원정팀 존재 확인
-		if (!teamRepository.existsById(request.getAwayId())) {
-			throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "원정팀을 찾을 수 없습니다.");
+		// 연관 엔티티 존재 확인
+		fetchLeague(request.getLeagueId(), "리그 정보를 찾을 수 없습니다.");
+		fetchTeam(request.getHomeId(), "홈팀 정보를 찾을 수 없습니다.");
+		fetchTeam(request.getAwayId(), "원정팀 정보를 찾을 수 없습니다.");
+		if (request.getSportId() != null) {
+			fetchSport(request.getSportId(), "스포츠 정보를 찾을 수 없습니다.");
 		}
 
 		// 수동 경기 생성
@@ -125,12 +111,8 @@ public class MatchAdminService {
 		matchRepository.save(match);
 		log.info("수동 경기 등록 완료 - matchId: {}", match.getId());
 
-		League leagueEntity = leagueRepository.findById(request.getLeagueId()).orElse(null);
-		Team homeTeam = teamRepository.findById(request.getHomeId()).orElse(null);
-		Team awayTeam = teamRepository.findById(request.getAwayId()).orElse(null);
-		Sport sportEntity = request.getSportId() != null ? sportRepository.findById(request.getSportId()).orElse(null) : null;
-
-		return toListResponse(match, true, leagueEntity, homeTeam, awayTeam, sportEntity);
+		// 기본 정보만 반환
+		return toBasicResponse(match);
 	}
 
 	/**
@@ -188,8 +170,10 @@ public class MatchAdminService {
 		log.info("경기 삭제 완료 - matchId: {}", matchId);
 	}
 
+	// ======================== 헬퍼 메서드 ========================
+
 	/**
-	 * 경기 조회(공통)
+	 * 경기 조회 (공통)
 	 */
 	private Match findMatchById(String matchId) {
 		return matchRepository.findById(matchId)
@@ -197,9 +181,35 @@ public class MatchAdminService {
 	}
 
 	/**
+	 * 리그 조회 (존재하지 않으면 예외 발생)
+	 */
+	private void fetchLeague(String leagueId, String errorMessage) {
+		leagueRepository.findById(leagueId)
+			.orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, errorMessage));
+	}
+
+	/**
+	 * 팀 조회 (존재하지 않으면 예외 발생)
+	 */
+	private void fetchTeam(String teamId, String errorMessage) {
+		teamRepository.findById(teamId)
+			.orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND, errorMessage));
+	}
+
+	/**
+	 * 스포츠 조회 (존재하지 않으면 예외 발생)
+	 */
+	private void fetchSport(String sportId, String errorMessage) {
+		sportRepository.findById(sportId)
+			.orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND, errorMessage));
+	}
+
+	// ======================== 응답 변환 메서드 ========================
+
+	/**
 	 * Match -> MatchListResponse 변환 (리스트 조회용, 일괄 조회된 Map 사용)
 	 */
-	private MatchListResponse toListResponse(Match match, boolean includeDetail,
+	private MatchListResponse toListResponse(Match match,
 		Map<String, League> leagueMap, Map<String, Team> teamMap, Map<String, Sport> sportMap) {
 
 		League leagueEntity = match.getLeagueId() != null ? leagueMap.get(match.getLeagueId()) : null;
@@ -207,19 +217,26 @@ public class MatchAdminService {
 		Team awayTeam = match.getAwayId() != null ? teamMap.get(match.getAwayId()) : null;
 		Sport sportEntity = match.getSportId() != null ? sportMap.get(match.getSportId()) : null;
 
-		return toListResponse(match, includeDetail, leagueEntity, homeTeam, awayTeam, sportEntity);
+		return buildMatchResponse(match, leagueEntity, homeTeam, awayTeam, sportEntity);
 	}
 
 	/**
-	 * Match -> MatchListResponse 변환 (상세 조회용)
+	 * Match -> MatchListResponse 변환 (기본 정보만 반환)
 	 */
-	private MatchListResponse toListResponse(Match match, boolean includeDetail,
+	private MatchListResponse toBasicResponse(Match match) {
+		return buildMatchResponse(match, null, null, null, null);
+	}
+
+	/**
+	 * MatchListResponse 생성
+	 */
+	private MatchListResponse buildMatchResponse(Match match,
 		League leagueEntity, Team homeTeam, Team awayTeam, Sport sportEntity) {
 
 		String leagueName = leagueEntity != null ? leagueEntity.getEName() : "";
-		String sportName = sportEntity != null ? sportEntity.getKName() : "";
+		String sportName = sportEntity != null ? sportEntity.getEName() : "";
 
-		MatchListResponse.MatchListResponseBuilder builder = MatchListResponse.builder()
+		return MatchListResponse.builder()
 			.id(match.getId())
 			.sportId(match.getSportId())
 			.sportName(sportName)
@@ -238,16 +255,9 @@ public class MatchAdminService {
 			.awayImageUrl(awayTeam != null ? awayTeam.getImageUrl() : null)
 			.awayScore(match.getAwayScore())
 			.isManual(match.isManual())
-			.isActive(match.isActive());
-
-		if (includeDetail) {
-			builder
-				.betsApiEventId(match.getBetsApiEventId())
-				.bet365Id(match.getBet365Id())
-				.createdAt(match.getCreatedAt())
-				.updatedAt(match.getUpdatedAt());
-		}
-
-		return builder.build();
+			.isActive(match.isActive())
+			.build();
 	}
+
+
 }

@@ -54,7 +54,7 @@ public class Match extends BaseEntity {
 	}
 
 	public static String generateManualId(String sportId) {
-		String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+		String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 		return String.format("MANUAL%s%s", sportId, uuid);
 	}
 

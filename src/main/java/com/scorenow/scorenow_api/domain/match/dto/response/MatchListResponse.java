@@ -16,7 +16,6 @@ public class MatchListResponse {
 	private String leagueId;
 	private String leagueName;
 	private String matchType;
-	private LocalDateTime startAt;
 	private String statusCode;
 	private String statusName;
 	private String homeId;
@@ -30,13 +29,6 @@ public class MatchListResponse {
 	private boolean isManual;
 	private boolean isActive;
 
-	// 상세 조회용
-	private String betsApiEventId;
-	private String bet365Id;
-
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-	private LocalDateTime createdAt;
-
-	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-	private LocalDateTime updatedAt;
+	private LocalDateTime startAt;
 }

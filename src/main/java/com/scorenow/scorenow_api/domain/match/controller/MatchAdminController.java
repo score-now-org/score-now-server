@@ -43,14 +43,6 @@ public class MatchAdminController {
 		return ApiResponse.success(result);
 	}
 
-	/**
-	 * 경기 상세 조회
-	 */
-	@GetMapping("/{matchId}")
-	public ApiResponse<MatchListResponse> getMatch(@PathVariable String matchId){
-		MatchListResponse result = matchAdminService.getMatch(matchId);
-		return ApiResponse.success(result);
-	}
 
 	/**
 	 * 경기 수동 등록

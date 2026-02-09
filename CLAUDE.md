@@ -46,7 +46,6 @@ Java 17 필수. QueryDSL Q-class는 `build/generated/querydsl`에 생성된다.
 - **Lombok:** `@Getter`, `@Builder`, `@NoArgsConstructor` 등 적극 사용
 
 ## API Endpoints
-1
 관리자 API: `/api/admin/matches` (CRUD)
 Swagger UI: `/swagger-ui/index.html`
 

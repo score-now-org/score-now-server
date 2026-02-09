@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository.jpa;
 
-import static com.scorenow.scorenow_api.domain.match.entity.QMatch.*;
 import static com.scorenow.scorenow_api.domain.league.entity.QLeague.*;
+import static com.scorenow.scorenow_api.domain.match.entity.QMatch.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -84,7 +84,7 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 	private BooleanExpression statusEq(String status){
 		if(status == null || status.isBlank()) return null;
 		try{
-			return match.statusCode.eq(MatchStatus.valueOf(status));
+			return match.statusCode.eq(MatchStatus.valueOf(status.toUpperCase()));
 		}catch (Exception e){
 			return null;
 		}
@@ -103,7 +103,7 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 			LocalDateTime endOfDay = localDate.atTime(LocalTime.MAX);
 
 			return match.startAt.between(startOfDay, endOfDay);
-		} catch (Exception e) {
+		} catch (java.time.format.DateTimeParseException e) {
 			return null;
 		}
 	}

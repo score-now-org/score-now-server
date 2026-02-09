@@ -25,7 +25,10 @@ public enum ErrorCode {
 	LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "L001", "리그를 찾을 수 없습니다."),
 
 	// Team
-	TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "팀을 찾을 수 없습니다.");
+	TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "팀을 찾을 수 없습니다."),
+
+	// Sport
+	SPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "스포츠를 찾을 수 없습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;
