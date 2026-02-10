@@ -118,10 +118,6 @@ public class Match extends BaseEntity {
 		this.isActive = isActive;
 	}
 
-	public boolean isDeletable() {
-		return this.isManual;
-	}
-
 
 }
 

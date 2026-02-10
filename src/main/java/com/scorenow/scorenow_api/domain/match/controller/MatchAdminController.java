@@ -4,7 +4,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -64,12 +63,4 @@ public class MatchAdminController {
 		return ApiResponse.success(null);
 	}
 
-	/**
-	 * 경기 삭제
-	 */
-	@DeleteMapping("/{matchId}")
-	public ApiResponse<Void> deleteMatch(@PathVariable String matchId){
-		matchAdminService.deleteMatch(matchId);
-		return ApiResponse.success(null);
-	}
 }

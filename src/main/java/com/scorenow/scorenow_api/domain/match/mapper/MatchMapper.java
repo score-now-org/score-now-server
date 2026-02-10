@@ -46,7 +46,7 @@ public class MatchMapper {
 			.awayId(request.getAwayId())
 			.startAt(request.getStartAt())
 			.statusCode(MatchStatus.NOT_STARTED)
-			.matchType("M")
+			.matchType("A")
 			.isManual(true)
 			.isActive(false)
 			.build();

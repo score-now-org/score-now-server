@@ -13,9 +13,6 @@ import lombok.Setter;
 @Setter
 public class MatchCreateRequest {
 
-	@NotBlank(message = "경기 타입은 필수입니다.")
-	private String matchType; // A(자동), M(수동)
-
 	@NotBlank(message = "종목 ID는 필수입니다.")
 	private String sportId;
 

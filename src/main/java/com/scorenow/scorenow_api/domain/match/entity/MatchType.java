@@ -6,8 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum MatchType {
-	A("A", "자동"),
-	M("M", "수동");
+	A("A", "일반");
 
 	private final String code;
 	private final String description;

@@ -12,7 +12,6 @@ import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
-import com.scorenow.scorenow_api.domain.match.entity.MatchType;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
@@ -72,27 +71,9 @@ public class MatchAdminService {
 		log.info("경기 수정 완료 - matchId: {}", matchId);
 	}
 
-	/**
-	 * 경기 삭제
-	 */
-	@Transactional
-	public void deleteMatch(String matchId) {
-		Match match = findMatchById(matchId);
-
-		validateDeletable(match);
-
-		matchRepository.delete(match);
-		log.info("경기 삭제 완료 - matchId: {}", matchId);
-	}
-
 	// === Validation Methods ===
 
 	private void validateMatchCreateRequest(MatchCreateRequest request) {
-		try{
-			MatchType.fromCode(request.getMatchType());
-		} catch (Exception e) {
-			throw new BusinessException(ErrorCode.MATCH_INVALID_TYPE);
-		}
 		if (!leagueRepository.existsById(request.getLeagueId())) {
 			throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
 		}
@@ -104,12 +85,6 @@ public class MatchAdminService {
 		}
 		if (request.getSportId() != null && !sportRepository.existsById(request.getSportId())) {
 			throw new BusinessException(ErrorCode.SPORT_NOT_FOUND);
-		}
-	}
-
-	private void validateDeletable(Match match) {
-		if (!match.isDeletable()) {
-			throw new BusinessException(ErrorCode.MATCH_CANNOT_DELETE, "자동 경기는 삭제할 수 없습니다.");
 		}
 	}
 
