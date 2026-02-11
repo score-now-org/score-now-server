@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.document;
 
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,5 +23,11 @@ public class MatchDetailDocument {
         private Integer firstHalf;
         private Integer secondHalf;
         private Integer overTime;
+    }
+
+    public void updateFrom(MatchDetailUpdateRequest request) {
+        if (request.getHomeStats() != null) this.homeStats = request.getHomeStats();
+        if (request.getAwayStats() != null) this.awayStats = request.getAwayStats();
+        if (request.getExtraTime() != null) this.extraTime = request.getExtraTime();
     }
 }

@@ -1,0 +1,14 @@
+package com.scorenow.scorenow_api.domain.match.dto.request;
+
+import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.model.MatchStats;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+public class MatchDetailUpdateRequest {
+    private MatchStats homeStats;
+    private MatchStats awayStats;
+    private MatchDetailDocument.ExtraTime extraTime;
+}
