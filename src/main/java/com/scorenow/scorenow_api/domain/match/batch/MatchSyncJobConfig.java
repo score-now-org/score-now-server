@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MatchSyncJobConfig {
 
-	private static final int UPCOMING_DAYS = 14;
+	private static final int UPCOMING_DAYS = 31;
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 	private final MatchSyncService matchSyncService;
