@@ -9,12 +9,12 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
-import com.scorenow.scorenow_api.domain.league.service.LeaguePersistenceService;
+import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
-import com.scorenow.scorenow_api.domain.team.service.TeamPersistenceService;
+import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -29,8 +29,8 @@ public class MatchEventSyncService {
 	private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of("Asia/Seoul");
 
 	private final MatchRepository matchRepository;
-	private final TeamPersistenceService teamPersistenceService;
-	private final LeaguePersistenceService leaguePersistenceService;
+	private final TeamRepository teamRepository;
+	private final LeagueRepository leagueRepository;
 
 	/**
 	 * 개별 경기 동기화 - league → team → match 순서 보장
@@ -49,15 +49,14 @@ public class MatchEventSyncService {
 			return;
 		}
 
-		League league = League.builder()
-			.id(League.generateLeagueId(sportId, betsLeague.getId()))
-			.sportId(sportId)
-			.eName(betsLeague.getName())
-			.kName(betsLeague.getName())
-			.cc(betsLeague.getCc())
-			.build();
-
-		leaguePersistenceService.saveIfNotExists(league);
+		leagueRepository.insertIgnore(
+			League.generateLeagueId(sportId, betsLeague.getId()),
+			sportId,
+			betsLeague.getName(),
+			betsLeague.getName(),
+			null,
+			betsLeague.getCc()
+		);
 	}
 
 	private void saveTeam(BetsEventResponse.Team betsTeam, String sportId) {
@@ -70,16 +69,16 @@ public class MatchEventSyncService {
 			imageUrl = TEAM_IMAGE_BASE_URL + betsTeam.getImageId() + ".png";
 		}
 
-		Team team = Team.builder()
-			.id(Team.generateId(sportId, betsTeam.getId()))
-			.sportId(sportId)
-			.eName(betsTeam.getName())
-			.kName(betsTeam.getName())
-			.cc(betsTeam.getCc())
-			.imageUrl(imageUrl)
-			.build();
-
-		teamPersistenceService.saveIfNotExists(team);
+		teamRepository.insertIgnore(
+			Team.generateId(sportId, betsTeam.getId()),
+			sportId,
+			null,
+			betsTeam.getName(),
+			betsTeam.getName(),
+			null,
+			betsTeam.getCc(),
+			imageUrl
+		);
 	}
 
 	private void saveMatch(BetsEventResponse.Event event, String sportId) {
