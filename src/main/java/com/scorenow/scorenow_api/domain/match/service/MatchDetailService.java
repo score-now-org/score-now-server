@@ -42,8 +42,8 @@ public class MatchDetailService {
 
     private void updateMySqlScore(String eventId, BetsViewResponse.ViewResult result) {
         matchRepository.findById(eventId).ifPresent(match -> {
-            match.setHomeScore(result.getHomeScore());
-            match.setAwayScore(result.getAwayScore());
+            match.updateHomeScore(result.getHomeScore());
+            match.updateAwayScore(result.getAwayScore());
         });
     }
 
