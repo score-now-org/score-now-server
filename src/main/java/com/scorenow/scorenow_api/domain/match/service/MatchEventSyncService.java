@@ -98,16 +98,25 @@ public class MatchEventSyncService {
 		match.updateAwayId(Team.generateId(sportId, event.getAway().getId()));
 		match.updateStatus(MatchStatus.fromCode(event.getTimeStatus()));
 
-		if (event.getTime() != null) {
-			long timestamp = Long.parseLong(event.getTime());
-			match.updateStartAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), DEFAULT_ZONE_ID));
+		if(event.getTime() != null){
+			try{
+				long timestamp = Long.parseLong(event.getTime());
+				match.updateStartAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), DEFAULT_ZONE_ID));
+			} catch (NumberFormatException e) {
+				log.warn("Invalid timestamp format for eventId {}: time='{}'", event.getId(), event.getTime());
+			}
 		}
 
 		if (event.getSs() != null && event.getSs().contains("-")) {
 			String[] scores = event.getSs().split("-");
 			if (scores.length == 2) {
-				match.updateHomeScore(Integer.parseInt(scores[0].trim()));
-				match.updateAwayScore(Integer.parseInt(scores[1].trim()));
+				try{
+					match.updateHomeScore(Integer.parseInt(scores[0].trim()));
+					match.updateAwayScore(Integer.parseInt(scores[1].trim()));
+				} catch (NumberFormatException e) {
+					log.warn("Invalid score format for eventId {}: ss='{}'", event.getId(), event.getSs());
+				}
+
 			}
 		}
 
