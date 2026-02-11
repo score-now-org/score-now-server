@@ -19,7 +19,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/api/test/betsapi/**",
+                                "/api/v1/**"
+
                         ).permitAll()
                         // Admin API 접근 허용 (개발 환경)
                         .requestMatchers("/api/admin/**").permitAll()

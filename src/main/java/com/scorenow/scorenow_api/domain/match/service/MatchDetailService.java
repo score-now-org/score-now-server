@@ -1,10 +1,13 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,5 +45,15 @@ public class MatchDetailService {
             match.updateHomeScore(result.getHomeScore());
             match.updateAwayScore(result.getAwayScore());
         });
+    }
+
+    @Transactional
+    public String updateMatchDetailManual(String eventId, MatchDetailUpdateRequest request) {
+
+        MatchDetailDocument detail = matchDetailRepository.findById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+        detail.updateFrom(request);
+
+        return matchDetailRepository.save(detail).getId();
     }
 }
