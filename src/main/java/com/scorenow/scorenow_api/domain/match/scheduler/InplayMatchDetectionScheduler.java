@@ -24,11 +24,11 @@ public class InplayMatchDetectionScheduler {
 	 */
 	@Scheduled(fixedDelay = 5000) // 테스트 5초(운영 시 60초)
 	public void run() {
-		List<InplayMatchDetectionDto> newOnes = inplayMatchSvc.getNewInplayMatchesAndMark();
-		log.info("[IN_PLAY NEW] count={}", newOnes.size());
+		List<InplayMatchDetectionDto> newOnes = inplayMatchSvc.getNewInplayMatches();
+		log.info("[IN_PLAY NEW] 경기중인 경기 개수={}", newOnes.size());
 
-		newOnes.stream().limit(3).forEach(m ->
-			log.info("[IN_PLAY NEW] matchId={}, HOME={}({}) AWAY={}({})",
+		newOnes.stream().forEach(m ->
+			log.info("[IN_PLAY NEW] 경기Id={}, 홈팀={}({}) 원정팀={}({})",
 				m.getMatchId(),
 				m.getHomeId(), m.getHomeName(),
 				m.getAwayId(), m.getAwayName()
