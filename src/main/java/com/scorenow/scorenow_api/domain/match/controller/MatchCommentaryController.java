@@ -19,9 +19,14 @@ public class MatchCommentaryController {
     public ApiResponse<String> createCommentary(
             @PathVariable String eventId,
             @RequestPart(value = "data") CommentaryCreateRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
+            @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        String savedId = commentaryService.saveCommentary(eventId, request, image);
+        String savedId = null;
+        try {
+            savedId = commentaryService.saveCommentary(eventId, request, image);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return ApiResponse.success(savedId);
     }
 }

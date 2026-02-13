@@ -6,8 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Getter
-@Builder
+@Getter @Builder
 @Document(collection = "match_commentaries")
 public class MatchCommentaryDocument extends BaseDocument {
     @Id
