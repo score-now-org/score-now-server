@@ -1,7 +1,11 @@
 package com.scorenow.scorenow_api.domain.match.scheduler;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,45 +19,41 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MatchSyncScheduler {
 
-	// 지원 종목 ID(축구 , 확장 가능)
 	private static final String FOOTBALL = "1";
+
+	private final JobLauncher jobLauncher;
+	private final Job matchSyncJob;
 	private final MatchSyncService matchSyncService;
 
 	/**
-	 * 예정 경기 동기화(Upcoming)
-	 * 일주일치 데이터 가져오기
+	 * 매일 2회 배치 실행(4시, 16시)
 	 */
-	@Scheduled(cron = "0 0 0,6,12,18 * * *")
-	public void syncUpcomingMatches(){
-		log.info("=== [UPCOMING] 예정 경기 동기화 ===");
-
-		int totalCount = 0;
-		LocalDate today = LocalDate.now();
+	@Scheduled(cron = "0 0 4,16 * * *")
+	public void runMatchSyncJob(){
+		log.info("=== Match Sync Batch Job 시작 ===");
 
 		try{
-			// 오늘 경기
-			int todayCount = matchSyncService.syncUpcomingMatches(FOOTBALL, null);
+			JobParameters params = new JobParametersBuilder()
+				.addString("runTime", LocalDateTime.now().toString())
+				.toJobParameters();
 
-			// 내일 경기
-			String tomorrow = java.time.LocalDate.now().plusDays(1)
-				.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-			int tomorrowCount = matchSyncService.syncUpcomingMatches(FOOTBALL, tomorrow);
+			jobLauncher.run(matchSyncJob, params);
 
-			log.info("[UPCOMING] 동기화 완료 - 오늘 {}건, 내일: {}건", todayCount, tomorrowCount);
+			log.info("=== Match Sync Batch Job 완료 ===");
 		} catch (Exception e) {
-			log.error("[UPCOMING] 동기화 실패", e);
+			log.error("Batch Job 실패", e);
 		}
 	}
 
+
 	/**
-	 * 종료 경기 동기화(Ended)
-	 * - 매 10분마다 동기화
-	 * - 최종 스코어 및 상태 확정
+	 * Ended - 10분마다 (오늘 경기만, 종료 후 30분 내 반영)
 	 */
 	@Scheduled(fixedDelay = 600000)
-	public void syncEndedMatches(){
-		log.info("=== [ENDED] 종료 경기 동기화 시작 ===");
-		try{
+	public void syncEndedMatches() {
+		log.info("=== [ENDED] 종료 경기 동기화 ===");
+
+		try {
 			int count = matchSyncService.syncEndedMatches(FOOTBALL, null);
 			log.info("[ENDED] 동기화 완료 - {}건", count);
 		} catch (Exception e) {
