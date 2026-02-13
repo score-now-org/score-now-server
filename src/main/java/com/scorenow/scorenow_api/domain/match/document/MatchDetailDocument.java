@@ -18,6 +18,9 @@ public class MatchDetailDocument {
 
     private ExtraTime extraTime;
 
+    private String currentCommentary; // 가장 최신 중계 문구
+    private String currentCommentaryId; // 해당 중계의 ID
+
     @Getter @Builder
     public static class ExtraTime {
         private Integer firstHalf;
@@ -29,5 +32,10 @@ public class MatchDetailDocument {
         if (request.getHomeStats() != null) this.homeStats = request.getHomeStats();
         if (request.getAwayStats() != null) this.awayStats = request.getAwayStats();
         if (request.getExtraTime() != null) this.extraTime = request.getExtraTime();
+    }
+
+    public void updateCurrentCommentary(String content, String commentaryId) {
+        this.currentCommentary = content;
+        this.currentCommentaryId = commentaryId;
     }
 }
