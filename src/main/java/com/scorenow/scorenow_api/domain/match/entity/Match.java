@@ -8,10 +8,12 @@ import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -58,19 +60,19 @@ public class Match extends BaseEntity {
 
 	// JPA 관계 추가 (Fetch join용)
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "leagueId", insertable = false, updatable = false)
+	@JoinColumn(name = "leagueId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private League league;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "sportId", insertable = false, updatable = false)
+	@JoinColumn(name = "sportId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Sport sport;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "homeId", insertable = false, updatable = false)
+	@JoinColumn(name = "homeId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Team homeTeam;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "awayId", insertable = false, updatable = false)
+	@JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Team awayTeam;
 
 	public static String generateMatchId(String sportId, String eventId) {
