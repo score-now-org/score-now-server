@@ -47,13 +47,29 @@ public class MatchDetailService {
         });
     }
 
+    /**
+     * 어드민 수동 수정 (MySQL 스코어 + MongoDB 상세 데이터)
+     */
     @Transactional
     public String updateMatchDetailManual(String eventId, MatchDetailUpdateRequest request) {
+        // 스코어 수정
+        matchRepository.findById(eventId).ifPresent(match -> {
+            if (request.getHomeScore() != null) {
+                match.updateHomeScore(request.getHomeScore());
+            }
+            if (request.getAwayScore() != null) {
+                match.updateAwayScore(request.getAwayScore());
+            }
+            log.info("MySQL 스코어 수동 수정 : {} -> {}:{}", eventId, request.getHomeScore(), request.getAwayScore());
+        });
 
+        // 경기 기록 수정
         MatchDetailDocument detail = matchDetailRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
         detail.updateFrom(request);
 
+        log.info("📊 MongoDB 상세 지표 수동 수정 완료: {}", eventId);
         return matchDetailRepository.save(detail).getId();
     }
 }

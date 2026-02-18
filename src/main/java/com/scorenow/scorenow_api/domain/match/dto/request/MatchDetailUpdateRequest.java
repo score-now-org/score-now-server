@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class MatchDetailUpdateRequest {
+    private Integer homeScore;
+    private Integer awayScore;
     private MatchStats homeStats;
     private MatchStats awayStats;
     private MatchDetailDocument.ExtraTime extraTime;
