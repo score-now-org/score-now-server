@@ -5,8 +5,10 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class InplayMatchDetectionDto {
+public class InplayScanDto {
 	private final String matchId;
+
+	private final String sportId;
 
 	private final String homeId;    // 홈 팀 ID
 	private final String homeName;    // 홈 팀명(영문)
