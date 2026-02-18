@@ -59,7 +59,7 @@ public class MatchDetailService {
                 try {
                     match.updateStatus(MatchStatus.valueOf(request.getStatus()));
                 } catch (IllegalArgumentException e) {
-                    log.error("잘못된 상태값입니다: {}", request.getStatus());
+log.error("잘못된 상태값입니다: {}", request.getStatus().replace('\n', '_').replace('\r', '_'));
                     throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
                 }
             }
