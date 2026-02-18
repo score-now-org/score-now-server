@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class MatchDetailUpdateRequest {
+    private String status;
     private Integer homeScore;
     private Integer awayScore;
     private MatchStats homeStats;

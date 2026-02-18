@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
@@ -52,15 +53,19 @@ public class MatchDetailService {
      */
     @Transactional
     public String updateMatchDetailManual(String eventId, MatchDetailUpdateRequest request) {
-        // 스코어 수정
+        // 스코어 및 경기 상태 수정
         matchRepository.findById(eventId).ifPresent(match -> {
-            if (request.getHomeScore() != null) {
-                match.updateHomeScore(request.getHomeScore());
+            if (request.getStatus() != null) {
+                try {
+                    match.updateStatus(MatchStatus.valueOf(request.getStatus()));
+                } catch (IllegalArgumentException e) {
+                    log.error("잘못된 상태값입니다: {}", request.getStatus());
+                    throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
+                }
             }
-            if (request.getAwayScore() != null) {
-                match.updateAwayScore(request.getAwayScore());
-            }
-            log.info("MySQL 스코어 수동 수정 : {} -> {}:{}", eventId, request.getHomeScore(), request.getAwayScore());
+
+            if (request.getHomeScore() != null) match.updateHomeScore(request.getHomeScore());
+            if (request.getAwayScore() != null) match.updateAwayScore(request.getAwayScore());
         });
 
         // 경기 기록 수정
