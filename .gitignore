@@ -20,8 +20,6 @@ bin/
 ### IntelliJ IDEA ###
 .idea
 *.iws
-*.yml
-*.yaml
 *.iml
 *.ipr
 out/
@@ -37,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### GCP ###
+gcp-key.json
+
+### Local config ###
+src/main/resources/application.yml
+.env
