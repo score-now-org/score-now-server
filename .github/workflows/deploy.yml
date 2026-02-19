@@ -36,11 +36,13 @@ jobs:
           docker push asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID}}/scorenow-repo/scorenow-api:latest
 
       - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: scorenow-api
-          region: asia-northeast3
-          image: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/scorenow-repo/scorenow-api:${{ github.sha }}
+        run: |
+          gcloud run deploy scorenow-api \
+            --image=asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/scorenow-repo/scorenow-api:${{ github.sha }} \
+            --region=asia-northeast3 \
+            --network=default \
+            --subnet=default \
+            --vpc-egress=private-ranges-only
 
 
 
