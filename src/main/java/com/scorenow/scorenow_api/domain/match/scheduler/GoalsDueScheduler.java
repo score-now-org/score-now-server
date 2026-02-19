@@ -40,7 +40,7 @@ public class GoalsDueScheduler {
 
 		long now = System.currentTimeMillis();
 
-		// 1) due된 matchId 조회
+		// due된 matchId 조회
 		List<String> matchIds = redisSvc.pollDue(InplayRedisKeys.DUE_GOALS, now, batchSize);
 		log.info("[GOALS DUE POLL] size={}, ids={}", matchIds.size(), matchIds);
 
@@ -54,30 +54,30 @@ public class GoalsDueScheduler {
 
 			String lockKey = InplayRedisKeys.LOCK_GOALS_PREFIX + matchId;
 
-			// 2) 락 획득 실패 시 스킵
+			// 락 획득 실패 시 스킵
 			if (!redisSvc.tryLock(lockKey, lockTtlMs))
 				continue;
 
 			try {
 
-				redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, matchId);
-
 				if (!matchRepo.existsByIdAndStatusCode(matchId, MatchStatus.IN_PLAY)) {
 					log.info("[GOALS DUE STOP] not IN_PLAY matchId={}", matchId);
+					redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, matchId);
 					continue;
 				}
 
 				String sportId = MatchIdParser.extractSportId(matchId);
 
-				// 4) 골 업데이트 (view api 호출 + 반영)
+				// 골 업데이트 (view api 호출 + 반영)
 				lineupSvc.updateGoals(matchId, sportId);
 
-				// 5) 다음 실행 예약
+				// 다음 실행 예약
 				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, matchId, now + intervalMs);
 
 			} catch (Exception e) {
 				log.warn("GoalsDueScheduler error. matchId={}", matchId, e);
 
+				// 예외 시에는 다음 시도 예약만 하고 due는 남아있음
 				redisSvc.scheduleNext(
 					InplayRedisKeys.DUE_GOALS,
 					matchId,

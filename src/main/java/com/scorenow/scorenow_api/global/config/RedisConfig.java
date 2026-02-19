@@ -64,6 +64,7 @@ public class RedisConfig {
 			.build();
 	}
 
+	@Bean
 	public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
 		return new StringRedisTemplate(connectionFactory);
 	}

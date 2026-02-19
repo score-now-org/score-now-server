@@ -25,6 +25,10 @@ public class LineupInitWorkerScheduler {
 	@Value("${scorenow.inplay.due.goals.intervalMs:15000}")
 	private long goalsIntervalMs;
 
+	// 재큐잉 최대 횟수
+	@Value("${scorenow.inplay.worker.lineup.maxRetry:5}")
+	private int maxRetry;
+
 	@Scheduled(fixedDelayString = "${scorenow.inplay.worker.lineup.fixedDelayMs:10000}")
 	public void run() {
 
@@ -34,14 +38,23 @@ public class LineupInitWorkerScheduler {
 			if (payload == null)
 				break;
 
-			String[] parts = payload.split("\\|", 2);
-			if (parts.length != 2) {
+			String[] parts = payload.split("\\|", 3);
+			if (parts.length < 2) {
 				log.warn("[LINEUP INIT SKIP] invalid payload={}", payload);
 				continue;
 			}
 
 			String matchId = parts[0];
 			String sportId = parts[1];
+			int attempt = 0;
+
+			if (parts.length == 3) {
+				try {
+					attempt = Integer.parseInt(parts[2]);
+				} catch (NumberFormatException ignore) {
+					attempt = 0;
+				}
+			}
 
 			// 도큐먼트 존재 여부 확인(안전장치)
 			if (lineupSvc.exists(matchId)) {
@@ -51,8 +64,13 @@ public class LineupInitWorkerScheduler {
 
 			// 중복 처리 방지(짧은 락)
 			String lockKey = InplayRedisKeys.LOCK_LINEUP_PREFIX + matchId;
-			if (!redisSvc.tryLock(lockKey, 10_000))
+
+			// 락 실패 → 유실 방지를 위해 재큐잉
+			if (!redisSvc.tryLock(lockKey, 10_000)) {
+				redisSvc.requeueNewLineup(payload);
+				log.debug("[LINEUP INIT REQUEUE] lock busy matchId={}", matchId);
 				continue;
+			}
 
 			try {
 				lineupSvc.fetchAndSaveByMatchId(matchId, sportId);
@@ -61,8 +79,25 @@ public class LineupInitWorkerScheduler {
 				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, matchId, nextRunAt);
 
 				log.info("[LINEUP INIT OK] matchId={}", matchId);
+
 			} catch (Exception e) {
-				log.warn("[LINEUP INIT FAIL] matchId={}, 실패이유={}", matchId, e.getMessage());
+
+				int nextAttempt = attempt + 1;
+
+				if (nextAttempt > maxRetry) {
+					redisSvc.pushLineupInitDlq(payload, e.toString());
+					log.error("[LINEUP INIT DLQ] matchId={}, attempt={}, reason={}",
+						matchId, nextAttempt, e.toString());
+					continue;
+				}
+
+				// 예외도 유실 방지를 위해 재큐잉
+				// 재시도 payload로 attempt 업데이트해서 재큐잉
+				String retryPayload = matchId + "|" + sportId + "|" + nextAttempt;
+				redisSvc.requeueNewLineup(retryPayload);
+
+				log.warn("[LINEUP INIT RETRY] matchId={}, attempt={}, reason={}",
+					matchId, nextAttempt, e.toString());
 			}
 		}
 	}

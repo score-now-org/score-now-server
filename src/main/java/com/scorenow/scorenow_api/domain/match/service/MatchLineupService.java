@@ -42,7 +42,7 @@ public class MatchLineupService {
 		if (!matchId.startsWith(sportId))
 			throw new IllegalArgumentException("matchId/sportId mismatch");
 
-		String eventId = matchId.substring(sportId.length());
+		String eventId = MatchIdParser.extractEventId(matchId);
 		BetsLineupResponse response = betsApiClient.getLineup(eventId);
 		validateLineupResponse(response, eventId);
 
@@ -76,8 +76,6 @@ public class MatchLineupService {
 	public void updateGoals(String matchId, String sportId) {
 		if (matchId == null || matchId.isBlank())
 			return;
-		if (!matchLineupRepository.existsById(matchId))
-			return;
 
 		String eventId = MatchIdParser.extractEventId(matchId);
 		var viewResponse = betsApiClient.getEventView(eventId);
@@ -94,6 +92,7 @@ public class MatchLineupService {
 			return;
 
 		boolean changed = false;
+		List<String> appliedEventIds = new ArrayList<>();
 
 		for (var ev : result.getEvents()) {
 			if (ev == null || ev.getId() == null || ev.getText() == null)
@@ -103,9 +102,8 @@ public class MatchLineupService {
 			if (!text.contains("Goal"))
 				continue; // 골 이벤트만
 
-			// ✅ 중복 방지: 같은 goalEventId는 1번만 반영
-			boolean isNew = redisSvc.markGoalEventIfNew(matchId, ev.getId(), 24 * 60 * 60);
-			if (!isNew)
+			// 체크만, 선마킹 금지
+			if (redisSvc.isGoalEventSeen(matchId, ev.getId()))
 				continue;
 
 			log.info("[GOAL EVENT NEW] matchId={}, text={}", matchId, text);
@@ -114,13 +112,18 @@ public class MatchLineupService {
 			if (goal == null || goal.playerName == null || goal.playerName.isBlank())
 				continue;
 
-			boolean applied = applyGoal(doc, goal.playerName);
-			if (applied)
+			if (applyGoal(doc, goal.playerName)) {
 				changed = true;
+				appliedEventIds.add(ev.getId());
+			}
 		}
 
 		if (changed) {
 			matchLineupRepository.save(doc);
+
+			for (String goalEventId : appliedEventIds) {
+				redisSvc.markGoalEventSeen(matchId, goalEventId, 24 * 60 * 60);
+			}
 		}
 
 	}

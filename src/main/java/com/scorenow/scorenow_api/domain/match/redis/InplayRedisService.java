@@ -52,6 +52,19 @@ public class InplayRedisService {
 		return new ArrayList<>(set);
 	}
 
+	public void requeueNewLineup(String payload) {
+		redis.opsForList().rightPush(InplayRedisKeys.Q_NEW_LINEUP, payload);
+	}
+
+	public void pushLineupInitDlq(String payload, String reason) {
+		String r = (reason == null) ? "" : reason;
+		if (r.length() > 300)
+			r = r.substring(0, 300);
+
+		String dlqPayload = payload + "|reason=" + r;
+		redis.opsForList().rightPush(InplayRedisKeys.DLQ_LINEUP_INIT, dlqPayload);
+	}
+
 	/** due 재등록(다음 실행 시각) */
 	public void scheduleNext(String dueKey, String matchId, long nextRunAtMillis) {
 		redis.opsForZSet().add(dueKey, matchId, nextRunAtMillis);
@@ -69,9 +82,20 @@ public class InplayRedisService {
 	}
 
 	public boolean markGoalEventIfNew(String matchId, String goalEventId, long ttlSeconds) {
-		String key = "inplay:goal:seen:" + matchId + ":" + goalEventId;
+		String key = InplayRedisKeys.GOAL_SEEN_PREFIX + matchId + ":" + goalEventId;
 		Boolean ok = redis.opsForValue().setIfAbsent(key, "1", Duration.ofSeconds(ttlSeconds));
 		return ok != null && ok;
+	}
+
+	public boolean isGoalEventSeen(String matchId, String goalEventId) {
+		String key = InplayRedisKeys.GOAL_SEEN_PREFIX + matchId + ":" + goalEventId;
+		Boolean exists = redis.hasKey(key);
+		return Boolean.TRUE.equals(exists);
+	}
+
+	public void markGoalEventSeen(String matchId, String goalEventId, long ttlSeconds) {
+		String key = InplayRedisKeys.GOAL_SEEN_PREFIX + matchId + ":" + goalEventId;
+		redis.opsForValue().set(key, "1", Duration.ofSeconds(ttlSeconds));
 	}
 
 }

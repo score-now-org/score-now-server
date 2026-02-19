@@ -5,6 +5,7 @@ public class InplayRedisKeys {
 	}
 
 	public static final String SEEN_PREFIX = "inplay:seen:";
+	public static final String GOAL_SEEN_PREFIX = "inplay:goal:seen:";
 
 	public static final String Q_NEW_LINEUP = "queue:new_inplay:lineup";
 	public static final String Q_NEW_DETAIL = "queue:new_inplay:detail";
@@ -15,5 +16,7 @@ public class InplayRedisKeys {
 	public static final String LOCK_GOALS_PREFIX = "lock:goals:";   // + matchId
 	public static final String LOCK_DETAIL_PREFIX = "lock:detail:"; // + matchId
 	public static final String LOCK_LINEUP_PREFIX = "lock:lineup:"; // + matchId
+
+	public static final String DLQ_LINEUP_INIT = "dlq:lineup:init";
 }
 
