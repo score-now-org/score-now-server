@@ -10,6 +10,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -24,7 +25,7 @@ public class RedisConfig {
 	 * - Value: JSON (GenericJackson2JsonRedisSerializer)
 	 */
 	@Bean
-	public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory){
+	public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
 		RedisTemplate<String, Object> template = new RedisTemplate<>();
 		template.setConnectionFactory(connectionFactory);
 
@@ -46,7 +47,7 @@ public class RedisConfig {
 	 * - JSON: 직렬화
 	 */
 	@Bean
-	public CacheManager cacheManager(RedisConnectionFactory connectionFactory){
+	public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
 		RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
 			.entryTtl(Duration.ofMinutes(10)) // 기본 TTL 10분
 			.serializeKeysWith(
@@ -61,5 +62,10 @@ public class RedisConfig {
 		return RedisCacheManager.builder(connectionFactory)
 			.cacheDefaults(config)
 			.build();
+	}
+
+	@Bean
+	public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
+		return new StringRedisTemplate(connectionFactory);
 	}
 }
