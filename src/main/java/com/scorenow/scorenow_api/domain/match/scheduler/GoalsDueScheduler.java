@@ -57,10 +57,15 @@ public class GoalsDueScheduler {
 			if (payload == null || payload.isBlank())
 				continue;
 
-			String[] parts = payload.split("\\|", 2);
+			String[] parts = payload.split("\\|", 3);
+			if (parts.length < 2) {
+				log.warn("❌[GOALS DUE] 스킵: payload 형식 오류 payload={}", payload);
+				redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, payload);
+				continue;
+			}
 			String matchId = parts[0];
 			String sportId = parts[1];
-
+			String basePayload = matchId + "|" + sportId;
 			String lockKey = InplayRedisKeys.LOCK_GOALS_PREFIX + matchId;
 
 			// 락 획득 실패 시 스킵
@@ -81,7 +86,7 @@ public class GoalsDueScheduler {
 				lineupSvc.updateGoals(matchId, sportId);
 
 				// payload 재예약
-				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, payload, now + intervalMs);
+				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, now + intervalMs);
 
 				handled++;
 
@@ -90,10 +95,10 @@ public class GoalsDueScheduler {
 				log.warn("⚠[GOALS DUE] 실패: 골 업데이트/재예약 중 예외 matchId={}, reason={}",
 					matchId, e.toString());
 
-				// 예외 시 재예약(너 로직 유지)
+				// 예외 시 재예약
 				redisSvc.scheduleNext(
 					InplayRedisKeys.DUE_GOALS,
-					payload,
+					basePayload,
 					now + Math.min(30_000L, intervalMs)
 				);
 			}

@@ -29,6 +29,9 @@ public class LineupInitWorkerScheduler {
 	@Value("${scorenow.inplay.worker.lineup.maxRetry:5}")
 	private int maxRetry;
 
+	@Value("${scorenow.inplay.worker.lineup.lockTtlMs:10000}")
+	private long lockTtlMs;
+
 	@Scheduled(fixedDelayString = "${scorenow.inplay.worker.lineup.fixedDelayMs:10000}")
 	public void run() {
 
@@ -66,17 +69,19 @@ public class LineupInitWorkerScheduler {
 			String lockKey = InplayRedisKeys.LOCK_LINEUP_PREFIX + matchId;
 
 			// 락 실패 → 유실 방지를 위해 재큐잉
-			if (!redisSvc.tryLock(lockKey, 10_000)) {
+			if (!redisSvc.tryLock(lockKey, lockTtlMs)) {
 				redisSvc.requeueNewLineup(payload);
 				log.debug("❗[LINEUP INIT] 재큐잉: 락 점유 중 matchId={}", matchId);
 				continue;
 			}
 
+			String basePayload = matchId + "|" + sportId;
+
 			try {
 				lineupSvc.saveInplayMatchLineup(matchId, sportId);
 
 				long nextRunAt = System.currentTimeMillis() + goalsIntervalMs;
-				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, payload, nextRunAt);
+				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, nextRunAt);
 
 				log.info("✅[LINEUP INIT] 완료 matchId={}", matchId);
 
@@ -85,15 +90,14 @@ public class LineupInitWorkerScheduler {
 				int nextAttempt = attempt + 1;
 
 				if (nextAttempt > maxRetry) {
-					redisSvc.pushLineupInitDlq(payload, e.toString());
+					redisSvc.pushLineupInitDlq(basePayload + "|" + nextAttempt, e.toString());
 					log.error("⛔[LINEUP INIT] DLQ: 최대 재시도 초과 matchId={}, attempt={}, reason={}",
 						matchId, nextAttempt, e.toString());
 					continue;
 				}
 
-				// 재시도 payload로 attempt 업데이트해서 재큐잉
-				String retryPayload = matchId + "|" + sportId + "|" + nextAttempt;
-				redisSvc.requeueNewLineup(retryPayload);
+				// 재큐잉
+				redisSvc.requeueNewLineup(basePayload + "|" + nextAttempt);
 
 				log.warn("⚠[LINEUP INIT] 재시도: 실패 후 재큐잉 matchId={}, attempt={}, reason={}",
 					matchId, nextAttempt, e.toString());

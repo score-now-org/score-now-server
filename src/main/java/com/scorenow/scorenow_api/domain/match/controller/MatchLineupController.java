@@ -32,7 +32,7 @@ public class MatchLineupController {
 	}
 
 	/** 라인업 조회 */
-	@GetMapping("/{matchId}")
+	@GetMapping("/{matchId}/lineup")
 	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable String matchId) {
 		return ApiResponse.success(matchLineupSvc.getByMatchId(matchId));
 	}
