@@ -40,7 +40,7 @@ public class LineupInitWorkerScheduler {
 
 			String[] parts = payload.split("\\|", 3);
 			if (parts.length < 2) {
-				log.warn("[LINEUP INIT SKIP] invalid payload={}", payload);
+				log.warn("❌[LINEUP INIT] 스킵: payload 형식 오류 payload={}", payload);
 				continue;
 			}
 
@@ -58,7 +58,7 @@ public class LineupInitWorkerScheduler {
 
 			// 도큐먼트 존재 여부 확인(안전장치)
 			if (lineupSvc.exists(matchId)) {
-				log.debug("[LINEUP INIT SKIP] 라인업 도큐먼트가 이미 존재={}", matchId);
+				log.debug("⏭[LINEUP INIT] 스킵: 라인업 도큐먼트 이미 존재 matchId={}", matchId);
 				continue;
 			}
 
@@ -68,17 +68,17 @@ public class LineupInitWorkerScheduler {
 			// 락 실패 → 유실 방지를 위해 재큐잉
 			if (!redisSvc.tryLock(lockKey, 10_000)) {
 				redisSvc.requeueNewLineup(payload);
-				log.debug("[LINEUP INIT REQUEUE] lock busy matchId={}", matchId);
+				log.debug("❗[LINEUP INIT] 재큐잉: 락 점유 중 matchId={}", matchId);
 				continue;
 			}
 
 			try {
-				lineupSvc.fetchAndSaveByMatchId(matchId, sportId);
+				lineupSvc.saveInplayMatchLineup(matchId, sportId);
 
 				long nextRunAt = System.currentTimeMillis() + goalsIntervalMs;
-				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, matchId, nextRunAt);
+				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, payload, nextRunAt);
 
-				log.info("[LINEUP INIT OK] matchId={}", matchId);
+				log.info("✅[LINEUP INIT] 완료 matchId={}", matchId);
 
 			} catch (Exception e) {
 
@@ -86,17 +86,16 @@ public class LineupInitWorkerScheduler {
 
 				if (nextAttempt > maxRetry) {
 					redisSvc.pushLineupInitDlq(payload, e.toString());
-					log.error("[LINEUP INIT DLQ] matchId={}, attempt={}, reason={}",
+					log.error("⛔[LINEUP INIT] DLQ: 최대 재시도 초과 matchId={}, attempt={}, reason={}",
 						matchId, nextAttempt, e.toString());
 					continue;
 				}
 
-				// 예외도 유실 방지를 위해 재큐잉
 				// 재시도 payload로 attempt 업데이트해서 재큐잉
 				String retryPayload = matchId + "|" + sportId + "|" + nextAttempt;
 				redisSvc.requeueNewLineup(retryPayload);
 
-				log.warn("[LINEUP INIT RETRY] matchId={}, attempt={}, reason={}",
+				log.warn("⚠[LINEUP INIT] 재시도: 실패 후 재큐잉 matchId={}, attempt={}, reason={}",
 					matchId, nextAttempt, e.toString());
 			}
 		}

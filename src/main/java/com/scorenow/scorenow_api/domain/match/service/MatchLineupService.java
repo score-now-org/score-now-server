@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisService;
@@ -27,22 +28,148 @@ public class MatchLineupService {
 	private final MatchLineupRepository matchLineupRepository;
 	private final InplayRedisService redisSvc;
 
+	/* ========================= Public API - Manual ========================= */
+
+	/** 라인업 수동 업데이트 */
+	@Transactional
+	public String updateMatchLineupManual(String matchId, String playerId, MatchLineupUpdateRequest request) {
+		if (matchId == null || matchId.isBlank())
+			throw new IllegalArgumentException("잘못된 요청: matchId가 비어있습니다.");
+		if (playerId == null || playerId.isBlank())
+			throw new IllegalArgumentException("잘못된 요청: playerId가 비어있습니다.");
+		if (request == null)
+			throw new IllegalArgumentException("잘못된 요청: request가 null입니다.");
+
+		MatchLineupDocument doc = matchLineupRepository.findById(matchId)
+			.orElseThrow(() -> new IllegalArgumentException("라인업이 존재하지 않습니다. matchId=" + matchId));
+
+		boolean found = false;
+		boolean changed = false;
+
+		if (doc.getHome() != null) {
+			UpdateResult r = updatePlayerOnSide(doc.getHome(), playerId, request);
+			found |= r.found;
+			changed |= r.changed;
+		}
+		if (doc.getAway() != null) {
+			UpdateResult r = updatePlayerOnSide(doc.getAway(), playerId, request);
+			found |= r.found;
+			changed |= r.changed;
+		}
+
+		if (!found) {
+			throw new IllegalArgumentException(
+				"라인업에서 선수를 찾지 못했습니다. matchId=" + matchId + ", playerId=" + playerId);
+		}
+
+		// 변경 없으면 저장 안 하고 정상 응답
+		if (!changed) {
+			return "NO_CHANGES";
+		}
+
+		matchLineupRepository.save(doc);
+		return matchId + ":" + playerId;
+	}
+
+	/* ========================= Manual Internals =========================== */
+
+	private static class UpdateResult {
+		final boolean found;
+		final boolean changed;
+
+		UpdateResult(boolean found, boolean changed) {
+			this.found = found;
+			this.changed = changed;
+		}
+
+		static UpdateResult notFound() {
+			return new UpdateResult(false, false);
+		}
+
+		static UpdateResult foundNoChange() {
+			return new UpdateResult(true, false);
+		}
+
+		static UpdateResult foundChanged() {
+			return new UpdateResult(true, true);
+		}
+	}
+
+	/** 라인업 수동 업데이트 */
+	private UpdateResult updatePlayerOnSide(LineupSide side, String playerId, MatchLineupUpdateRequest req) {
+		if (side == null)
+			return UpdateResult.notFound();
+
+		LineupPlayer p = findPlayer(side, playerId);
+		if (p == null)
+			return UpdateResult.notFound();
+
+		boolean changed = false;
+
+		if (req.getPosition() != null && !req.getPosition().isBlank()) {
+			String newPos = req.getPosition().trim();
+			if (p.getPosition() == null || !p.getPosition().equals(newPos)) {
+				p.setPosition(newPos);
+				changed = true;
+			}
+		}
+
+		if (req.getShirtNumber() != null) {
+			Integer newNo = req.getShirtNumber();
+			if (p.getShirtNumber() == null || !p.getShirtNumber().equals(newNo)) {
+				p.setShirtNumber(newNo);
+				changed = true;
+			}
+		}
+
+		if (req.getGoals() != null) {
+			int newGoals = Math.max(0, req.getGoals());
+			Integer cur = (p.getGoals() == null ? 0 : p.getGoals());
+			if (!cur.equals(newGoals)) {
+				p.setGoals(newGoals);
+				changed = true;
+			}
+		}
+
+		return changed ? UpdateResult.foundChanged() : UpdateResult.foundNoChange();
+	}
+
+	private LineupPlayer findPlayer(LineupSide side, String playerId) {
+		if (side.getStartingLineup() != null) {
+			for (LineupPlayer p : side.getStartingLineup()) {
+				if (playerId.equals(p.getPlayerId()))
+					return p;
+			}
+		}
+		if (side.getSubstitutes() != null) {
+			for (LineupPlayer p : side.getSubstitutes()) {
+				if (playerId.equals(p.getPlayerId()))
+					return p;
+			}
+		}
+		return null;
+	}
+
+
+	/* ========================= Public API - Sync(Lineup) =================== */
+
 	/**
 	 * eventId 기준으로 라인업 조회 + Mongo 저장 (upsert)
 	 * matchId 예: BETS1 + eventId
 	 */
 	@Transactional
-	public MatchLineupDocument fetchAndSaveByMatchId(String matchId, String sportId) {
+	public MatchLineupDocument saveInplayMatchLineup(String matchId, String sportId) {
 		if (matchId == null || matchId.isBlank())
-			throw new IllegalArgumentException("matchId is blank");
+			throw new IllegalArgumentException("잘못된 요청: matchId가 비어있습니다.");
 
 		if (sportId == null || sportId.isBlank())
-			throw new IllegalArgumentException("sportId is blank");
+			throw new IllegalArgumentException("잘못된 요청: sportId가 비어있습니다.");
 
 		if (!matchId.startsWith(sportId))
-			throw new IllegalArgumentException("matchId/sportId mismatch");
+			throw new IllegalArgumentException(
+				"잘못된 요청: matchId/sportId가 일치하지 않습니다. matchId=" + matchId + ", sportId=" + sportId);
 
-		String eventId = MatchIdParser.extractEventId(matchId);
+		String eventId = MatchIdParser.extractEventId(matchId, sportId);
 		BetsLineupResponse response = betsApiClient.getLineup(eventId);
 		validateLineupResponse(response, eventId);
 
@@ -56,6 +183,8 @@ public class MatchLineupService {
 
 		return matchLineupRepository.save(doc);
 	}
+
+	/* ========================= Public API - Read =========================== */
 
 	/** 도큐먼트 존재 여부 */
 	@Transactional(readOnly = true)
@@ -72,77 +201,98 @@ public class MatchLineupService {
 			.orElseThrow(() -> new IllegalArgumentException("라인업이 존재하지 않습니다. matchId=" + matchId));
 	}
 
-	/** 골득접 업데이트 */
+	/* ========================= Public API - Sync(Goals) ==================== */
+
+	/** 골득점 업데이트 */
+	@Transactional
 	public void updateGoals(String matchId, String sportId) {
 		if (matchId == null || matchId.isBlank())
 			return;
-
-		String eventId = MatchIdParser.extractEventId(matchId);
-		var viewResponse = betsApiClient.getEventView(eventId);
-
-		if (viewResponse == null || viewResponse.getResults() == null || viewResponse.getResults().isEmpty())
+		if (sportId == null || sportId.isBlank())
 			return;
 
-		var result = viewResponse.getResults().get(0);
-		if (result.getEvents() == null || result.getEvents().isEmpty())
-			return;
+		try {
+			String eventId = MatchIdParser.extractEventId(matchId, sportId);
+			var viewResponse = betsApiClient.getEventView(eventId);
 
-		MatchLineupDocument doc = matchLineupRepository.findById(matchId).orElse(null);
-		if (doc == null)
-			return;
+			if (viewResponse == null || viewResponse.getResults() == null || viewResponse.getResults().isEmpty())
+				return;
 
-		boolean changed = false;
-		List<String> appliedEventIds = new ArrayList<>();
+			var result = viewResponse.getResults().get(0);
+			if (result.getEvents() == null || result.getEvents().isEmpty())
+				return;
 
-		for (var ev : result.getEvents()) {
-			if (ev == null || ev.getId() == null || ev.getText() == null)
-				continue;
+			MatchLineupDocument doc = matchLineupRepository.findById(matchId).orElse(null);
+			if (doc == null)
+				return;
 
-			String text = ev.getText();
-			if (!text.contains("Goal"))
-				continue; // 골 이벤트만
+			boolean changed = false;
+			int newGoalEvents = 0;
+			int applied = 0;
+			List<String> appliedEventIds = new ArrayList<>();
 
-			// 체크만, 선마킹 금지
-			if (redisSvc.isGoalEventSeen(matchId, ev.getId()))
-				continue;
+			for (var ev : result.getEvents()) {
+				if (ev == null || ev.getId() == null || ev.getText() == null)
+					continue;
 
-			log.info("[GOAL EVENT NEW] matchId={}, text={}", matchId, text);
+				String text = ev.getText();
+				if (!text.contains("Goal"))
+					continue;
 
-			GoalInfo goal = GoalInfo.parse(text);
-			if (goal == null || goal.playerName == null || goal.playerName.isBlank())
-				continue;
+				if (redisSvc.isGoalEventSeen(matchId, ev.getId()))
+					continue;
 
-			if (applyGoal(doc, goal.playerName)) {
-				changed = true;
-				appliedEventIds.add(ev.getId());
+				newGoalEvents++;
+				log.debug("⚽[GOALS] 신규 골 이벤트 감지 matchId={}, eventId={}, text={}",
+					matchId, ev.getId(), text);
+
+				GoalInfo goal = GoalInfo.parse(text);
+				if (goal == null || goal.playerName == null || goal.playerName.isBlank())
+					continue;
+
+				if (applyGoal(doc, goal.playerName)) {
+					changed = true;
+					applied++;
+					appliedEventIds.add(ev.getId());
+					log.debug("✅[GOALS] 골 반영 matchId={}, eventId={}, player={}",
+						matchId, ev.getId(), goal.playerName);
+				}
 			}
-		}
 
-		if (changed) {
-			matchLineupRepository.save(doc);
-
-			for (String goalEventId : appliedEventIds) {
-				redisSvc.markGoalEventSeen(matchId, goalEventId, 24 * 60 * 60);
+			if (changed) {
+				matchLineupRepository.save(doc);
+				for (String goalEventId : appliedEventIds) {
+					redisSvc.markGoalEventSeen(matchId, goalEventId, 24 * 60 * 60);
+				}
 			}
-		}
 
+			if (newGoalEvents > 0) {
+				log.debug("[GOALS] 요약 matchId={}, 신규이벤트={}, 반영={}, 저장={}",
+					matchId, newGoalEvents, applied, changed);
+			}
+
+		} catch (Exception e) {
+			log.warn("⚠[GOALS] 처리 중 예외 matchId={}, sportId={}, reason={}",
+				matchId, sportId, e.toString());
+		}
 	}
 
-	/* ====================================================================== */
+	/* ========================= Internals - Validation ====================== */
 	private void validateLineupResponse(BetsLineupResponse response, String eventId) {
 		if (response == null) {
-			throw new IllegalStateException("라인업 API 응답이 null 입니다. eventId=" + eventId);
+			throw new IllegalStateException("라인업 API 응답이 null입니다. eventId=" + eventId);
 		}
 		if (response.getSuccess() == null || response.getSuccess() != 1) {
-			throw new IllegalStateException("라인업 API 실패. success=" + response.getSuccess() + ", eventId=" + eventId);
+			throw new IllegalStateException("라인업 API 호출 실패: success=" + response.getSuccess() + ", eventId=" + eventId);
 		}
 		if (response.getResults() == null
 			|| response.getResults().getHome() == null
 			|| response.getResults().getAway() == null) {
-			throw new IllegalStateException("라인업 API results가 비어있습니다. eventId=" + eventId);
+			throw new IllegalStateException("라인업 API 결과가 비어있습니다. eventId=" + eventId);
 		}
 	}
 
+	/* ========================= Internals - Mapping ========================= */
 	private LineupSide mapSide(BetsLineupResponse.BetsLineupSide ext, String sportId) {
 		return LineupSide.builder()
 			.formation(ext.getFormation())
@@ -181,7 +331,6 @@ public class MatchLineupService {
 			.build();
 	}
 
-	/* ====================================================================== */
 	private Integer parseIntOrNull(String v) {
 		if (v == null || v.isBlank())
 			return null;
@@ -205,6 +354,7 @@ public class MatchLineupService {
 		};
 	}
 
+	/* ========================= Internals - Goal Helpers ==================== */
 	private static class GoalInfo {
 		final String playerName;
 
@@ -276,14 +426,4 @@ public class MatchLineupService {
 
 		return a.contains(b) || b.contains(a);
 	}
-
-	// private String extractEventId(String matchId, String sportId) {
-	// 	if (!matchId.startsWith(sportId)) {
-	// 		throw new IllegalStateException(
-	// 			"matchId/sportId mismatch. matchId=" + matchId + ", sportId=" + sportId
-	// 		);
-	// 	}
-	// 	return matchId.substring(sportId.length());
-	// }
-
 }
