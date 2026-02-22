@@ -22,6 +22,7 @@ public enum ErrorCode {
 
 	// League
 	LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "L001", "리그를 찾을 수 없습니다."),
+	LEAGUE_ALREADY_EXISTS(HttpStatus.CONFLICT, "L002", "이미 존재하는 리그입니다."),
 
 	// Team
 	TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "팀을 찾을 수 없습니다."),
