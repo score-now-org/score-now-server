@@ -43,27 +43,21 @@ public class MatchLineupService {
 		MatchLineupDocument doc = matchLineupRepository.findById(matchId)
 			.orElseThrow(() -> new IllegalArgumentException("라인업이 존재하지 않습니다. matchId=" + matchId));
 
-		boolean found = false;
-		boolean changed = false;
+		UpdateResult result = UpdateResult.notFound();
 
 		if (doc.getHome() != null) {
-			UpdateResult r = updatePlayerOnSide(doc.getHome(), playerId, request);
-			found |= r.found;
-			changed |= r.changed;
+			result = updatePlayerOnSide(doc.getHome(), playerId, request);
 		}
-		if (doc.getAway() != null) {
-			UpdateResult r = updatePlayerOnSide(doc.getAway(), playerId, request);
-			found |= r.found;
-			changed |= r.changed;
+		if (!result.found && doc.getAway() != null) {
+			result = updatePlayerOnSide(doc.getAway(), playerId, request);
 		}
 
-		if (!found) {
+		if (!result.found) {
 			throw new IllegalArgumentException(
 				"라인업에서 선수를 찾지 못했습니다. matchId=" + matchId + ", playerId=" + playerId);
 		}
 
-		// 변경 없으면 저장 안 하고 정상 응답
-		if (!changed) {
+		if (!result.changed) {
 			return "NO_CHANGES";
 		}
 
@@ -159,16 +153,10 @@ public class MatchLineupService {
 	 */
 	@Transactional
 	public MatchLineupDocument saveInplayMatchLineup(String matchId, String sportId) {
-		if (matchId == null || matchId.isBlank())
-			throw new IllegalArgumentException("잘못된 요청: matchId가 비어있습니다.");
-
-		if (sportId == null || sportId.isBlank())
-			throw new IllegalArgumentException("잘못된 요청: sportId가 비어있습니다.");
-
-		if (!matchId.startsWith(sportId))
+		if (matchId == null || sportId == null || !matchId.startsWith(sportId)) {
 			throw new IllegalArgumentException(
 				"잘못된 요청: matchId/sportId가 일치하지 않습니다. matchId=" + matchId + ", sportId=" + sportId);
-
+		}
 		String eventId = MatchIdParser.extractEventId(matchId, sportId);
 		BetsLineupResponse response = betsApiClient.getLineup(eventId);
 		validateLineupResponse(response, eventId);
