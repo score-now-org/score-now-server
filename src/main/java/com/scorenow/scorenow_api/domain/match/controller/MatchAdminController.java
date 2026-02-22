@@ -24,7 +24,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/admin/matches")
+@RequestMapping("/api/v1/admin/matches")
 @RequiredArgsConstructor
 public class MatchAdminController {
 
