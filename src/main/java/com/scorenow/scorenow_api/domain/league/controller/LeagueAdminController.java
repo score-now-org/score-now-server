@@ -18,6 +18,8 @@ import com.scorenow.scorenow_api.domain.league.dto.response.LeagueAdminResponse;
 import com.scorenow.scorenow_api.domain.league.service.LeagueAdminService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/admin/leagues")
 public class LeagueAdminController {
@@ -34,7 +36,7 @@ public class LeagueAdminController {
 	}
 
 	@PostMapping
-	public ApiResponse<LeagueAdminResponse> createLeague(@RequestBody LeagueCreateRequest request){
+	public ApiResponse<LeagueAdminResponse> createLeague(@RequestBody @Valid LeagueCreateRequest request){
 		return ApiResponse.success(leagueAdminService.createLeague(request));
 	}
 
