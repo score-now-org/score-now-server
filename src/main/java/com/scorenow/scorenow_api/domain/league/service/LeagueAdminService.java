@@ -40,6 +40,7 @@ public class LeagueAdminService {
 		League league = League.builder()
 			.id(id)
 			.sportId(request.getSportId())
+			.eName(request.getEName())
 			.kName(request.getKName())
 			.sName(request.getSName())
 			.build();
@@ -53,6 +54,7 @@ public class LeagueAdminService {
 			.orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
 
 		if(request.getSportId() != null) league.setSportId(request.getSportId());
+		if(request.getEName() != null) league.setEName(request.getEName());
 		if(request.getKName() != null) league.setKName(request.getKName());
 		if(request.getSName() != null) league.setSName(request.getSName());
 	}

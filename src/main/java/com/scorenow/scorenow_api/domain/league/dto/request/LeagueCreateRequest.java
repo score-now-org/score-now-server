@@ -13,6 +13,8 @@ public class LeagueCreateRequest {
 	private String leagueId; // 외부 ID(BetsAPI 기준)
 
 	@NotBlank
+	private String eName;
+
 	private String kName;
 
 	private String sName;

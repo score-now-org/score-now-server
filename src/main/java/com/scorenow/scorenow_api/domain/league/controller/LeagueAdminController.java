@@ -41,14 +41,14 @@ public class LeagueAdminController {
 	}
 
 	@PutMapping("/{id}")
-	public ApiResponse<Void> updateLeague(@PathVariable String id, @RequestBody LeagueUpdateRequest request){
+	public ApiResponse<Void> updateLeague(@PathVariable String id, @RequestBody @Valid LeagueUpdateRequest request){
 		leagueAdminService.updateLeague(id, request);
-		return ApiResponse.success(null);
+		return ApiResponse.success();
 	}
 
 	@DeleteMapping("/{id}")
 	public ApiResponse<Void> deleteLeague(@PathVariable String id){
 		leagueAdminService.deleteLeague(id);
-		return ApiResponse.success(null);
+		return ApiResponse.success();
 	}
 }

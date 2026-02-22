@@ -6,6 +6,7 @@ import lombok.Getter;
 public class LeagueUpdateRequest {
 
 	private String sportId;
+	private String eName;
 	private String kName;
 	private String sName;
 }
