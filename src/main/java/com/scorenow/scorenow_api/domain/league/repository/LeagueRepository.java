@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.league.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,4 +24,9 @@ public interface LeagueRepository extends JpaRepository<League, String> {
 		@Param("sName") String sName,
 		@Param("cc") String cc
 	);
+
+	@Query("SELECT l FROM League l WHERE " +
+		"(:keyword IS NULL OR l.kName LIKE %:keyword% OR " +
+		"l.eName LIKE %:keyword% OR l.id LIKE %:keyword%)")
+	List<League> searchByKeyword(@Param("keyword") String keyword);
 }
