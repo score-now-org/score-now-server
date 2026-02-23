@@ -11,7 +11,6 @@ import com.scorenow.scorenow_api.domain.match.redis.InplayRedisKeys;
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisService;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.MatchLineupService;
-import com.scorenow.scorenow_api.domain.match.util.MatchIdParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,54 +35,76 @@ public class GoalsDueScheduler {
 
 	@Scheduled(fixedDelayString = "${scorenow.inplay.due.goals.fixedDelayMs:5000}")
 	public void run() {
-		log.info("[GoalsDueScheduler] 골득점 스케줄러 시작");
 
 		long now = System.currentTimeMillis();
 
-		// due된 matchId 조회
-		List<String> matchIds = redisSvc.pollDue(InplayRedisKeys.DUE_GOALS, now, batchSize);
-		log.info("[GOALS DUE POLL] size={}, ids={}", matchIds.size(), matchIds);
+		// ✅ payload 조회 (matchId|sportId)
+		List<String> payloads =
+			redisSvc.fetchDue(InplayRedisKeys.DUE_GOALS, now, batchSize);
 
-		if (matchIds.isEmpty())
+		if (payloads.isEmpty()) {
+			log.debug("⏭[GOALS DUE] 처리 대상 없음");
 			return;
+		}
 
-		for (String matchId : matchIds) {
-			log.info("[GOALS DUE HANDLE] matchId={}", matchId);
-			if (matchId == null || matchId.isBlank())
+		int handled = 0;
+		int skippedLock = 0;
+		int removedNotInplay = 0;
+		int failed = 0;
+
+		for (String payload : payloads) {
+
+			if (payload == null || payload.isBlank())
 				continue;
 
+			String[] parts = payload.split("\\|", 3);
+			if (parts.length < 2) {
+				log.warn("❌[GOALS DUE] 스킵: payload 형식 오류 payload={}", payload);
+				redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, payload);
+				continue;
+			}
+			String matchId = parts[0];
+			String sportId = parts[1];
+			String basePayload = matchId + "|" + sportId;
 			String lockKey = InplayRedisKeys.LOCK_GOALS_PREFIX + matchId;
 
 			// 락 획득 실패 시 스킵
-			if (!redisSvc.tryLock(lockKey, lockTtlMs))
+			if (!redisSvc.tryLock(lockKey, lockTtlMs)) {
+				skippedLock++;
 				continue;
+			}
 
 			try {
-
+				// IN_PLAY 아니면 due 제거
 				if (!matchRepo.existsByIdAndStatusCode(matchId, MatchStatus.IN_PLAY)) {
-					log.info("[GOALS DUE STOP] not IN_PLAY matchId={}", matchId);
-					redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, matchId);
+					redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, payload);
+					removedNotInplay++;
 					continue;
 				}
 
-				String sportId = MatchIdParser.extractSportId(matchId);
-
-				// 골 업데이트 (view api 호출 + 반영)
+				// 골 업데이트
 				lineupSvc.updateGoals(matchId, sportId);
 
-				// 다음 실행 예약
-				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, matchId, now + intervalMs);
+				// payload 재예약
+				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, now + intervalMs);
+
+				handled++;
 
 			} catch (Exception e) {
-				log.warn("GoalsDueScheduler error. matchId={}", matchId, e);
+				failed++;
+				log.warn("⚠[GOALS DUE] 실패: 골 업데이트/재예약 중 예외 matchId={}, reason={}",
+					matchId, e.toString());
 
-				// 예외 시에는 다음 시도 예약만 하고 due는 남아있음
+				// 예외 시 재예약
 				redisSvc.scheduleNext(
 					InplayRedisKeys.DUE_GOALS,
-					matchId,
+					basePayload,
 					now + Math.min(30_000L, intervalMs)
 				);
 			}
 		}
+
+		log.debug("[GOALS DUE] 처리={}, 스킵(락)={}, 제거(IN_PLAY아님)={}, 실패={}",
+			handled, skippedLock, removedNotInplay, failed);
 	}
 }

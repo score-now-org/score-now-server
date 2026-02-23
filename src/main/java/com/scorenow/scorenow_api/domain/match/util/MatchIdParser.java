@@ -5,17 +5,13 @@ public class MatchIdParser {
 	private MatchIdParser() {
 	}
 
-	// matchId: BETS + sportNo(1자리) + eventId
-	// sportId: BETS + sportNo
-	public static String extractSportId(String matchId) {
-		if (matchId == null || !matchId.startsWith("BETS") || matchId.length() < 6) {
-			throw new IllegalArgumentException("invalid matchId: " + matchId);
-		}
-		return matchId.substring(0, 5); // 예: BETS1
-	}
+	/** matchId: sportId + eventId */
+	public static String extractEventId(String matchId, String sportId) {
 
-	public static String extractEventId(String matchId) {
-		String sportId = extractSportId(matchId);
-		return matchId.substring(sportId.length()); // sportId(BETS1) 떼고 나머지
+		if (matchId == null || sportId == null || !matchId.startsWith(sportId)) {
+			throw new IllegalArgumentException(
+				"잘못된 요청: matchId/sportId가 일치하지 않습니다. matchId=" + matchId + ", sportId=" + sportId);
+		}
+		return matchId.substring(sportId.length());
 	}
 }
