@@ -21,6 +21,7 @@ public class MatchLineupController {
 
 	private final MatchLineupService matchLineupSvc;
 
+	/** 라인업 수동 업데이트 */
 	@PatchMapping("/{matchId}/lineup/players/{playerId}")
 	public ApiResponse<String> updateLineupPlayer(
 		@PathVariable String matchId,
