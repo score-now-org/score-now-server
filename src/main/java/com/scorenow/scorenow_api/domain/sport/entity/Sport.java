@@ -26,4 +26,8 @@ public class Sport extends BaseEntity {
 
 	@Builder.Default
 	private boolean isActive = true;
+
+	public static String generateSportId(String sportId) {
+		return "BETS" + sportId;
+	}
 }

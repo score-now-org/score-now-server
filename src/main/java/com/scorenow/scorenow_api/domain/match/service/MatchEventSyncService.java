@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
@@ -51,7 +52,7 @@ public class MatchEventSyncService {
 
 		leagueRepository.insertIgnore(
 			League.generateLeagueId(sportId, betsLeague.getId()),
-			sportId,
+			Sport.generateSportId(sportId),
 			betsLeague.getName(),
 			betsLeague.getName(),
 			null,
@@ -71,7 +72,7 @@ public class MatchEventSyncService {
 
 		teamRepository.insertIgnore(
 			Team.generateId(sportId, betsTeam.getId()),
-			sportId,
+			Sport.generateSportId(sportId),
 			null,
 			betsTeam.getName(),
 			betsTeam.getName(),
@@ -92,7 +93,7 @@ public class MatchEventSyncService {
 		Match match = matchRepository.findById(matchId)
 			.orElse(Match.builder().id(matchId).betsApiEventId(event.getId()).bet365Id(event.getBet365Id()).build());
 
-		match.updateSportId(sportId);
+		match.updateSportId(Sport.generateSportId(sportId));
 		match.updateLeagueId(League.generateLeagueId(sportId, event.getLeague().getId()));
 		match.updateHomeId(Team.generateId(sportId, event.getHome().getId()));
 		match.updateAwayId(Team.generateId(sportId, event.getAway().getId()));
