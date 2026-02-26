@@ -2,17 +2,23 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisService;
+import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
 import com.scorenow.scorenow_api.domain.match.util.MatchIdParser;
+import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
 
@@ -27,6 +33,9 @@ public class MatchLineupService {
 	private final BetsApiClient betsApiClient;
 	private final MatchLineupRepository matchLineupRepository;
 	private final InplayRedisService redisSvc;
+
+	private final MatchRepository matchRepo;
+	private final TeamRepository teamRepo;
 
 	/* ========================= Public API - Manual ========================= */
 
@@ -157,6 +166,19 @@ public class MatchLineupService {
 			throw new IllegalArgumentException(
 				"잘못된 요청: matchId/sportId가 일치하지 않습니다. matchId=" + matchId + ", sportId=" + sportId);
 		}
+
+		Match match = matchRepo.findById(matchId)
+			.orElseThrow(() -> new IllegalArgumentException("경기가 존재하지 않습니다. matchId=" + matchId));
+
+		String homeId = match.getHomeId();
+		String awayId = match.getAwayId();
+
+		Map<String, String> eNameMap = teamRepo.findAllById(List.of(homeId, awayId)).stream()
+			.collect(Collectors.toMap(Team::getId, Team::getEName));
+
+		String homeEname = eNameMap.get(homeId);
+		String awayEname = eNameMap.get(awayId);
+
 		String eventId = MatchIdParser.extractEventId(matchId, sportId);
 		BetsLineupResponse response = betsApiClient.getLineup(eventId);
 		validateLineupResponse(response, eventId);
@@ -166,8 +188,8 @@ public class MatchLineupService {
 		MatchLineupDocument doc = matchLineupRepository.findById(matchId)
 			.orElseGet(() -> MatchLineupDocument.create(matchId));
 
-		doc.setHome(mapSide(results.getHome(), sportId));
-		doc.setAway(mapSide(results.getAway(), sportId));
+		doc.setHome(mapSide(results.getHome(), sportId, homeId, homeEname));
+		doc.setAway(mapSide(results.getAway(), sportId, awayId, awayEname));
 
 		return matchLineupRepository.save(doc);
 	}
@@ -281,41 +303,46 @@ public class MatchLineupService {
 	}
 
 	/* ========================= Internals - Mapping ========================= */
-	private LineupSide mapSide(BetsLineupResponse.BetsLineupSide ext, String sportId) {
+	private LineupSide mapSide(BetsLineupResponse.BetsLineupSide ext,
+		String sportId, String teamId, String teamEname) {
 		return LineupSide.builder()
+			.teamId(teamId)
+			.teamEname(teamEname)
 			.formation(ext.getFormation())
-			.startingLineup(mapPlayers(ext.getStartinglineup(), sportId))
-			.substitutes(mapPlayers(ext.getSubstitutes(), sportId))
+			.startingLineup(mapPlayers(ext.getStartinglineup(), teamId))
+			.substitutes(mapPlayers(ext.getSubstitutes(), teamId))
 			.build();
 	}
 
 	private List<LineupPlayer> mapPlayers(List<BetsLineupResponse.BetsLineupPlayer> extPlayers,
-		String sportId) {
+		String teamId) {
 		if (extPlayers == null) {
 			return new ArrayList<>();
 		}
 		List<LineupPlayer> list = new ArrayList<>();
 		for (BetsLineupResponse.BetsLineupPlayer ext : extPlayers) {
-			list.add(mapPlayer(ext, sportId));
+			list.add(mapPlayer(ext, teamId));
 		}
 		return list;
 	}
 
-	private LineupPlayer mapPlayer(BetsLineupResponse.BetsLineupPlayer ext, String sportId) {
-		String playerId = null;
+	private LineupPlayer mapPlayer(BetsLineupResponse.BetsLineupPlayer ext, String teamId) {
+		String playerApiId = null;
 		String eName = null;
 
 		if (ext != null && ext.getPlayer() != null) {
-			playerId = ext.getPlayer().getId();
+			playerApiId = ext.getPlayer().getId();
 			eName = ext.getPlayer().getName();
 		}
 
+		String playerId = (teamId == null || playerApiId == null) ? null : teamId + ":" + playerApiId;
+
 		return LineupPlayer.builder()
-			.playerId(playerId == null ? null : sportId + playerId)
+			.playerId(playerId)
 			.eName(eName)
 			.shirtNumber(parseIntOrNull(ext != null ? ext.getShirtnumber() : null))
 			.position(mapPosition(ext != null ? ext.getPos() : null))
-			.goals(0) // view api 연동 전
+			.goals(0)
 			.build();
 	}
 
