@@ -75,7 +75,6 @@ public class MatchLineupGoalScheduler {
 			try {
 				// alive가 없으면 "Scan에서 더 이상 IN_PLAY로 못 봄" => due 제거
 				if (!redisSvc.isInplayAlive(matchId)) {
-					// redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, basePayload);
 					redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, payload);
 					removedNotAlive++;
 					continue;
