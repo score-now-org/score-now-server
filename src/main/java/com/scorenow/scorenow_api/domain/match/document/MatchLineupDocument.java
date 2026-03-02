@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
+import com.scorenow.scorenow_api.global.entity.BaseDocument;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Document(collection = "match_lineups")
-public class MatchLineupDocument {
+public class MatchLineupDocument extends BaseDocument {
 
 	@Id
 	private String id; // matchId
@@ -28,4 +29,3 @@ public class MatchLineupDocument {
 		return doc;
 	}
 }
-

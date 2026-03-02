@@ -7,6 +7,8 @@ public class InplayRedisKeys {
 	public static final String SEEN_PREFIX = "inplay:seen:";
 	public static final String GOAL_SEEN_PREFIX = "inplay:goal:seen:";
 
+	public static final String INPLAY_ALIVE_PREFIX = "inplay:alive:"; // + matchId
+
 	public static final String Q_NEW_LINEUP = "queue:new_inplay:lineup";
 	public static final String Q_NEW_DETAIL = "queue:new_inplay:detail";
 

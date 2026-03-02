@@ -20,6 +20,41 @@ public class InplayRedisService {
 	@Value("${scorenow.inplay.seen.ttlSeconds:21600}")
 	private long seenTtlSeconds;
 
+	// ✅ [ADD] alive TTL (Scan 주기보다 길게: 예) scan 60s면 alive 90s
+	@Value("${scorenow.inplay.alive.ttlSeconds:90}")
+	private long aliveTtlSeconds;
+
+	// ======================================================================
+	// 0) IN_PLAY Heartbeat (Scan -> Alive)
+	// ======================================================================
+
+	/**
+	 * ✅ [ADD] ScanScheduler가 IN_PLAY로 잡은 경기마다 호출해서 alive TTL을 갱신한다.
+	 * - key: inplay:alive:{matchId}
+	 * - GoalScheduler는 이 키가 없으면 due를 제거하고 종료(ENDED 처리)
+	 */
+	public void touchInplayAlive(String matchId) {
+		if (matchId == null || matchId.isBlank())
+			return;
+
+		String key = InplayRedisKeys.INPLAY_ALIVE_PREFIX + matchId;
+		redis.opsForValue().set(key, "1", Duration.ofSeconds(aliveTtlSeconds));
+	}
+
+	/**
+	 * ✅ [ADD] GoalScheduler에서 사용
+	 * - true: 아직 IN_PLAY로 스캔되고 있는 경기(=alive)
+	 * - false: 스캔에서 빠짐(ENDED 추정) → due 제거 대상
+	 */
+	public boolean isInplayAlive(String matchId) {
+		if (matchId == null || matchId.isBlank())
+			return false;
+
+		String key = InplayRedisKeys.INPLAY_ALIVE_PREFIX + matchId;
+		Boolean exists = redis.hasKey(key);
+		return Boolean.TRUE.equals(exists);
+	}
+
 	// ======================================================================
 	// 1) 신규 경기 큐잉 (Scan -> Queue)
 	// ======================================================================
@@ -82,6 +117,20 @@ public class InplayRedisService {
 	/** due 재등록(다음 실행 시각) */
 	public void scheduleNext(String dueKey, String payload, long nextRunAtMillis) {
 		redis.opsForZSet().add(dueKey, payload, nextRunAtMillis);
+	}
+
+	/**
+	 * due ZSET에 payload가 "없을 때만" 등록한다.
+	 * - InplayScanScheduler가 매번 nextRunAt을 덮어써서 due가 리셋되는 문제 방지용
+	 * - 반환값 true면 신규 등록, false면 기존에 이미 존재
+	 */
+	public boolean scheduleNextIfAbsent(String dueKey, String payload, long nextRunAtMillis) {
+		Double score = redis.opsForZSet().score(dueKey, payload);
+		if (score != null) {
+			return false; // 이미 스케줄 존재
+		}
+		Boolean ok = redis.opsForZSet().add(dueKey, payload, nextRunAtMillis);
+		return Boolean.TRUE.equals(ok);
 	}
 
 	/** due에서 제거 */
