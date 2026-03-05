@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
-import com.scorenow.scorenow_api.domain.player.service.PlayerSyncService;
+import com.scorenow.scorenow_api.domain.player.service.LeaguePlayerSyncService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -23,8 +23,7 @@ public class BetsApiTestController {
 
 	private final BetsApiClient betsApiClient;
 	private final MatchSyncService matchSyncService;
-
-	private final PlayerSyncService playerSyncService;
+	private final LeaguePlayerSyncService leaguePlayerSyncService;
 
 	@GetMapping("/upcoming")
 	public ApiResponse<BetsEventResponse> testUpcoming(
@@ -75,7 +74,7 @@ public class BetsApiTestController {
 	 */
 	@PostMapping("/sync/players")
 	public ApiResponse<String> syncPlayer(@RequestParam String leagueId) {
-		int count = playerSyncService.syncPlayersByLeague(leagueId);
+		int count = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
 		return ApiResponse.success(count + "건 동기화 완료");
 	}
 }

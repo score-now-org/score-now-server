@@ -7,6 +7,8 @@ import com.scorenow.scorenow_api.global.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,11 +18,13 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Player extends BaseEntity {
 	@Id
-	private String id; // = teamId:playerApiId 예) BETS117230:2740907
-	private String leagueId; // 예) 프리미어리그: BETS94
-	private String teamId; // 예) BETS117230 = BETS1 + teamApiId
+	private String id;
+	private String leagueId;
+	private String teamId;
 	private String season;
 
 	private String eName;
@@ -32,6 +36,9 @@ public class Player extends BaseEntity {
 	private Integer height;
 	private String shirtnumber;
 
+	@Builder.Default
 	private boolean teaguk = false; // 태극전사
+
+	@Builder.Default
 	private boolean squadOn = true; // 스쿼드 on/off
 }

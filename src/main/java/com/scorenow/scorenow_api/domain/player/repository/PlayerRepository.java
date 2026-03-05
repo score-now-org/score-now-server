@@ -9,7 +9,7 @@ import com.scorenow.scorenow_api.domain.player.entity.Player;
 
 public interface PlayerRepository extends JpaRepository<Player, String> {
 
-	@Modifying
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("update Player p set p.squadOn = false where p.teamId = :teamId")
 	int setSquadOffByTeamId(@Param("teamId") String teamId);
 }
