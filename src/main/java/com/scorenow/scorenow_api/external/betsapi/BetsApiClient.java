@@ -7,6 +7,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLeagueResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsTeamResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 
@@ -100,6 +102,9 @@ public class BetsApiClient {
 		return restTemplate.getForObject(url, BetsViewResponse.class);
 	}
 
+	/**
+	 * 라인업 조회
+	 */
 	public BetsLineupResponse getLineup(String eventId) {
 		String url = buildUrl("/v4/event/lineup")
 			.queryParam("event_id", eventId)
@@ -107,6 +112,30 @@ public class BetsApiClient {
 
 		log.debug("BetsAPI 호출: {}", maskToken(url));
 		return restTemplate.getForObject(url, BetsLineupResponse.class);
+	}
+
+	/**
+	 * 팀순위 조회
+	 */
+	public BetsStandingsResponse getStandings(String leagueId) {
+		String url = buildUrl("/v4/league/table")
+			.queryParam("league_id", leagueId)
+			.build().toUriString();
+
+		log.debug("BetsAPI 호출: {}", maskToken(url));
+		return restTemplate.getForObject(url, BetsStandingsResponse.class);
+	}
+
+	/**
+	 * 스쿼드 조회
+	 */
+	public BetsSquadResponse getSquad(String teamId) {
+		String url = buildUrl("/v4/team/squad")
+			.queryParam("team_id", teamId)
+			.build().toUriString();
+
+		log.debug("BetsAPI 호출: {}", maskToken(url));
+		return restTemplate.getForObject(url, BetsSquadResponse.class);
 	}
 
 	/**

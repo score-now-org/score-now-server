@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.player.entity;
 
+import java.time.LocalDate;
+
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.Entity;
@@ -16,17 +18,20 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Player extends BaseEntity {
 	@Id
-	private String id; // BETS + sportId + playerId
+	private String id; // = teamId:playerApiId 예) BETS117230:2740907
+	private String leagueId; // 예) 프리미어리그: BETS94
+	private String teamId; // 예) BETS117230 = BETS1 + teamApiId
+	private String season;
 
-	private String kName;     // 선수 이름
-	private String teamId;   // BETS + sportId + teamId (연관관계 없이 ID만 저장)
-	private String cc; // 국가코드
+	private String eName;
+	private String kName;
 
-	private String eName;     // 영문 이름
-	private String backNumber; // 등번호
+	private String cc;
+	private LocalDate birthdate;
+	private String position;
+	private Integer height;
+	private String shirtnumber;
 
-	private String birthDate; // 생년월일
-	private Double height;    // 신장(cm)
-
-	private boolean isInSquad;  // 팀 스쿼드 등록 여부
+	private boolean teaguk = false; // 태극전사
+	private boolean squadOn = true; // 스쿼드 on/off
 }

@@ -12,7 +12,7 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
-import com.scorenow.scorenow_api.domain.match.util.MatchIdParser;
+import com.scorenow.scorenow_api.domain.match.util.IdParser;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
@@ -88,11 +88,11 @@ public class MatchLineupSyncService {
 		}
 
 		// 라인업 API 호출
-		String eventId = MatchIdParser.extractEventId(matchId, sportId);
+		String eventId = IdParser.extractEventId(matchId, sportId);
 		BetsLineupResponse response = betsApiClient.getLineup(eventId);
 		validateLineupResponse(response, eventId);
 
-		BetsLineupResponse.BetsLineupResult results = response.getResults();
+		BetsLineupResponse.Result results = response.getResults();
 
 		// match_lineups doc에 upsert
 		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
