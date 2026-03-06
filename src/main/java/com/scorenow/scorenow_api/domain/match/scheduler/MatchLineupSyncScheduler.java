@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisKeys;
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisService;
-import com.scorenow.scorenow_api.domain.match.service.MatchLineupService;
+import com.scorenow.scorenow_api.domain.match.service.MatchLineupSyncService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class LineupInitWorkerScheduler {
+public class MatchLineupSyncScheduler {
 
 	private final InplayRedisService redisSvc;
-	private final MatchLineupService lineupSvc;
+	private final MatchLineupSyncService lineupSyncSvc;
 
 	@Value("${scorenow.inplay.worker.lineup.initBatchSize:10}")
 	private int initBatchSize;
@@ -60,7 +60,7 @@ public class LineupInitWorkerScheduler {
 			}
 
 			// 도큐먼트 존재 여부 확인(안전장치)
-			if (lineupSvc.exists(matchId)) {
+			if (lineupSyncSvc.exists(matchId)) {
 				log.debug("⏭[LINEUP INIT] 스킵: 라인업 도큐먼트 이미 존재 matchId={}", matchId);
 				continue;
 			}
@@ -78,11 +78,7 @@ public class LineupInitWorkerScheduler {
 			String basePayload = matchId + "|" + sportId;
 
 			try {
-				lineupSvc.saveInplayMatchLineup(matchId, sportId);
-
-				long nextRunAt = System.currentTimeMillis() + goalsIntervalMs;
-				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, nextRunAt);
-
+				lineupSyncSvc.syncMatchLineup(matchId, sportId);
 				log.info("✅[LINEUP INIT] 완료 matchId={}", matchId);
 
 			} catch (Exception e) {
