@@ -10,38 +10,38 @@ import lombok.Setter;
 public class BetsLineupResponse {
 
 	private Integer success;
-	private BetsLineupResult results;
+	private Result results;
 
 	@Getter
 	@Setter
-	public static class BetsLineupResult {
-		private BetsLineupSide home;
-		private BetsLineupSide away;
+	public static class Result {
+		private LineupSide home;
+		private LineupSide away;
 	}
 
 	@Getter
 	@Setter
-	public static class BetsLineupSide {
+	public static class LineupSide {
 		private String formation;
-		private List<BetsLineupPlayer> startinglineup;
-		private List<BetsLineupPlayer> substitutes;
+		private List<LineupPlayer> startinglineup;
+		private List<LineupPlayer> substitutes;
 	}
 
 	@Getter
 	@Setter
-	public static class BetsLineupPlayer {
+	public static class LineupPlayer {
 
-		private ExternalPlayer player;
+		private Player player;
 		private String shirtnumber;
 		private String pos;
+	}
 
-		@Getter
-		@Setter
-		public static class ExternalPlayer {
-			private String id;
-			private String name;
-			private String cc;
-		}
+	@Getter
+	@Setter
+	public static class Player {
+		private String id;
+		private String name;
+		private String cc;
 	}
 }
 
