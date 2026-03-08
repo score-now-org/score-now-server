@@ -9,8 +9,8 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 public class UserDto {
-    @JsonProperty("socialId")
-    private String userId;
+    private Long id;
+    private String socialId;
     private String nickname;
     private String profileImageUrl;
 }
