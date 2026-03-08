@@ -5,11 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder
 @AllArgsConstructor
-public class UserDto {
-    private Long id;
-    private String socialId;
-    private String nickname;
-    private String profileImageUrl;
+@Builder
+public class TokenResponseDto {
+    private String accessToken;
+    private String refreshToken;
 }

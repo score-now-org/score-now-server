@@ -6,11 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisKeys;
 import com.scorenow.scorenow_api.domain.match.redis.InplayRedisService;
-import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
-import com.scorenow.scorenow_api.domain.match.service.MatchLineupService;
+import com.scorenow.scorenow_api.domain.match.service.MatchLineupGoalsService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GoalsDueScheduler {
+public class MatchLineupGoalScheduler {
 
 	private final InplayRedisService redisSvc;
-	private final MatchLineupService lineupSvc;
-	private final MatchRepository matchRepo;
+	private final MatchLineupGoalsService lineupGoalsSyncSvc;
 
 	@Value("${scorenow.inplay.due.goals.batchSize:20}")
 	private int batchSize;
@@ -49,7 +46,7 @@ public class GoalsDueScheduler {
 
 		int handled = 0;
 		int skippedLock = 0;
-		int removedNotInplay = 0;
+		int removedNotAlive = 0;
 		int failed = 0;
 
 		for (String payload : payloads) {
@@ -66,6 +63,7 @@ public class GoalsDueScheduler {
 			String matchId = parts[0];
 			String sportId = parts[1];
 			String basePayload = matchId + "|" + sportId;
+
 			String lockKey = InplayRedisKeys.LOCK_GOALS_PREFIX + matchId;
 
 			// 락 획득 실패 시 스킵
@@ -75,18 +73,18 @@ public class GoalsDueScheduler {
 			}
 
 			try {
-				// IN_PLAY 아니면 due 제거
-				if (!matchRepo.existsByIdAndStatusCode(matchId, MatchStatus.IN_PLAY)) {
+				// alive가 없으면 "Scan에서 더 이상 IN_PLAY로 못 봄" => due 제거
+				if (!redisSvc.isInplayAlive(matchId)) {
 					redisSvc.removeDue(InplayRedisKeys.DUE_GOALS, payload);
-					removedNotInplay++;
+					removedNotAlive++;
 					continue;
 				}
-
 				// 골 업데이트
-				lineupSvc.updateGoals(matchId, sportId);
+				lineupGoalsSyncSvc.updateLineupGoals(matchId, sportId);
 
 				// payload 재예약
-				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, now + intervalMs);
+				long nextDue = System.currentTimeMillis() + intervalMs;
+				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, nextDue);
 
 				handled++;
 
@@ -96,15 +94,13 @@ public class GoalsDueScheduler {
 					matchId, e.toString());
 
 				// 예외 시 재예약
-				redisSvc.scheduleNext(
-					InplayRedisKeys.DUE_GOALS,
-					basePayload,
-					now + Math.min(30_000L, intervalMs)
-				);
+				long nextDue = System.currentTimeMillis() + Math.min(30_000L, intervalMs);
+				redisSvc.scheduleNext(InplayRedisKeys.DUE_GOALS, basePayload, nextDue);
 			}
 		}
 
-		log.debug("[GOALS DUE] 처리={}, 스킵(락)={}, 제거(IN_PLAY아님)={}, 실패={}",
-			handled, skippedLock, removedNotInplay, failed);
+		log.debug("[GOALS DUE] 처리={}, 스킵(락)={}, 제거(alive없음)={}, 실패={}",
+			handled, skippedLock, removedNotAlive, failed);
+
 	}
 }

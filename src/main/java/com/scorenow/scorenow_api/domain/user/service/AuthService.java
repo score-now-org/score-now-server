@@ -2,23 +2,45 @@ package com.scorenow.scorenow_api.domain.user.service;
 
 import com.scorenow.scorenow_api.domain.user.dto.*;
 import com.scorenow.scorenow_api.domain.user.entity.User;
+import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
+import com.scorenow.scorenow_api.domain.user.jwt.TokenPair;
+import com.scorenow.scorenow_api.domain.user.jwt.TokenService;
+import com.scorenow.scorenow_api.domain.user.redis.service.RedisService;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
-
+    private final GeoService geoService;
+    private final RedisService redisService;
+    private final TokenService tokenService;
     /**
      * 로그인 API
      * @param request
      * @return
      */
-    public SocialLoginDto socialLogin(SocialLoginRequestDto request)  {
+    @Transactional
+    public SocialLoginDto socialLogin(SocialLoginRequestDto request, HttpServletRequest httpRequest)  {
+
+        //ip 가져오기
+        String ip = extractTrustedClientIp(httpRequest);
+        //ip -> 국가 변환
+        String country = geoService.getCountryFromIp(ip);
 
         User user = userRepository
                 .findByProviderAndSocialId(request.getProvider(), request.getSocialId())
@@ -31,25 +53,29 @@ public class AuthService {
                     .provider(request.getProvider())
                     .socialId(request.getSocialId())
                     .name(request.getName())
+                    .countryCode(country)
+                    .nickname(request.getName()) // 닉네임 디폴트 : 소셜이름
+                    .warningCnt(0)
+                    .status(UserStatus.ACTIVE)
                     .build();
+
             userRepository.save(user);
             isNewUser = true;
+        } else {
+            user.updateLoginCountry(country);
+            userRepository.save(user); // 기존 사용자도 저장
+
         }
         //JWT 발급
         String accessToken = jwtProvider.createAccessToken(user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
+        //freshtoken redis 저장
+        redisService.saveRefreshToken(user.getId(), refreshToken);
 
         UserDto userDto = UserDto.builder()
-                .userId(user.getSocialId())
+                .socialId(user.getSocialId())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
-                .build();
-
-        SocialLoginDto data = SocialLoginDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .isNewUser(isNewUser)
-                .user(userDto)
                 .build();
 
         return SocialLoginDto.builder()
@@ -61,26 +87,24 @@ public class AuthService {
     }
 
     /**
-     * 신규 사용자 닉네임 설정 API
+     *  닉네임 설정 API
      * @param request
      * @return
      */
     public RegisterNicknameDto registerNickname(RegisterNicknameRequestDto request) {
-
         User user = userRepository
                 .findByProviderAndSocialId(request.getProvider(), request.getSocialId())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다. "));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         //닉네임 중복체크
         if (userRepository.existsByNickname(request.getNickname())) {
-            throw new RuntimeException("이미 사용중인 닉네임입니다.");
+            throw new BusinessException(ErrorCode.NICKNAME_DUPLICATED);
         }
         user.setNickname(request.getNickname());
-
         userRepository.save(user);
 
         UserDto userDto = UserDto.builder()
-                .userId(user.getSocialId())
+                .socialId(user.getSocialId())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
                 .build();
@@ -92,24 +116,16 @@ public class AuthService {
     }
 
     /**
-     * 로그아웃 API
-     */
-    public void logout() {
-        // 현재는 서버 처리 없음 -
-    }
-
-    /**
      * 사용자 프로필 조회 API
-     * @param accessToken
+     * @param id
      * @return
      */
-    public UserDto getProfile(String accessToken) {
+    public UserDto getProfile(Long id) {
 
-        String socialId = jwtProvider.getSocialId(accessToken);
-        User user = userRepository.findBySocialId(socialId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         return UserDto.builder()
-                .userId(user.getSocialId())
+                .socialId(user.getSocialId())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
                 .build();
@@ -117,14 +133,40 @@ public class AuthService {
 
     /**
      * 사용자 탈퇴 API
-     * @param socialId
+     * @param id
      */
-    public void deactivate(String socialId) {
+    public void deactivate(Long id) {
 
-        User user = userRepository.findBySocialId(socialId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         userRepository.delete(user);
     }
 
+
+    /**
+     * ip return 메서드
+     */
+    private String extractTrustedClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (StringUtils.hasText(forwarded)) {
+            return forwarded.split(",")[0].trim(); // 첫 번째 IP만 사용
+        }
+        return request.getRemoteAddr();
+    }
+
+    /**
+     * refresh토큰 갱신
+     * @param refreshToken
+     * @return
+     */
+    @Transactional
+    public TokenResponseDto refresh(String refreshToken) {
+        TokenPair tokens = tokenService.reRefreshToken(refreshToken);
+
+        return TokenResponseDto.builder()
+                .accessToken(tokens.getAccessToken())
+                .refreshToken(tokens.getRefreshToken())
+                .build();
+    }
 }

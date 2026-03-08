@@ -20,6 +20,11 @@ public enum ErrorCode {
 	MATCH_ALREADY_EXIST(HttpStatus.CONFLICT, "M002", "이미 존재하는 경기입니다."),
 	MATCH_INVALID_STATUS(HttpStatus.BAD_REQUEST, "M003", "잘못된 경기 상태입니다."),
 
+	// MatchLineup
+	MATCH_LINEUP_NOT_FOUND(HttpStatus.NOT_FOUND, "ML001", "라인업을 찾을 수 없습니다."),
+	MATCH_LINEUP_PLAYER_NOT_FOUND(HttpStatus.NOT_FOUND, "ML002", "라인업에서 선수를 찾을 수 없습니다."),
+	MATCH_LINEUP_INVALID_MATCH_SPORT(HttpStatus.BAD_REQUEST, "ML003", "matchId/sportId가 일치하지 않습니다."),
+
 	// League
 	LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "L001", "리그를 찾을 수 없습니다."),
 	LEAGUE_ALREADY_EXISTS(HttpStatus.CONFLICT, "L002", "이미 존재하는 리그입니다."),
@@ -28,7 +33,18 @@ public enum ErrorCode {
 	TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "팀을 찾을 수 없습니다."),
 
 	// Sport
-	SPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "스포츠를 찾을 수 없습니다.");
+	SPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "스포츠를 찾을 수 없습니다."),
+
+	// User 
+	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
+    NICKNAME_DUPLICATED(HttpStatus.CONFLICT, "U002", "이미 사용중인 닉네임입니다."),
+
+	// Token 
+	TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "A001", "만료된 토큰입니다."),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다."),
+    TOKEN_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "A003", "RefreshToken이 아닙니다.");
+
+
 
 	private final HttpStatus httpStatus;
 	private final String code;
