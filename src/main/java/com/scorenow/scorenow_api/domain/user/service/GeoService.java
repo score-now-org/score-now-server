@@ -27,7 +27,7 @@ public class GeoService {
         // 유효하지 않은 IP 조기 반환
         if (!isValidIp(ip)) {
             log.debug("Invalid or local IP skipped: {}", ip);
-            return "UNKNOWN";
+            return "";
         }
         // 이미 저장된 IP로 요청이 오면 외부API 호출X
         String cached = ipCountryCache.getIfPresent(ip);
@@ -50,7 +50,7 @@ public class GeoService {
             String url = "https://ipapi.co/" + ip + "/country/";
             String country = restTemplate.getForObject(url, String.class);
 
-            String result = (country != null && !country.isBlank()) ? country.trim() : "UNKNOWN";
+            String result = (country != null && !country.isBlank()) ? country.trim() : "";
 
             ipCountryCache.put(ip, result); // 결과 캐싱
             return result;
@@ -58,17 +58,17 @@ public class GeoService {
         } catch (HttpClientErrorException e) {
             // 4xx: Rate Limit(429) 등 클라이언트 오류
             log.warn("GeoIP API client error for ip={}, status={}", ip, e.getStatusCode());
-            return "UNKNOWN";
+            return "";
 
         } catch (HttpServerErrorException e) {
             // 5xx: 외부 서버 오류
             log.error("GeoIP API server error for ip={}, status={}", ip, e.getStatusCode());
-            return "UNKNOWN";
+            return "";
 
         } catch (ResourceAccessException e) {
             // 네트워크 타임아웃, 연결 불가
             log.error("GeoIP API network error for ip={}", ip, e);
-            return "UNKNOWN";
+            return "";
         }
     }
 
