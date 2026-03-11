@@ -18,10 +18,10 @@ public class UserLoginHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;  //User테이블의 id를 FK
+    private User user; // User테이블의 id를 FK
 
-    private String countryCode;   // 접속 국가
-    private String ipAddress;     // 접속 IP
+    private String countryCode; // 접속 국가
+    private String ipAddress; // 접속 IP
 
     private LocalDateTime loginAt; // 로그인 시각
 

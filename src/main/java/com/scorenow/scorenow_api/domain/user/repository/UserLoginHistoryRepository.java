@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserLoginHistoryRepository extends JpaRepository<UserLoginHistory,Long> {
+public interface UserLoginHistoryRepository extends JpaRepository<UserLoginHistory, Long> {
 
-    //최근 로그인 이력 10건 조회
+    // 최근 로그인 이력 10건 조회
     List<UserLoginHistory> findTop10ByUserIdOrderByLoginAtDesc(Long userId);
 }

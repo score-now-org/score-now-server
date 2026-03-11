@@ -22,6 +22,7 @@ public class JwtProvider {
 
     /**
      * AccessToken 생성
+     * 
      * @param id
      * @return
      */
@@ -38,6 +39,7 @@ public class JwtProvider {
 
     /**
      * RefreshToken 생성 + Redis저장
+     * 
      * @param id
      * @return
      */
@@ -62,10 +64,10 @@ public class JwtProvider {
     public boolean isAccessToken(String token) {
         return "access".equals(getClaims(token).get("type"));
     }
+
     public boolean isRefreshToken(String token) {
         return "refresh".equals(getClaims(token).get("type"));
     }
-
 
     /**
      * 토큰 유효성 검증
@@ -82,6 +84,7 @@ public class JwtProvider {
     public long getRefreshTokenTtlSeconds() {
         return REFRESH_TOKEN_EXPIRE / 1000;
     }
+
     private Claims getClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -90,4 +93,3 @@ public class JwtProvider {
                 .getPayload();
     }
 }
-

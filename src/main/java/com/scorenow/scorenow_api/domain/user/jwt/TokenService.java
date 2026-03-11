@@ -13,21 +13,20 @@ public class TokenService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    //로그인시 호출
+    // 로그인시 호출
     public TokenPair createToken(Long userId) {
-        String accessToken  = jwtProvider.createAccessToken(userId);
+        String accessToken = jwtProvider.createAccessToken(userId);
         String refreshToken = jwtProvider.createRefreshToken(userId);
 
         // Redis 저장
         refreshTokenRepository.save(
                 userId,
                 refreshToken,
-                jwtProvider.getRefreshTokenTtlSeconds()
-        );
+                jwtProvider.getRefreshTokenTtlSeconds());
         return new TokenPair(accessToken, refreshToken);
     }
 
-    //RefreshToken 재발급
+    // RefreshToken 재발급
     public TokenPair reRefreshToken(String refreshToken) {
 
         if (!jwtProvider.validateToken(refreshToken)) {
@@ -49,7 +48,7 @@ public class TokenService {
     }
 
     // 로그아웃 시 호출
-    public String  logout(Long id) {
+    public String logout(Long id) {
         refreshTokenRepository.delete(id);
         return "로그아웃 되었습니다.";
     }
