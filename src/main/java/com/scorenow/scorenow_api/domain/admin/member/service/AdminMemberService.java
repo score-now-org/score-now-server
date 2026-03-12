@@ -34,7 +34,7 @@ public class AdminMemberService {
      * @param id
      * @return
      */
-    public MemberBasicInfoResponseDto getMemberDetailBasic(Long id) {
+    public MemberBasicInfoResponseDto getMemberDetailBasicInfo(Long id) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
@@ -47,7 +47,7 @@ public class AdminMemberService {
      * @param userId
      * @return
      */
-    public MemberSecurityInfoResponseDto getMemberSecurityInfo(Long userId) {
+    public MemberSecurityInfoResponseDto getMemberDetailSecurityInfo(Long userId) {
         List<UserLoginHistory> histories = userLoginHistoryRepository
                 .findTop10ByUserIdOrderByLoginAtDesc(userId);
 
