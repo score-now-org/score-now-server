@@ -2,12 +2,14 @@ package com.scorenow.scorenow_api.domain.user.service;
 
 import com.scorenow.scorenow_api.domain.user.dto.*;
 import com.scorenow.scorenow_api.domain.user.entity.User;
+import com.scorenow.scorenow_api.domain.user.entity.UserLoginHistory;
 import com.scorenow.scorenow_api.domain.user.enums.NicknameGenerator;
 import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.jwt.TokenPair;
 import com.scorenow.scorenow_api.domain.user.jwt.TokenService;
 import com.scorenow.scorenow_api.domain.user.redis.service.RedisService;
+import com.scorenow.scorenow_api.domain.user.repository.UserLoginHistoryRepository;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -33,6 +35,9 @@ public class AuthService {
         private final RedisService redisService;
         private final TokenService tokenService;
         private final NicknameGenerator nicknameGenerator;
+        private final UserLoginHistoryRepository userLoginHistoryRepository;
+
+        private static final long NICKNAME_CHANGE_RESTRICTION_DAYS = 60;
 
         /**
          * 로그인 API
@@ -91,6 +96,14 @@ public class AuthService {
                 // freshtoken redis 저장
                 redisService.saveRefreshToken(user.getId(), refreshToken);
 
+                UserLoginHistory history = UserLoginHistory.builder()
+                                .user(user)
+                                .countryCode(country)
+                                .ipAddress(ip)
+                                .build();
+
+                userLoginHistoryRepository.save(history);
+
                 UserDto userDto = UserDto.builder()
                                 .socialId(user.getSocialId())
                                 .nickname(user.getNickname())
@@ -117,12 +130,21 @@ public class AuthService {
                                 .findByProviderAndSocialId(request.getProvider(), request.getSocialId())
                                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+                // 60일 변경 제한 체크
+                if (user.getNicknameUpdateAt() != null) {
+                        LocalDateTime nextChangeDate = user.getNicknameUpdateAt().plusDays(NICKNAME_CHANGE_RESTRICTION_DAYS);
+
+                        if (LocalDateTime.now().isBefore(nextChangeDate)) {
+                                throw new BusinessException(ErrorCode.NICKNAME_RESTRICTED);
+                        }
+                }
+
                 // 닉네임 중복체크
                 if (userRepository.existsByNickname(request.getNickname())) {
                         throw new BusinessException(ErrorCode.NICKNAME_DUPLICATED);
                 }
-                user.setNickname(request.getNickname());
-                userRepository.save(user);
+            
+                user.changeNickname(request.getNickname());
 
                 UserDto userDto = UserDto.builder()
                                 .socialId(user.getSocialId())

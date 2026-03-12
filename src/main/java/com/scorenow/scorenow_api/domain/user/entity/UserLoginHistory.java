@@ -26,7 +26,7 @@ public class UserLoginHistory {
     private LocalDateTime loginAt; // 로그인 시각
 
     @Builder
-    public void LoginHistory(User user, String countryCode, String ipAddress) {
+    public UserLoginHistory(User user, String countryCode, String ipAddress) {
         this.user = user;
         this.countryCode = countryCode;
         this.ipAddress = ipAddress;

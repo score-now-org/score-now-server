@@ -1,9 +1,13 @@
 package com.scorenow.scorenow_api.domain.user.entity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
+
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -36,6 +40,9 @@ public class User extends BaseEntity {
 
     private LocalDateTime deletedAt; // 탈퇴일자
 
+    @Column(name = "nickname_updated_at")
+    private LocalDateTime nicknameUpdateAt; // 닉네임 마지막 업데이트일자
+
     public void updateLoginCountry(String country) {
         this.countryCode = country;
     }
@@ -49,5 +56,12 @@ public class User extends BaseEntity {
         this.status = UserStatus.DELETED;
         this.deletedAt = LocalDateTime.now();
     }
+
+    //닉네임 저장 
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+        this.nicknameUpdateAt = LocalDateTime.now();
+    }
+
 
 }
