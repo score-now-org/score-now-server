@@ -15,7 +15,6 @@ public class RedisService {
         redisTemplate.opsForValue().set(
                 "refreshToken:" + userId,
                 refreshToken,
-                Duration.ofDays(7)
-        );
+                Duration.ofDays(7));
     }
 }

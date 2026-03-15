@@ -40,8 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").permitAll()
                         // 토큰없이 접근 가능한 인증 API
                         .requestMatchers(
-                                "/api/auth/social-login",
-                                "/api/auth/refresh"
+                                "/api/v1/auth/social-login",
+                                "/api/v1/auth/refresh"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

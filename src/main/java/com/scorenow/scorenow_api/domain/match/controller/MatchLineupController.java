@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
-import com.scorenow.scorenow_api.domain.match.service.MatchLineupService;
+import com.scorenow.scorenow_api.domain.match.service.MatchLineupCommandService;
+import com.scorenow.scorenow_api.domain.match.service.MatchLineupQueryService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/matches")
 public class MatchLineupController {
 
-	private final MatchLineupService matchLineupSvc;
+	private final MatchLineupCommandService lineupCommandSvc;
+	private final MatchLineupQueryService lineupQuerySvc;
 
 	/** 라인업 수동 업데이트 */
 	@PatchMapping("/{matchId}/lineup/players/{playerId}")
@@ -28,13 +30,13 @@ public class MatchLineupController {
 		@PathVariable String playerId,
 		@RequestBody MatchLineupUpdateRequest request
 	) {
-		String updateId = matchLineupSvc.updateMatchLineupManual(matchId, playerId, request);
+		String updateId = lineupCommandSvc.updateLineupManual(matchId, playerId, request);
 		return ApiResponse.success(updateId);
 	}
 
 	/** 라인업 조회 */
 	@GetMapping("/{matchId}/lineup")
 	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable String matchId) {
-		return ApiResponse.success(matchLineupSvc.getByMatchId(matchId));
+		return ApiResponse.success(lineupQuerySvc.getByMatchId(matchId));
 	}
 }

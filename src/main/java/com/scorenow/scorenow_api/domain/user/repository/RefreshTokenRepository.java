@@ -17,15 +17,18 @@ public class RefreshTokenRepository {
         redisTemplate.opsForValue()
                 .set(PREFIX + userId, refreshToken, ttlSeconds, TimeUnit.SECONDS);
     }
-    //조회
+
+    // 조회
     public String find(Long userId) {
         return redisTemplate.opsForValue().get(PREFIX + userId);
     }
-    //삭제
+
+    // 삭제
     public void delete(Long userId) {
         redisTemplate.delete(PREFIX + userId);
     }
-    //검증
+
+    // 검증
     public boolean isValid(Long userId, String refreshToken) {
         String stored = find(userId);
         return stored != null && stored.equals(refreshToken);
