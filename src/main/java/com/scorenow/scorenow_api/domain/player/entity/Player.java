@@ -1,10 +1,14 @@
 package com.scorenow.scorenow_api.domain.player.entity;
 
+import java.time.LocalDate;
+
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,19 +18,27 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Player extends BaseEntity {
 	@Id
-	private String id; // BETS + sportId + playerId
+	private String id;
+	private String leagueId;
+	private String teamId;
+	private String season;
 
-	private String kName;     // 선수 이름
-	private String teamId;   // BETS + sportId + teamId (연관관계 없이 ID만 저장)
-	private String cc; // 국가코드
+	private String eName;
+	private String kName;
 
-	private String eName;     // 영문 이름
-	private String backNumber; // 등번호
+	private String cc;
+	private LocalDate birthdate;
+	private String position;
+	private Integer height;
+	private String shirtnumber;
 
-	private String birthDate; // 생년월일
-	private Double height;    // 신장(cm)
+	@Builder.Default
+	private boolean teaguk = false; // 태극전사
 
-	private boolean isInSquad;  // 팀 스쿼드 등록 여부
+	@Builder.Default
+	private boolean squadOn = true; // 스쿼드 on/off
 }

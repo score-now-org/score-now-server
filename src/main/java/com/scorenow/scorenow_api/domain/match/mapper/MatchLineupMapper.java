@@ -13,12 +13,12 @@ import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
 public class MatchLineupMapper {
 
 	public LineupSide toSide(
-		BetsLineupResponse.BetsLineupSide ext,
+		BetsLineupResponse.LineupSide betsLineupSide,
 		String teamId,
 		String teamEname
 	) {
-		if (ext == null) {
-			// ext가 null이면 최소 구조라도 만들어두는 게 안전함
+		if (betsLineupSide == null) {
+
 			return LineupSide.builder()
 				.teamId(teamId)
 				.teamEname(teamEname)
@@ -31,30 +31,30 @@ public class MatchLineupMapper {
 		return LineupSide.builder()
 			.teamId(teamId)
 			.teamEname(teamEname)
-			.formation(ext.getFormation())
-			.startingLineup(toPlayers(ext.getStartinglineup(), teamId))
-			.substitutes(toPlayers(ext.getSubstitutes(), teamId))
+			.formation(betsLineupSide.getFormation())
+			.startingLineup(toPlayers(betsLineupSide.getStartinglineup(), teamId))
+			.substitutes(toPlayers(betsLineupSide.getSubstitutes(), teamId))
 			.build();
 	}
 
-	public List<LineupPlayer> toPlayers(List<BetsLineupResponse.BetsLineupPlayer> extPlayers, String teamId) {
-		if (extPlayers == null)
+	public List<LineupPlayer> toPlayers(List<BetsLineupResponse.LineupPlayer> betsPlayers, String teamId) {
+		if (betsPlayers == null)
 			return new ArrayList<>();
 
-		List<LineupPlayer> list = new ArrayList<>(extPlayers.size());
-		for (BetsLineupResponse.BetsLineupPlayer ext : extPlayers) {
-			list.add(toPlayer(ext, teamId));
+		List<LineupPlayer> list = new ArrayList<>(betsPlayers.size());
+		for (BetsLineupResponse.LineupPlayer betsPlayer : betsPlayers) {
+			list.add(toPlayer(betsPlayer, teamId));
 		}
 		return list;
 	}
 
-	public LineupPlayer toPlayer(BetsLineupResponse.BetsLineupPlayer ext, String teamId) {
+	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer, String teamId) {
 		String playerApiId = null;
 		String eName = null;
 
-		if (ext != null && ext.getPlayer() != null) {
-			playerApiId = ext.getPlayer().getId();
-			eName = ext.getPlayer().getName();
+		if (betsPlayer != null && betsPlayer.getPlayer() != null) {
+			playerApiId = betsPlayer.getPlayer().getId();
+			eName = betsPlayer.getPlayer().getName();
 		}
 
 		String playerId = (teamId == null || playerApiId == null) ? null : teamId + ":" + playerApiId;
@@ -62,8 +62,8 @@ public class MatchLineupMapper {
 		return LineupPlayer.builder()
 			.playerId(playerId)
 			.eName(eName)
-			.shirtNumber(parseIntOrNull(ext != null ? ext.getShirtnumber() : null))
-			.position(mapPosition(ext != null ? ext.getPos() : null))
+			.shirtNumber(parseIntOrNull(betsPlayer != null ? betsPlayer.getShirtnumber() : null))
+			.position(mapPosition(betsPlayer != null ? betsPlayer.getPos() : null))
 			.goals(0)
 			.build();
 	}
