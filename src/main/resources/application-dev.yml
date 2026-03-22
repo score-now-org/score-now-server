@@ -54,3 +54,6 @@ betsapi:
   token: ${BETSAPI_TOKEN}
   connect-timeout: 30
   read-timeout: 30
+
+jwt:
+  secret : ${JWT_SECRET}
