@@ -11,6 +11,7 @@ import com.scorenow.scorenow_api.domain.user.jwt.TokenService;
 import com.scorenow.scorenow_api.domain.user.redis.service.RedisService;
 import com.scorenow.scorenow_api.domain.user.repository.UserLoginHistoryRepository;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import com.scorenow.scorenow_api.domain.user.validator.UserValidator;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -36,6 +37,7 @@ public class AuthService {
         private final TokenService tokenService;
         private final NicknameGenerator nicknameGenerator;
         private final UserLoginHistoryRepository userLoginHistoryRepository;
+        private final UserValidator userValidator;
 
         private static final long NICKNAME_CHANGE_RESTRICTION_DAYS = 60;
 
@@ -138,23 +140,27 @@ public class AuthService {
                                 throw new BusinessException(ErrorCode.NICKNAME_RESTRICTED);
                         }
                 }
+                
+                String nickname = request.getNickname();
 
                 // 닉네임 중복체크
-                if (userRepository.existsByNickname(request.getNickname())) {
+                if (userRepository.existsByNickname(nickname)) {
                         throw new BusinessException(ErrorCode.NICKNAME_DUPLICATED);
                 }
-            
-                user.changeNickname(request.getNickname());
+                // 닉네임 유효성 체크 
+                userValidator.validateNickname(nickname);
+
+                user.changeNickname(nickname);
 
                 UserDto userDto = UserDto.builder()
                                 .socialId(user.getSocialId())
-                                .nickname(user.getNickname())
+                                .nickname(nickname)
                                 .profileImageUrl(user.getProfileImageUrl())
                                 .build();
 
                 return RegisterNicknameDto.builder()
                                 .user(userDto)
-                                .newNickname(user.getNickname())
+                                .newNickname(nickname)
                                 .build();
         }
 
