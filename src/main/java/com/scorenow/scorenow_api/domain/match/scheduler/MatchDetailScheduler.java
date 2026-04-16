@@ -29,9 +29,9 @@ public class MatchDetailScheduler {
 		List<Match> inplayMatches = matchRepository.findByStatusCode(MatchStatus.IN_PLAY);
 		log.info("조회된 In-play 경기 수: {}", inplayMatches.size());
 
-		for (Match match : inplayMatches) {
-			log.info("상세 업데이트 시작 - 경기 ID: {}", match.getId());
-			matchDetailService.updateInplayMatchDetail(match.getId());
-		}
-	}
+        for (Match match : inplayMatches) {
+            log.info("상세 업데이트 시작 - 경기 ID: {}", match.getId());
+            matchDetailService.updateInplayMatchDetail(match.getSportId(), match.getId());
+        }
+    }
 }

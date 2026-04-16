@@ -5,6 +5,7 @@ import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateReque
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.match.util.IdParser;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -23,22 +24,22 @@ public class MatchDetailService {
     private final BetsApiClient betsApiClient;
 
     @Transactional
-    public void updateInplayMatchDetail(String eventId) {
-        String pureId = eventId.replaceAll("[^0-9]", "");
-        BetsViewResponse response = betsApiClient.getEventView(pureId);
+    public void updateInplayMatchDetail(String sportId, String matchId) {
+        String externalEventId = IdParser.extractEventId(matchId, sportId);
+        BetsViewResponse response = betsApiClient.getEventView(externalEventId);
 
         if (response == null || !response.hasResult()) {
-            log.warn("❌ 실패: ID {}에 대한 API 응답 데이터가 없습니다.", pureId);
+            log.warn("❌ 실패: ID {}에 대한 API 응답 데이터가 없습니다.", externalEventId);
             return;
         }
 
         BetsViewResponse.ViewResult apiResult = response.getResults().get(0);
-        updateMySqlScore(eventId, apiResult);
+        updateMySqlScore(matchId, apiResult);
 
-        MatchDetailDocument detail = response.toDocument(eventId);
+        MatchDetailDocument detail = response.toDocument(matchId);
         matchDetailRepository.save(detail);
 
-        log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", eventId);
+        log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", matchId);
     }
 
     private void updateMySqlScore(String eventId, BetsViewResponse.ViewResult result) {
@@ -59,7 +60,7 @@ public class MatchDetailService {
                 try {
                     match.updateStatus(MatchStatus.valueOf(request.getStatus()));
                 } catch (IllegalArgumentException e) {
-log.error("잘못된 상태값입니다: {}", request.getStatus().replace('\n', '_').replace('\r', '_'));
+                    log.error("잘못된 상태값입니다: {}", request.getStatus().replace('\n', '_').replace('\r', '_'));
                     throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
                 }
             }
