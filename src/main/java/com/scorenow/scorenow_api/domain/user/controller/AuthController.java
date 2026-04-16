@@ -4,6 +4,9 @@ import com.scorenow.scorenow_api.domain.user.dto.*;
 import com.scorenow.scorenow_api.domain.user.jwt.TokenService;
 import com.scorenow.scorenow_api.domain.user.service.AuthService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Auth", description = "스코어나우 앱 로그인 인증/인가 관련 API")
 public class AuthController {
     private final AuthService authService;
     private final TokenService tokenService;
@@ -22,6 +26,7 @@ public class AuthController {
      * @param request
      * @return
      */
+    @Operation(summary = "소셜 로그인", description = "소셜 플랫폼(Google, Kakao 등)을 통해 로그인합니다.")
     @PostMapping("/social-login")
     public ApiResponse<SocialLoginDto> socialLogin(
             @RequestBody SocialLoginRequestDto request,
@@ -36,6 +41,8 @@ public class AuthController {
      * @param request
      * @return
      */
+    @Operation(summary = "닉네임 설정", description = "사용자의 닉네임을 등록합니다.")
+    @SecurityRequirement(name = "bearerAuth")  // JWT 필요한 API에 적용
     @PostMapping("/register-nickname")
     public ApiResponse<RegisterNicknameDto> registerNickname(
             @AuthenticationPrincipal Long id,
@@ -49,6 +56,7 @@ public class AuthController {
      * 
      * @return
      */
+    @Operation(summary = "로그아웃", description = "Redis에서 RefreshToken을 삭제하고 로그아웃합니다.")
     @PostMapping("/logout")
     public ApiResponse<String> logout(
             @AuthenticationPrincipal Long id) {
@@ -62,6 +70,7 @@ public class AuthController {
      * @param id
      * @return
      */
+    @Operation(summary = "프로필 조회", description = "현재 로그인된 사용자의 프로필을 조회합니다.")
     @GetMapping("/profile")
     public ApiResponse<UserDto> getProfile(
             @AuthenticationPrincipal Long id) {
@@ -74,6 +83,7 @@ public class AuthController {
      * @param id
      * @return
      */
+    @Operation(summary = "회원 탈퇴", description = "사용자 계정을 비활성화합니다.")
     @DeleteMapping("/deactivate")
     public ApiResponse<String> deactivate(
             @AuthenticationPrincipal Long id) {
@@ -86,6 +96,7 @@ public class AuthController {
      * @param request
      * @return
      */
+    @Operation(summary = "토큰 갱신", description = "RefreshToken으로 AccessToken과 RefreshToken을 재발급합니다.")
     @PostMapping("/refresh")
     public ApiResponse<TokenResponseDto> refresh(
             @RequestBody RefreshTokenRequestDto request) {
