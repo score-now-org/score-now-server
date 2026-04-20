@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.player.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,4 +14,6 @@ public interface PlayerRepository extends JpaRepository<Player, String> {
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("update Player p set p.squadOn = false where p.teamId = :teamId")
 	int setSquadOffByTeamId(@Param("teamId") String teamId);
+
+	List<Player> findByTeamId(String teamId);
 }

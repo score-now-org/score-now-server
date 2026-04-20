@@ -20,7 +20,7 @@ import lombok.Setter;
 @Builder
 public class Team extends BaseEntity {
 	@Id
-	private String id; // BETS + sportId + teamId
+	private String id; // BETS + sportApiId + teamApiId
 	private String type;    // 구분 (국가대표, 클럽)
 	private String kName;
 	private String eName;
