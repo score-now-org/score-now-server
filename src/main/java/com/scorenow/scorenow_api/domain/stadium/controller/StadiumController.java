@@ -3,12 +3,7 @@ package com.scorenow.scorenow_api.domain.stadium.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.scorenow.scorenow_api.domain.stadium.dto.request.StadiumCreateRequest;
 import com.scorenow.scorenow_api.domain.stadium.dto.response.StadiumResponse;
@@ -22,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/stadiums")
 @RequiredArgsConstructor
-public class StadiumController implements StadiumApiDocs{
+public class StadiumController implements StadiumApiDocs {
 
     private final StadiumService stadiumService;
 
@@ -49,11 +44,12 @@ public class StadiumController implements StadiumApiDocs{
     }
 
     /**
-     * 경기장 ID 로 검색
+     * 경기장 외부 API의 ID 로 검색
      */
-    @GetMapping(value = "/search", params = "id")
-    public ApiResponse<List<StadiumResponse>> searchStadiumByExternalStadiumId(@RequestParam String id) {
-        List<StadiumResponse> stadiums = stadiumService.getStadiumByExternalStadiumId(id).stream()
+    @GetMapping("/{externalStadiumId}")
+    public ApiResponse<List<StadiumResponse>> searchStadiumByExternalStadiumId(@PathVariable String externalStadiumId) {
+        List<StadiumResponse> stadiums = stadiumService.getStadiumByExternalStadiumId(externalStadiumId)
+                .stream()
                 .map(StadiumResponse::from)
                 .toList();
         return ApiResponse.success(stadiums);

@@ -17,11 +17,11 @@ public interface StadiumApiDocs {
 
     @Operation(summary = "경기장 이름 검색", description = "경기장 이름으로 특정 경기장 목록을 검색합니다.")
     ApiResponse<List<StadiumResponse>> searchStadiumsByName(
-            @Parameter(description = "검색할 경기장 이름", required = true, example = "상암 월드컵 경기장") String name);
+            @Parameter(description = "검색할 경기장 이름", required = true, example = "Neo Quimica Arena") String name);
 
-    @Operation(summary = "경기장 ID로 검색", description = "외부 API의 경기장 ID(External ID)를 이용하여 특정 경기장을 검색합니다.")
+    @Operation(summary = "경기장 외부 API의 ID 로 검색", description = "외부 API의 경기장 ID(External ID)를 이용하여 특정 경기장을 검색합니다.")
     ApiResponse<List<StadiumResponse>> searchStadiumByExternalStadiumId(
-            @Parameter(description = "검색할 외부 API 경기장 ID", required = true, example = "324") String id);
+            @Parameter(description = "검색할 외부 API 경기장 ID", required = true, example = "686") String id);
 
     @Operation(summary = "경기장 단건 수동 생성", description = "수동으로 새로운 경기장 정보를 등록합니다. (추후 경기장 등록 관리자 페이지에서 사용)")
     ApiResponse<StadiumResponse> createStadium(
