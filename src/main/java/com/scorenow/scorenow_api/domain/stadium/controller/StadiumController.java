@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/stadiums")
 @RequiredArgsConstructor
-public class StadiumController {
+public class StadiumController implements StadiumApiDocs{
 
     private final StadiumService stadiumService;
 
@@ -41,7 +41,7 @@ public class StadiumController {
      * 경기장 이름으로 검색
      */
     @GetMapping(value = "/search", params = "name")
-    public ApiResponse<List<StadiumResponse>> searchStadiums(@RequestParam String name) {
+    public ApiResponse<List<StadiumResponse>> searchStadiumsByName(@RequestParam String name) {
         List<StadiumResponse> stadiums = stadiumService.getStadiumByStadiumName(name).stream()
                 .map(StadiumResponse::from)
                 .toList();
@@ -52,7 +52,7 @@ public class StadiumController {
      * 경기장 ID 로 검색
      */
     @GetMapping(value = "/search", params = "id")
-    public ApiResponse<List<StadiumResponse>> searchStadium(@RequestParam String id) {
+    public ApiResponse<List<StadiumResponse>> searchStadiumByExternalStadiumId(@RequestParam String id) {
         List<StadiumResponse> stadiums = stadiumService.getStadiumByExternalStadiumId(id).stream()
                 .map(StadiumResponse::from)
                 .toList();
