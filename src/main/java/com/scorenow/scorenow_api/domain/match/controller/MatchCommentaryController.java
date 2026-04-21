@@ -21,6 +21,8 @@ public class MatchCommentaryController {
             @RequestPart(value = "data") CommentaryCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
+        // TODO: IOException 은 S3 에서 던짐.
+        //  => ServiceLayer 에서 처리해서 RuntimeException 던지는 방식으로 변경
         String savedId = null;
         try {
             savedId = commentaryService.saveCommentary(eventId, request, image);

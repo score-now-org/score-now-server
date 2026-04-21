@@ -5,19 +5,11 @@ import java.util.UUID;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
-import jakarta.persistence.ConstraintMode;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,6 +37,11 @@ public class Match extends BaseEntity {
 	private Integer homeScore;
 	private Integer awayScore;
 	private LocalDateTime startAt;
+
+	private Long stadiumId;
+
+	@Embedded
+	private TemporaryStadium temporaryStadium;
 
 	@Builder.Default
 	private String matchType = "A"; // 기본 A로 세팅
@@ -120,6 +117,11 @@ public class Match extends BaseEntity {
 		this.isActive = isActive;
 	}
 
+	public void updateStadiumId(Long stadiumId) { this.stadiumId = stadiumId; }
 
+	public void assignTemporaryStadium(String stadiumName, String city) {
+		this.stadiumId = null;  // 기존에 자동으로 매핑된 경기장 정보가 있다면 해제
+		this.temporaryStadium = new TemporaryStadium(stadiumName, city);
+	}
 }
 

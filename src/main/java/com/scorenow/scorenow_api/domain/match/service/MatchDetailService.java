@@ -2,10 +2,13 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.util.IdParser;
+import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
+import com.scorenow.scorenow_api.domain.stadium.service.StadiumService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class MatchDetailService {
+    private final StadiumService stadiumService;
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
     private final BetsApiClient betsApiClient;
@@ -33,20 +37,24 @@ public class MatchDetailService {
             return;
         }
 
+        // TODO: 서로 다른 DB 를 사용하기 때문에 한쪽에서 문제가 발생했을 때 롤백 정책을 어떻게 가져갈지 고민해야 할듯.
         BetsViewResponse.ViewResult apiResult = response.getResults().get(0);
-        updateMySqlScore(matchId, apiResult);
 
+        // 홈-어웨이 스코어 변경
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+        updateMatchScore(match, apiResult.getHomeScore(), apiResult.getAwayScore());
+
+        // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
+        BetsViewResponse.StadiumData stadiumData = apiResult.getExtra().getStadiumData();
+        Stadium stadium = stadiumService.getOrCreateStadium(Stadium.of(stadiumData.getId(), stadiumData.getName(), apiResult.getSportId(), stadiumData.getCity()));
+        match.updateStadiumId(stadium.getId());
+
+        // 경기 정보 반영
         MatchDetailDocument detail = response.toDocument(matchId);
         matchDetailRepository.save(detail);
 
         log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", matchId);
-    }
-
-    private void updateMySqlScore(String eventId, BetsViewResponse.ViewResult result) {
-        matchRepository.findById(eventId).ifPresent(match -> {
-            match.updateHomeScore(result.getHomeScore());
-            match.updateAwayScore(result.getAwayScore());
-        });
     }
 
     /**
@@ -78,4 +86,10 @@ public class MatchDetailService {
         log.info("📊 MongoDB 상세 지표 수동 수정 완료: {}", eventId);
         return matchDetailRepository.save(detail).getId();
     }
+
+    private void updateMatchScore(Match match, Integer homeScore, Integer awayScore) {
+        match.updateHomeScore(homeScore);
+        match.updateAwayScore(awayScore);
+    }
+
 }
