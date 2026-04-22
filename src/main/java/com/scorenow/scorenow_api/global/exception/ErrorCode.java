@@ -23,6 +23,7 @@ public enum ErrorCode {
 	// MatchLineup
 	MATCH_LINEUP_NOT_FOUND(HttpStatus.NOT_FOUND, "ML001", "라인업을 찾을 수 없습니다."),
 	MATCH_LINEUP_PLAYER_NOT_FOUND(HttpStatus.NOT_FOUND, "ML002", "라인업에서 선수를 찾을 수 없습니다."),
+	MATCH_LINEUP_PLAYER_ALREADY_EXISTS(HttpStatus.CONFLICT, "ML004", "이미 라인업에 존재하는 선수입니다."),
 	MATCH_LINEUP_INVALID_MATCH_SPORT(HttpStatus.BAD_REQUEST, "ML003", "matchId/sportId가 일치하지 않습니다."),
 
 	// League

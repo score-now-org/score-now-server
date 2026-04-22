@@ -12,8 +12,9 @@ public class MatchLineupPlayerResponse {
 	private String kName;
 	private String eName;
 	private String position;
+	private String teamId;
 	private String teamName;
-	private String shirtnumber;
+	private String shirtNumber;
 	private boolean selected;
 
 }

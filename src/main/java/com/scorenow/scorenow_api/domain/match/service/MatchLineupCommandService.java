@@ -31,6 +31,13 @@ public class MatchLineupCommandService {
 		if (player == null || player.getPlayerId() == null || player.getPlayerId().isBlank()) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "player가 올바르지 않습니다.");
 		}
+		if (player.getEName() == null || player.getEName().isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "eName이 필요합니다.");
+		}
+
+		if (player.getShirtNumber() == null || player.getShirtNumber().isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "shirtNumber가 필요합니다.");
+		}
 
 		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
 			.orElseThrow(() -> new BusinessException(
@@ -49,7 +56,7 @@ public class MatchLineupCommandService {
 		boolean exists = isPlayerAlreadyInLineup(side, player.getPlayerId());
 		if (exists) {
 			throw new BusinessException(
-				ErrorCode.MATCH_LINEUP_PLAYER_NOT_FOUND,
+				ErrorCode.MATCH_LINEUP_PLAYER_ALREADY_EXISTS,
 				"이미 라인업에 존재하는 선수입니다."
 			);
 		}

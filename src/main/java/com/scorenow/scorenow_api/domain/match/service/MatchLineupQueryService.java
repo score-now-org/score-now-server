@@ -66,8 +66,9 @@ public class MatchLineupQueryService {
 				player.getKName(),
 				player.getEName(),
 				player.getPosition(),
+				player.getTeamId(),
 				player.getTeamName(),
-				player.getShirtnumber(),
+				player.getShirtNumber(),
 				selectedPlayerIds.contains(player.getPlayerId())
 			))
 			.toList();
@@ -99,8 +100,9 @@ public class MatchLineupQueryService {
 				player.getKName(),
 				player.getEName(),
 				player.getPosition(),
+				player.getTeamId(),
 				player.getTeamName(),
-				player.getShirtnumber(),
+				player.getShirtNumber(),
 				selectedPlayerIds.contains(player.getPlayerId())
 			))
 			.toList();
