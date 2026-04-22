@@ -11,9 +11,9 @@ import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
-import com.scorenow.scorenow_api.domain.match.util.IdParser;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
+import com.scorenow.scorenow_api.global.util.IdParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

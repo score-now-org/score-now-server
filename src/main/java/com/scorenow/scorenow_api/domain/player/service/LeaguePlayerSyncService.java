@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
-import com.scorenow.scorenow_api.domain.match.util.IdParser;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.util.IdParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

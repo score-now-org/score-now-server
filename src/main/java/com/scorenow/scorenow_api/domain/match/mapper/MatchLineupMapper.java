@@ -51,10 +51,15 @@ public class MatchLineupMapper {
 	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer, String teamId) {
 		String playerApiId = null;
 		String eName = null;
+		String shirtNumber = null;
 
-		if (betsPlayer != null && betsPlayer.getPlayer() != null) {
-			playerApiId = betsPlayer.getPlayer().getId();
-			eName = betsPlayer.getPlayer().getName();
+		if (betsPlayer != null) {
+			shirtNumber = betsPlayer.getShirtnumber();
+
+			if (betsPlayer.getPlayer() != null) {
+				playerApiId = betsPlayer.getPlayer().getId();
+				eName = betsPlayer.getPlayer().getName();
+			}
 		}
 
 		String playerId = (teamId == null || playerApiId == null) ? null : teamId + ":" + playerApiId;
@@ -62,20 +67,10 @@ public class MatchLineupMapper {
 		return LineupPlayer.builder()
 			.playerId(playerId)
 			.eName(eName)
-			.shirtNumber(parseIntOrNull(betsPlayer != null ? betsPlayer.getShirtnumber() : null))
+			.shirtNumber(shirtNumber)
 			.position(mapPosition(betsPlayer != null ? betsPlayer.getPos() : null))
 			.goals(0)
 			.build();
-	}
-
-	private Integer parseIntOrNull(String v) {
-		if (v == null || v.isBlank())
-			return null;
-		try {
-			return Integer.valueOf(v);
-		} catch (NumberFormatException e) {
-			return null;
-		}
 	}
 
 	private String mapPosition(String pos) {

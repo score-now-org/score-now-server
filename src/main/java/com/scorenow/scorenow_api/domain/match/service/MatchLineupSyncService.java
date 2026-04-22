@@ -12,13 +12,13 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
-import com.scorenow.scorenow_api.domain.match.util.IdParser;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.util.IdParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import com.scorenow.scorenow_api.domain.match.service.InplayScanService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!test")
 @Slf4j
 @Component
 @RequiredArgsConstructor

@@ -6,6 +6,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!test")
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -29,10 +31,10 @@ public class MatchSyncScheduler {
 	 * 매일 2회 배치 실행(4시, 16시)
 	 */
 	@Scheduled(cron = "0 0 4,16 * * *")
-	public void runMatchSyncJob(){
+	public void runMatchSyncJob() {
 		log.info("=== Match Sync Batch Job 시작 ===");
 
-		try{
+		try {
 			JobParameters params = new JobParametersBuilder()
 				.addString("runTime", LocalDateTime.now().toString())
 				.toJobParameters();
@@ -44,7 +46,6 @@ public class MatchSyncScheduler {
 			log.error("Batch Job 실패", e);
 		}
 	}
-
 
 	/**
 	 * Ended - 10분마다 (오늘 경기만, 종료 후 30분 내 반영)

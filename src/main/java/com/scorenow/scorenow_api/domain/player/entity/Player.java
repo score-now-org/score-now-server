@@ -40,5 +40,5 @@ public class Player extends BaseEntity {
 	private boolean teaguk = false; // 태극전사
 
 	@Builder.Default
-	private boolean squadOn = true; // 스쿼드 on/off
+	private boolean squadOn = false; // 스쿼드 on/off
 }
