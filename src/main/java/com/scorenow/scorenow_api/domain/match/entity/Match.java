@@ -117,11 +117,18 @@ public class Match extends BaseEntity {
 		this.isActive = isActive;
 	}
 
-	public void updateStadiumId(Long stadiumId) { this.stadiumId = stadiumId; }
+    public void updateStadiumId(Long stadiumId) {
+        this.stadiumId = stadiumId;
+        this.temporaryStadium = null;
+    }
 
-	public void assignTemporaryStadium(String stadiumName, String city) {
-		this.stadiumId = null;  // 기존에 자동으로 매핑된 경기장 정보가 있다면 해제
-		this.temporaryStadium = new TemporaryStadium(stadiumName, city);
-	}
+    public void assignTemporaryStadium(String stadiumName, String city) {
+        this.stadiumId = null;  // 기존에 자동으로 매핑된 경기장 정보가 있다면 해제
+        this.temporaryStadium = new TemporaryStadium(stadiumName, city);
+    }
+
+    public boolean hasStadiumInfo() {
+        return stadiumId != null || temporaryStadium != null;
+    }
 }
 

@@ -37,7 +37,6 @@ public class MatchDetailService {
             return;
         }
 
-        // TODO: 서로 다른 DB 를 사용하기 때문에 한쪽에서 문제가 발생했을 때 롤백 정책을 어떻게 가져갈지 고민해야 할듯.
         BetsViewResponse.ViewResult apiResult = response.getResults().get(0);
 
         // 홈-어웨이 스코어 변경
@@ -47,8 +46,14 @@ public class MatchDetailService {
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
         BetsViewResponse.StadiumData stadiumData = apiResult.getExtra().getStadiumData();
-        Stadium stadium = stadiumService.getOrCreateStadium(Stadium.of(stadiumData.getId(), stadiumData.getName(), apiResult.getSportId(), stadiumData.getCity()));
-        match.updateStadiumId(stadium.getId());
+        if (stadiumData != null) {
+            Stadium stadium = stadiumService.getOrCreateStadium(Stadium.of(stadiumData.getId(), stadiumData.getName(), apiResult.getSportId(), stadiumData.getCity()));
+
+            // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
+            if (match.hasStadiumInfo()) {
+                match.updateStadiumId(stadium.getId());
+            }
+        }
 
         // 경기 정보 반영
         MatchDetailDocument detail = response.toDocument(matchId);
