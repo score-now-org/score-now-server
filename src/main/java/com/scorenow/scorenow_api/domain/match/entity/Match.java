@@ -127,8 +127,8 @@ public class Match extends BaseEntity {
         this.temporaryStadium = new TemporaryStadium(stadiumName, city);
     }
 
-    public boolean hasStadiumInfo() {
-        return stadiumId != null || temporaryStadium != null;
+    public boolean isStadiumEmpty() {
+        return stadiumId == null || temporaryStadium == null;
     }
 }
 

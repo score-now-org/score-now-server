@@ -9,7 +9,7 @@ import lombok.*;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_external_stadium_id_sport_id",
-                        columnNames = {"external_stadium_id, sport_id"})})
+                        columnNames = {"external_stadium_id", "sport_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter

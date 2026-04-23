@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 
-import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import lombok.Data;
 
 @Data
@@ -159,13 +158,5 @@ public class BetsViewResponse {
         private String id;              // 경기장 ID
         private String name;            // 경기장명
         private String city;            // 경기장이 위치한 도시
-
-        public Stadium toStadium() {
-            return Stadium.builder()
-                    .externalStadiumId(id)
-                    .name(name)
-                    .city(city)
-                    .build();
-        }
     }
 }

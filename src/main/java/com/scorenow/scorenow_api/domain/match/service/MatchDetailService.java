@@ -50,7 +50,7 @@ public class MatchDetailService {
             Stadium stadium = stadiumService.getOrCreateStadium(Stadium.of(stadiumData.getId(), stadiumData.getName(), apiResult.getSportId(), stadiumData.getCity()));
 
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
-            if (match.hasStadiumInfo()) {
+            if (match.isStadiumEmpty()) {
                 match.updateStadiumId(stadium.getId());
             }
         }
