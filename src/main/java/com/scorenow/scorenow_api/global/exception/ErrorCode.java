@@ -36,14 +36,17 @@ public enum ErrorCode {
 	// Sport
 	SPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "스포츠를 찾을 수 없습니다."),
 
-	// User 
+	// Stadium
+	STADIUM_NOT_FOUND(HttpStatus.NOT_FOUND, "STA001", "경기장을 찾을 수 없습니다."),
+
+	// User
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
     NICKNAME_DUPLICATED(HttpStatus.CONFLICT, "U002", "이미 사용중인 닉네임입니다."),
 	REJOIN_RESTRICTED(HttpStatus.CONFLICT,"U003","재가입이 제한된 계정입니다."),
 	NICKNAME_RESTRICTED(HttpStatus.CONFLICT,"U004","60일 이내 닉네임 재설정 불가합니다."),
 
 
-	// Token 
+	// Token
 	TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "A001", "만료된 토큰입니다."),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다."),
     TOKEN_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "A003", "RefreshToken이 아닙니다.");

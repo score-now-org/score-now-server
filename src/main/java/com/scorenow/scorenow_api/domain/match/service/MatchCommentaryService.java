@@ -29,17 +29,22 @@ public class MatchCommentaryService {
     public String saveCommentary(String eventId, CommentaryCreateRequest request, MultipartFile file) throws IOException {
         String imageUrl = s3Service.uploadFile(file);
 
+        // 1. mongoDB 에 저장할 Document 인스턴스 생성
         MatchCommentaryDocument commentary = MatchCommentaryDocument.builder()
                 .eventId(eventId)
                 .minute(request.getMinute())
                 .content(request.getContent())
                 .imageUrl(imageUrl)
                 .build();
+
+        // 2. MatchCommentary Document 저장
         MatchCommentaryDocument saved = commentaryRepository.save(commentary);
 
+        // 3.  MatchDetail Document 조회 (eventID 기반)
         MatchDetailDocument detail = matchDetailRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
+        // 4. MatchDetail 업데이트
         detail.updateCurrentCommentary(saved.getContent(), saved.getId());
 
         matchDetailRepository.save(detail);
