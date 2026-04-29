@@ -7,18 +7,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/matches")
 @RequiredArgsConstructor
 public class MatchCommentaryController {
+
     private final MatchCommentaryService commentaryService;
 
     /**
      * 중계 멘트 등록
      */
-    @PostMapping("/{matchId}/commentary")
+    @PostMapping("/{matchId}/commentaries")
     public ApiResponse<String> createCommentary(
             @PathVariable String matchId,
             @RequestPart(value = "data") CommentaryCreateRequest request,
@@ -26,5 +27,13 @@ public class MatchCommentaryController {
 
         String savedId = commentaryService.saveCommentary(matchId, request, image);
         return ApiResponse.success(savedId);
+    }
+
+    /**
+     * 작성한 중계 멘트 목록 조회
+     */
+    @GetMapping("/{matchId}/commentaries")
+    public ApiResponse<List<String>> getCommentaries(@PathVariable String matchId) {
+        return ApiResponse.success(commentaryService.getCommentariesByMatchId(matchId));
     }
 }

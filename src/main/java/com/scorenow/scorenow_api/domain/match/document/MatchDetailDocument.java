@@ -7,7 +7,8 @@ import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Getter @Builder
+@Getter
+@Builder
 @Document(collection = "match_details")
 public class MatchDetailDocument {
     @Id
@@ -18,10 +19,11 @@ public class MatchDetailDocument {
 
     private ExtraTime extraTime;
 
-    private String currentCommentary; // 가장 최신 중계 문구
-    private String currentCommentaryId; // 해당 중계의 ID
+    private String currentCommentary;   // 현재 보여야 하는 중계 멘트
+    private String currentCommentaryId; // 현재 보여야 하는 중계 멘트의 id
 
-    @Getter @Builder
+    @Getter
+    @Builder
     public static class ExtraTime {
         private Integer firstHalf;
         private Integer secondHalf;
