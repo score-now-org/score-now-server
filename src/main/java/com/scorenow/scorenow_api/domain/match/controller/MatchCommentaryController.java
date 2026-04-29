@@ -15,20 +15,16 @@ import java.io.IOException;
 public class MatchCommentaryController {
     private final MatchCommentaryService commentaryService;
 
-    @PostMapping("/{eventId}/commentary")
+    /**
+     * 중계 멘트 등록
+     */
+    @PostMapping("/{matchId}/commentary")
     public ApiResponse<String> createCommentary(
-            @PathVariable String eventId,
+            @PathVariable String matchId,
             @RequestPart(value = "data") CommentaryCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        // TODO: IOException 은 S3 에서 던짐.
-        //  => ServiceLayer 에서 처리해서 RuntimeException 던지는 방식으로 변경
-        String savedId = null;
-        try {
-            savedId = commentaryService.saveCommentary(eventId, request, image);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        String savedId = commentaryService.saveCommentary(matchId, request, image);
         return ApiResponse.success(savedId);
     }
 }
