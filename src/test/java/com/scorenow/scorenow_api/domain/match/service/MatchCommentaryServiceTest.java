@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatRuntimeException;
 
 class MatchCommentaryServiceTest {
     private MatchCommentaryService matchCommentaryService;
@@ -59,6 +60,14 @@ class MatchCommentaryServiceTest {
         List<String> commentaries = matchCommentaryService.getCommentariesByMatchId(matchId);
 
         assertThat(commentaries.size()).isEqualTo(3);
+    }
+
+    @Test
+    void 존재하지_않는_경기에_중계멘트_저장시_예외가_발생한다() {
+        String invalidMatchId = "INVALID_MATCH_ID";
+
+        assertThatRuntimeException()
+                .isThrownBy(() -> matchCommentaryService.saveCommentary(invalidMatchId, "3", "메시 오늘 좋네요.", true, null));
     }
 
     private MatchDetailDocument createMatchDetailDocument() {

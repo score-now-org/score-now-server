@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.repository;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,10 +25,13 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
 
     @Override
     public long updateCurrentCommentary(String matchId, String content, String commentaryId) {
-        MatchDetailDocument matchDetailDocument = database.get(matchId);
-        matchDetailDocument.updateCurrentCommentary(content, commentaryId);
+        List<MatchDetailDocument> matchDetailDocuments = database.values().stream()
+                .filter(matchDetail -> matchId.equals(matchDetail.getId()))
+                .toList();
 
-        return 1;
+        matchDetailDocuments.forEach(matchDetailDocument -> matchDetailDocument.updateCurrentCommentary(content, commentaryId));
+
+        return matchDetailDocuments.size();
     }
 
 }
