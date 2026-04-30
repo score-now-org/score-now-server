@@ -23,9 +23,11 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public void updateCurrentCommentary(String matchId, String content, String commentaryId) {
+    public long updateCurrentCommentary(String matchId, String content, String commentaryId) {
         MatchDetailDocument matchDetailDocument = database.get(matchId);
         matchDetailDocument.updateCurrentCommentary(content, commentaryId);
+
+        return 1;
     }
 
 }

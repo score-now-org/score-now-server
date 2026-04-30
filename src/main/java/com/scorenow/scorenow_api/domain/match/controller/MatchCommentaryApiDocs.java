@@ -13,7 +13,7 @@ import java.util.List;
 public interface MatchCommentaryApiDocs {
 
     @Operation(summary = "중계 멘트 등록", description = "특정 경기에 새로운 중계 멘트를 등록합니다. 이미지 첨부가 가능합니다.")
-    ApiResponse<Void> createCommentary(
+    ApiResponse<String> createCommentary(
             @Parameter(description = "중계 멘트를 등록할 경기 ID", required = true) String matchId,
             @Parameter(description = "중계 멘트 정보", required = true) CommentaryCreateRequest request,
             @Parameter(description = "첨부할 이미지 파일") MultipartFile image);

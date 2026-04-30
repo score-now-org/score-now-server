@@ -4,6 +4,8 @@ package com.scorenow.scorenow_api.domain.match.service;
 import com.scorenow.scorenow_api.domain.match.document.MatchCommentaryDocument;
 import com.scorenow.scorenow_api.domain.match.repository.MatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +46,11 @@ public class MatchCommentaryService {
         MatchCommentaryDocument savedCommentary = commentaryRepository.save(commentary);
 
         // 3. MatchDetail 에서 관리되는 현재 중계 멘트 업데이트
-        matchDetailRepository.updateCurrentCommentary(matchId, savedCommentary.getContent(), savedCommentary.getId());
+        long updatedCount = matchDetailRepository.updateCurrentCommentary(matchId, savedCommentary.getContent(), savedCommentary.getId());
+        if (updatedCount == 0) {
+            log.warn("최신 중계 문구를 업데이트할 경기 정보를 찾을 수 없습니다. matchId:{}", matchId);
+            throw new BusinessException(ErrorCode.MATCH_NOT_FOUND, "최신 중계 문구를 업데이트할 경기 정보를 찾을 수 없습니다.");
+        }
 
         return savedCommentary.getId();
     }

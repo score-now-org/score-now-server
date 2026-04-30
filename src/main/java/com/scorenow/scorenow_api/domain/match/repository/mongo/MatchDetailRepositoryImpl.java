@@ -23,7 +23,7 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public void updateCurrentCommentary(String matchId, String content, String commentaryId) {
-        mongoRepository.updateCurrentCommentary(matchId, content, commentaryId);
+    public long updateCurrentCommentary(String matchId, String content, String commentaryId) {
+        return mongoRepository.updateCurrentCommentary(matchId, content, commentaryId);
     }
 }

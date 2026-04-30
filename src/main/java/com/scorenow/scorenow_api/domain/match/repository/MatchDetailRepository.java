@@ -9,5 +9,5 @@ public interface MatchDetailRepository {
 
     MatchDetailDocument save(MatchDetailDocument detail);
 
-    void updateCurrentCommentary(String matchId, String content, String commentaryId);
+    long updateCurrentCommentary(String matchId, String content, String commentaryId);
 }
