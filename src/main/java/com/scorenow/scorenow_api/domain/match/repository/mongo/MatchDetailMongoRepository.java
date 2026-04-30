@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.Update;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface MatchDetailRepository extends MongoRepository<MatchDetailDocument, String> {
+public interface MatchDetailMongoRepository extends MongoRepository<MatchDetailDocument, String> {
     @Query("{ '_id' : ?0 }")
     @Update("{'$set' : {'currentCommentary':?1 , 'currentCommentaryId':?2}}")
     void updateCurrentCommentary(String matchId, String currentCommentary, String currentCommentaryId);

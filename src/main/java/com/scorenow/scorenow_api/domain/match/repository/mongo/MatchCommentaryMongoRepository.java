@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.Query;
 import java.util.List;
 
 
-public interface MatchCommentaryRepository extends MongoRepository<MatchCommentaryDocument, String> {
+public interface MatchCommentaryMongoRepository extends MongoRepository<MatchCommentaryDocument, String> {
     @Query(value = "{ 'matchId' : ?0, 'visible' : true }",
             sort = "{ 'created_at' :  -1 }")
     List<MatchCommentaryDocument> findVisibleCommentaries(String matchId);
