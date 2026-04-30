@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.controller;
 import com.scorenow.scorenow_api.domain.match.dto.request.CommentaryCreateRequest;
 import com.scorenow.scorenow_api.domain.match.service.MatchCommentaryService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,10 +23,10 @@ public class MatchCommentaryController {
     @PostMapping("/{matchId}/commentaries")
     public ApiResponse<String> createCommentary(
             @PathVariable String matchId,
-            @RequestPart(value = "data") CommentaryCreateRequest request,
+            @Valid @RequestPart(value = "data") CommentaryCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        String savedId = commentaryService.saveCommentary(matchId, request, image);
+        String savedId = commentaryService.saveCommentary(matchId, request.getMinute(), request.getContent(), request.isRecordEnabled(), image);
         return ApiResponse.success(savedId);
     }
 
