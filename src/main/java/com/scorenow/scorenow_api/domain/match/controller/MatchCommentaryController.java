@@ -13,7 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/matches")
 @RequiredArgsConstructor
-public class MatchCommentaryController {
+public class MatchCommentaryController implements MatchCommentaryApiDocs {
 
     private final MatchCommentaryService commentaryService;
 
