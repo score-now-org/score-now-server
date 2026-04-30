@@ -21,13 +21,13 @@ public class MatchCommentaryController {
      * 중계 멘트 등록
      */
     @PostMapping("/{matchId}/commentaries")
-    public ApiResponse<String> createCommentary(
+    public ApiResponse<Void> createCommentary(
             @PathVariable String matchId,
             @Valid @RequestPart(value = "data") CommentaryCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        String savedId = commentaryService.saveCommentary(matchId, request.getMinute(), request.getContent(), request.isRecordEnabled(), image);
-        return ApiResponse.success(savedId);
+        commentaryService.saveCommentary(matchId, request.getMinute(), request.getContent(), request.isRecordEnabled(), image);
+        return ApiResponse.success();
     }
 
     /**
