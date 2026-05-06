@@ -26,7 +26,7 @@ public class MatchCommentaryService {
      * 중계 멘트 저장 <br>
      * (단, 중계 멘트 저장 ON/OFF 에 따라서 작성한 중계글 모음에서 조회 여부가 결정)
      */
-    public String saveCommentary(String matchId, String minute, String content, boolean recordEnabled, MultipartFile file) {
+    public String saveCommentary(Long matchId, String minute, String content, boolean recordEnabled, MultipartFile file) {
         String imageUrl = null;
 
         if (file != null && !file.isEmpty()) {
@@ -59,7 +59,7 @@ public class MatchCommentaryService {
      * 해당 경기에서 작성된 중계 멘트 목록 조회 <br>
      * (단, 중계 멘트 저장 ON 에서 작성된 중계 멘트들만 조회 가능)
      */
-    public List<String> getCommentariesByMatchId(String matchId) {
+    public List<String> getCommentariesByMatchId(Long matchId) {
         return commentaryRepository.findVisibleCommentaries(matchId).stream()
                 .map(MatchCommentaryDocument::getContent)
                 .toList();

@@ -40,7 +40,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 				player.id.isNotNull() // selected 자리 임시값, 서비스에서 다시 세팅
 			))
 			.from(player)
-			.join(team).on(player.teamId.eq(team.id))
+//			.join(team).on(player.teamId.eq(team.id))
 			.where(player.teamId.eq(teamId))
 			.limit(limit)
 			.fetch();
@@ -64,7 +64,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 				player.id.isNotNull() // selected 자리 임시값, 서비스에서 다시 세팅
 			))
 			.from(player)
-			.join(team).on(player.teamId.eq(team.id))
+//			.join(team).on(player.teamId.eq(team.id))
 			.where(keywordCondition(keyword))
 			.limit(limit)
 			.fetch();

@@ -1,7 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.repository.jpa;
 
 import java.util.List;
+import java.util.Optional;
 
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -40,5 +42,10 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
 		""")
 	List<InplayScanDto> findInplayMatchDtos(@Param("status") MatchStatus status);
 
-	boolean existsByIdAndStatusCode(Long id, MatchStatus statusCode);
+    boolean existsByIdAndStatusCode(Long id, MatchStatus statusCode);
+
+    @Query("select m from Match m " +
+            "where m.provider = :provider " +
+            "and m.externalMatchId = :externalMatchId")
+    Optional<Match> findByExternalInfo(ExternalProvider provider, String externalMatchId);
 }

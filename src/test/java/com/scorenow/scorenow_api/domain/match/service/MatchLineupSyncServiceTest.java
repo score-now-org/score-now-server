@@ -80,13 +80,13 @@ class MatchLineupSyncServiceTest {
 
 		TeamExternalMapping homeMapping = TeamExternalMapping.builder()
 			.provider(ExternalProvider.BETS)
-			.apiTeamId("17170")
+			.externalTeamId("17170")
 			.team(homeTeam)
 			.build();
 
 		TeamExternalMapping awayMapping = TeamExternalMapping.builder()
 			.provider(ExternalProvider.BETS)
-			.apiTeamId("23451")
+			.externalTeamId("23451")
 			.team(awayTeam)
 			.build();
 

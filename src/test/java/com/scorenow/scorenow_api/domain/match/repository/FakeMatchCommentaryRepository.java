@@ -22,7 +22,7 @@ public class FakeMatchCommentaryRepository implements MatchCommentaryRepository 
     }
 
     @Override
-    public List<MatchCommentaryDocument> findVisibleCommentaries(String matchId) {
+    public List<MatchCommentaryDocument> findVisibleCommentaries(Long matchId) {
         return database.values().stream()
                 .filter(matchCommentary -> matchId.equals(matchCommentary.getMatchId()))
                 .filter(MatchCommentaryDocument::isVisible)

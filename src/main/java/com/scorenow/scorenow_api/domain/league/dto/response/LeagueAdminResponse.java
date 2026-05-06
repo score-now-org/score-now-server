@@ -9,19 +9,19 @@ import lombok.Getter;
 @Builder
 public class LeagueAdminResponse {
 
-	private String id;
-	private String sportId;
-	private String kName;
-	private String eName;
-	private String sName;
+    private Long id;
+    private Long sportId;
+    private String kName;
+    private String eName;
+    private String sName;
 
-	public static LeagueAdminResponse from(League league){
-		return LeagueAdminResponse.builder()
-			.id(league.getId())
-			.sportId(league.getSportId())
-			.kName(league.getKName())
-			.eName(league.getEName())
-			.sName(league.getSName())
-			.build();
-	}
+    public static LeagueAdminResponse from(League league) {
+        return LeagueAdminResponse.builder()
+                .id(league.getId())
+                .sportId(league.getSportId())
+                .kName(league.getKName())
+                .eName(league.getEName())
+                .sName(league.getSName())
+                .build();
+    }
 }

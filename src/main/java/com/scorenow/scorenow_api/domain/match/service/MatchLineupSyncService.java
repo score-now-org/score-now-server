@@ -129,7 +129,7 @@ public class MatchLineupSyncService {
 	private String findApiTeamId(Long teamId) {
 		return teamExternalMappingRepository
 			.findByProviderAndTeamId(ExternalProvider.BETS, teamId)
-			.map(TeamExternalMapping::getApiTeamId)
+			.map(TeamExternalMapping::getExternalTeamId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"팀 외부 API 매핑 정보를 찾을 수 없습니다.",

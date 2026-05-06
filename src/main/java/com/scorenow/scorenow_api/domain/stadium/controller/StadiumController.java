@@ -5,13 +5,10 @@ import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.scorenow.scorenow_api.domain.stadium.dto.request.StadiumCreateRequest;
 import com.scorenow.scorenow_api.domain.stadium.dto.response.StadiumResponse;
-import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -44,24 +41,24 @@ public class StadiumController implements StadiumApiDocs {
     }
 
     /**
-     * 경기장 외부 API의 ID 로 검색
+     * 경기장 ID 로 검색
      */
-    @GetMapping("/{externalStadiumId}")
-    public ApiResponse<List<StadiumResponse>> searchStadiumByExternalStadiumId(@PathVariable String externalStadiumId) {
-        List<StadiumResponse> stadiums = stadiumService.getStadiumByExternalStadiumId(externalStadiumId)
+    @GetMapping("/{stadiumId}")
+    public ApiResponse<List<StadiumResponse>> searchStadiumByStadiumId(@PathVariable Long stadiumId) {
+        List<StadiumResponse> stadiums = stadiumService.getStadiumByStadiumId(stadiumId)
                 .stream()
                 .map(StadiumResponse::from)
                 .toList();
         return ApiResponse.success(stadiums);
     }
 
-
     /**
-     * 경기장 단건 수동 생성 (추후 경기장 등록 관리자 페이지에서 사용되는 용도)
+     * TODO: 추후 경기장 등록 관리자 페이지 개발 시 진행
+     * 경기장 단건 수동 생성
      */
-    @PostMapping
-    public ApiResponse<StadiumResponse> createStadium(@Valid @RequestBody StadiumCreateRequest request) {
-        Stadium saved = stadiumService.getOrCreateStadium(request.toEntity());
-        return ApiResponse.success(StadiumResponse.from(saved));
-    }
+//    @PostMapping
+//    public ApiResponse<StadiumResponse> createStadium(@Valid @RequestBody StadiumCreateRequest request) {
+//        Stadium saved = stadiumService.getOrCreateStadium(request.toEntity());
+//        return ApiResponse.success(StadiumResponse.from(saved));
+//    }
 }

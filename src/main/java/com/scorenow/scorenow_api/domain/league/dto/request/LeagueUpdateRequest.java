@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public class LeagueUpdateRequest {
 
-	private String sportId;
+	private Long sportId;
 	private String eName;
 	private String kName;
 	private String sName;

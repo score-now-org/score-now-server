@@ -19,29 +19,11 @@ public class FakeStadiumRepository implements StadiumRepository {
     }
 
     @Override
-    public List<Stadium> findByExternalStadiumId(String externalStadiumId) {
-        List<Stadium> stadiums = database.values().stream().toList();
-        return stadiums.stream()
-                .filter(stadium -> externalStadiumId.equals(stadium.getExternalStadiumId()))
-                .toList();
-    }
-
-    @Override
     public List<Stadium> findByNameContainingIgnoreCase(String stadiumName) {
         List<Stadium> stadiums = database.values().stream().toList();
         return stadiums.stream()
                 .filter(stadium -> stadiumName.equals(stadium.getName()))
                 .toList();
-    }
-
-    @Override
-    public Optional<Stadium> findByExternalStadiumIdAndSportId(String externalStadiumId, String sportId) {
-        List<Stadium> stadiums = database.values().stream().toList();
-        return stadiums.stream()
-                .filter(stadium ->
-                        externalStadiumId.equals(stadium.getExternalStadiumId()) &&
-                                sportId.equals(stadium.getSportId()))
-                .findAny();
     }
 
     @Override

@@ -41,7 +41,7 @@ public class TeamPlayerSyncService {
 
 		Team team = teamExternalMappingRepository
 			.findByProviderAndApiTeamId(ExternalProvider.BETS, teamApiId)
-			.map(TeamExternalMapping::getTeam)
+			.map(TeamExternalMapping::getExternalTeamId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"팀 매핑 정보를 찾을 수 없습니다. teamApiId=" + teamApiId

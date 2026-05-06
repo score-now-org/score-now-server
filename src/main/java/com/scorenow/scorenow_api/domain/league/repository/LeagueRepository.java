@@ -17,8 +17,8 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
 		VALUES (:id, :sportId, :kName, :eName, :sName, :cc, true, NOW(), NOW())
 		""", nativeQuery = true)
 	void insertIgnore(
-		@Param("id") String id,
-		@Param("sportId") String sportId,
+		@Param("id") Long id,
+		@Param("sportId") Long sportId,
 		@Param("kName") String kName,
 		@Param("eName") String eName,
 		@Param("sName") String sName,

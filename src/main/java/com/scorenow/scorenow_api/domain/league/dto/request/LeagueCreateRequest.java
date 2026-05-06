@@ -6,11 +6,8 @@ import lombok.Getter;
 @Getter
 public class LeagueCreateRequest {
 
-	@NotBlank
-	private String sportId;
-
-	@NotBlank
-	private String leagueId; // 외부 ID(BetsAPI 기준)
+	@NotBlank(message = "종목ID 는 필수입니다.")
+	private Long sportId;
 
 	@NotBlank
 	private String eName;
