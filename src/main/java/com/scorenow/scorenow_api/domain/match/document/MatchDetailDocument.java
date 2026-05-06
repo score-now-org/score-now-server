@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "match_details")
 public class MatchDetailDocument {
     @Id
-    private String id;
+    private Long id;
 
     private MatchStats homeStats; // 홈팀 지표 (경고, 퇴장, 슈팅 등)
     private MatchStats awayStats; // 어웨이팀 지표

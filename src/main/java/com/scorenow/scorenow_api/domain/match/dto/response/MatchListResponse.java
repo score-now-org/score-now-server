@@ -10,19 +10,19 @@ import lombok.Getter;
 @Getter
 @Builder
 public class MatchListResponse {
-	private String id;
-	private String sportId;
+	private Long id;
+	private Long sportId;
 	private String sportName;
-	private String leagueId;
+	private Long leagueId;
 	private String leagueName;
 	private String matchType;
 	private String statusCode;
 	private String statusName;
-	private String homeId;
+	private Long homeId;
 	private String homeName;
 	private String homeImageUrl;
 	private Integer homeScore;
-	private String awayId;
+	private Long awayId;
 	private String awayName;
 	private String awayImageUrl;
 	private Integer awayScore;

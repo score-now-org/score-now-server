@@ -45,63 +45,64 @@ public class MatchLineupSyncService {
 	@Transactional
 	public MatchLineupDocument syncMatchLineup(String matchId, String sportId) {
 
-		if (matchId == null || matchId.isBlank() || sportId == null || sportId.isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId/sportId가 비어있습니다.");
-		}
-		if (!matchId.startsWith(sportId)) {
-			throw new BusinessException(
-				ErrorCode.MATCH_LINEUP_INVALID_MATCH_SPORT,
-				"matchId/sportId가 일치하지 않습니다.",
-				"matchId=" + matchId + ", sportId=" + sportId
-			);
-		}
-
-		Match match = matchRepo.findById(matchId)
-			.orElseThrow(() -> new BusinessException(
-				ErrorCode.MATCH_NOT_FOUND,
-				"경기가 존재하지 않습니다.",
-				matchId
-			));
-
-		String homeId = match.getHomeId();
-		String awayId = match.getAwayId();
-
-		Map<String, String> eNameMap = teamRepo.findAllById(List.of(homeId, awayId)).stream()
-			.collect(Collectors.toMap(Team::getId, Team::getEName));
-
-		String homeEname = eNameMap.get(homeId);
-		String awayEname = eNameMap.get(awayId);
-
-		if (homeEname == null || homeEname.isBlank()) {
-			throw new BusinessException(
-				ErrorCode.TEAM_NOT_FOUND,
-				"홈팀 eName 누락",
-				Map.of("homeId", homeId)
-			);
-		}
-		if (awayEname == null || awayEname.isBlank()) {
-			throw new BusinessException(
-				ErrorCode.TEAM_NOT_FOUND,
-				"원정팀 eName 누락",
-				Map.of("awayId", awayId)
-			);
-		}
-
-		// 라인업 API 호출
-		String eventId = IdParser.extractEventId(matchId, sportId);
-		BetsLineupResponse response = betsApiClient.getLineup(eventId);
-		validateLineupResponse(response, eventId);
-
-		BetsLineupResponse.Result results = response.getResults();
-
-		// match_lineups doc에 upsert
-		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
-			.orElseGet(() -> MatchLineupDocument.create(matchId));
-
-		doc.setHome(lineupMapper.toSide(results.getHome(), homeId, homeEname));
-		doc.setAway(lineupMapper.toSide(results.getAway(), awayId, awayEname));
-
-		return matchLineupRepo.save(doc);
+//		if (matchId == null || matchId.isBlank() || sportId == null || sportId.isBlank()) {
+//			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId/sportId가 비어있습니다.");
+//		}
+//		if (!matchId.startsWith(sportId)) {
+//			throw new BusinessException(
+//				ErrorCode.MATCH_LINEUP_INVALID_MATCH_SPORT,
+//				"matchId/sportId가 일치하지 않습니다.",
+//				"matchId=" + matchId + ", sportId=" + sportId
+//			);
+//		}
+//
+//		Match match = matchRepo.findById(matchId)
+//			.orElseThrow(() -> new BusinessException(
+//				ErrorCode.MATCH_NOT_FOUND,
+//				"경기가 존재하지 않습니다.",
+//				matchId
+//			));
+//
+//		String homeId = match.getHomeId();
+//		String awayId = match.getAwayId();
+//
+//		Map<String, String> eNameMap = teamRepo.findAllById(List.of(homeId, awayId)).stream()
+//			.collect(Collectors.toMap(Team::getId, Team::getEName));
+//
+//		String homeEname = eNameMap.get(homeId);
+//		String awayEname = eNameMap.get(awayId);
+//
+//		if (homeEname == null || homeEname.isBlank()) {
+//			throw new BusinessException(
+//				ErrorCode.TEAM_NOT_FOUND,
+//				"홈팀 eName 누락",
+//				Map.of("homeId", homeId)
+//			);
+//		}
+//		if (awayEname == null || awayEname.isBlank()) {
+//			throw new BusinessException(
+//				ErrorCode.TEAM_NOT_FOUND,
+//				"원정팀 eName 누락",
+//				Map.of("awayId", awayId)
+//			);
+//		}
+//
+//		// 라인업 API 호출
+//		String eventId = IdParser.extractEventId(matchId, sportId);
+//		BetsLineupResponse response = betsApiClient.getLineup(eventId);
+//		validateLineupResponse(response, eventId);
+//
+//		BetsLineupResponse.Result results = response.getResults();
+//
+//		// match_lineups doc에 upsert
+//		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
+//			.orElseGet(() -> MatchLineupDocument.create(matchId));
+//
+//		doc.setHome(lineupMapper.toSide(results.getHome(), homeId, homeEname));
+//		doc.setAway(lineupMapper.toSide(results.getAway(), awayId, awayEname));
+//
+//		return matchLineupRepo.save(doc);
+		return null;
 	}
 
 	private void validateLineupResponse(BetsLineupResponse response, String eventId) {

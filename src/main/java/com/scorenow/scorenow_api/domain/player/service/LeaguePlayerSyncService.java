@@ -30,39 +30,39 @@ public class LeaguePlayerSyncService {
 	@Transactional(readOnly = true)
 	public int syncPlayersByLeague(String leagueId) {
 
-		if (leagueId == null || leagueId.isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "leagueId가 비어있습니다.");
-		}
-
-		League league = leagueRepository.findById(leagueId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, "리그를 찾을 수 없습니다: " + leagueId));
-
-		String sportId = league.getSportId();
-		String leagueApiId = IdParser.extractApiId(leagueId, sportId);
-
-		BetsStandingsResponse standings = betsApiClient.getStandings(leagueApiId);
-		if (standings == null || standings.getSuccess() == null || standings.getSuccess() != 1) {
-			throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "팀순위(standings) 조회에 실패했습니다.");
-		}
-
-		String seasonName = extractSeasonName(standings);
-
-		Set<String> teamApiIds = extractTeamApiIds(standings);
-		if (teamApiIds.isEmpty()) {
-			return 0;
-		}
+//		if (leagueId == null || leagueId.isBlank()) {
+//			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "leagueId가 비어있습니다.");
+//		}
+//
+//		League league = leagueRepository.findById(leagueId)
+//			.orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, "리그를 찾을 수 없습니다: " + leagueId));
+//
+//		String sportId = league.getSportId();
+//		String leagueApiId = IdParser.extractApiId(leagueId, sportId);
+//
+//		BetsStandingsResponse standings = betsApiClient.getStandings(leagueApiId);
+//		if (standings == null || standings.getSuccess() == null || standings.getSuccess() != 1) {
+//			throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "팀순위(standings) 조회에 실패했습니다.");
+//		}
+//
+//		String seasonName = extractSeasonName(standings);
+//
+//		Set<String> teamApiIds = extractTeamApiIds(standings);
+//		if (teamApiIds.isEmpty()) {
+//			return 0;
+//		}
 
 		int upsertCount = 0;
 
-		for (String teamApiId : teamApiIds) {
-			try {
-				upsertCount += teamPlayerSyncService.syncTeamPlayers(leagueId, sportId, seasonName, teamApiId);
-			} catch (Exception e) {
-				// 팀 하나 실패해도 다음 팀 진행
-				log.warn("팀 선수 동기화 실패. leagueId={}, teamApiId={}, cause={}",
-					leagueId, teamApiId, e.toString(), e);
-			}
-		}
+//		for (String teamApiId : teamApiIds) {
+//			try {
+//				upsertCount += teamPlayerSyncService.syncTeamPlayers(leagueId, sportId, seasonName, teamApiId);
+//			} catch (Exception e) {
+//				// 팀 하나 실패해도 다음 팀 진행
+//				log.warn("팀 선수 동기화 실패. leagueId={}, teamApiId={}, cause={}",
+//					leagueId, teamApiId, e.toString(), e);
+//			}
+//		}
 		return upsertCount;
 	}
 

@@ -18,12 +18,12 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public Optional<MatchDetailDocument> findById(String matchId) {
+    public Optional<MatchDetailDocument> findById(Long matchId) {
         return mongoRepository.findById(matchId);
     }
 
     @Override
-    public long updateCurrentCommentary(String matchId, String content, String commentaryId) {
+    public long updateCurrentCommentary(Long matchId, String content, String commentaryId) {
         return mongoRepository.updateCurrentCommentary(matchId, content, commentaryId);
     }
 }

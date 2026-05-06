@@ -19,18 +19,8 @@ public class StadiumRepositoryImpl implements StadiumRepository {
     }
 
     @Override
-    public List<Stadium> findByExternalStadiumId(String externalStadiumId) {
-        return stadiumJpaRepository.findByExternalStadiumId(externalStadiumId);
-    }
-
-    @Override
     public List<Stadium> findByNameContainingIgnoreCase(String stadiumName) {
         return stadiumJpaRepository.findByNameContainingIgnoreCase(stadiumName);
-    }
-
-    @Override
-    public Optional<Stadium> findByExternalStadiumIdAndSportId(String externalStadiumId, String sportId) {
-        return stadiumJpaRepository.findByExternalStadiumIdAndSportId(externalStadiumId, sportId);
     }
 
     @Override

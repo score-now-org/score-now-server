@@ -13,12 +13,12 @@ public class MatchDetailController {
 
     private final MatchDetailService matchDetailService;
 
-    @PatchMapping("/{eventId}/detail")
-    public ApiResponse<String> updateMatchDetail(
-            @PathVariable String eventId,
+    @PatchMapping("/{matchId}/detail")
+    public ApiResponse<Long> updateMatchDetail(
+            @PathVariable Long matchId,
             @RequestBody MatchDetailUpdateRequest request) {
 
-        String updatedId = matchDetailService.updateMatchDetailManual(eventId, request);
+        Long updatedId = matchDetailService.updateMatchDetailManual(matchId, request);
 
         return ApiResponse.success(updatedId);
     }

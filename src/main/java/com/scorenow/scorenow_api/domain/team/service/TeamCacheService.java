@@ -3,6 +3,9 @@ package com.scorenow.scorenow_api.domain.team.service;
 import java.time.Duration;
 import java.util.Optional;
 
+import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
+import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -17,63 +20,83 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TeamCacheService {
 
-	private static final String CACHE_PREFIX = "team:";
-	private static final Duration CACHE_TTL = Duration.ofMinutes(30);
-	private final RedisTemplate<String, Object> redisTemplate;
-	private final TeamRepository teamRepository;
+    private static final String CACHE_PREFIX = "team:";
+    private static final String DELIMITER = ":";
 
-	/**
-	 * 팀 조회 (캐시 우선)
-	 */
-	public Optional<Team> get(String teamId) {
-		String cacheKey = CACHE_PREFIX + teamId;
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
-		// 1. 캐시 조회
-		Team cachedTeam = (Team) redisTemplate.opsForValue().get(cacheKey);
-		if (cachedTeam != null) {
-			log.debug("Cache HIT - Team: {}", teamId);
-			return Optional.of(cachedTeam);
-		}
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final TeamRepository teamRepository;
+    private final TeamExternalMappingRepository teamExternalMappingRepository;
 
-		// 2. DB 조회
-		log.debug("Cache MISS - Team: {}", teamId);
-		Optional<Team> team = teamRepository.findById(teamId);
+    /**
+     * 팀 조회 (캐시 우선)
+     */
+    public Optional<Team> get(ExternalProvider provider, String externalTeamId) {
+        String cacheKey = generateCacheKey(provider, externalTeamId);
 
-		// 3. 캐시 저장
-		team.ifPresent(t -> {
-			redisTemplate.opsForValue().set(cacheKey, t, CACHE_TTL);
-			log.debug("Cache SET - Team: {}", teamId);
-		});
+        // 1. 캐시 조회
+        Team cachedTeam = (Team) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedTeam != null) {
+            log.debug("Cache HIT - Team: {}", externalTeamId);
+            return Optional.of(cachedTeam);
+        }
 
-		return team;
-	}
+        log.debug("Cache MISS - Team: {}", externalTeamId);
 
-	/**
-	 * 팀 캐시 삭제
-	 */
-	public void delete(String teamId) {
-		String cacheKey = CACHE_PREFIX + teamId;
-		redisTemplate.delete(cacheKey);
-		log.info("Cache DELETE - Team: {}", teamId);
-	}
+        // 2. DB 조회 (Mapping Table)
+        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByExternalInfo(provider, externalTeamId);
+        if (teamMappingInfo.isPresent()) {
+            Long internalTeamId = teamMappingInfo.get().getInternalTeamId();
 
-	/**
-	 * 전체 팀 캐시 초기화
-	 */
-	public void invalidateAll() {
-		String pattern = CACHE_PREFIX + "*";
-		var keys = redisTemplate.keys(pattern);
-		if (keys != null && !keys.isEmpty()) {
-			redisTemplate.delete(keys);
-			log.info("Cache INVALIDATE ALL - Team count: {}", keys.size());
-		}
-	}
+            // 3. DB 조회 (Team Table)
+            Optional<Team> team = teamRepository.findById(internalTeamId);
 
-	/**
-	 * 팀 캐시 강제 갱신
-	 */
-	public Optional<Team> refresh(String teamId) {
-		delete(teamId);
-		return get(teamId);
-	}
+            // 4. 캐시 저장
+            if (team.isPresent()) {
+                redisTemplate.opsForValue().set(cacheKey, team, CACHE_TTL);
+                log.debug("Cache SET - Team: {}", externalTeamId);
+            }
+
+            return team;
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * 팀 캐시 삭제
+     */
+    public void delete(String externalTeamId) {
+        String cacheKey = CACHE_PREFIX + externalTeamId;
+        redisTemplate.delete(cacheKey);
+        log.info("Cache DELETE - Team: {}", externalTeamId);
+    }
+
+    /**
+     * 전체 팀 캐시 초기화
+     */
+    public void invalidateAll() {
+        String pattern = CACHE_PREFIX + "*";
+        var keys = redisTemplate.keys(pattern);
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+            log.info("Cache INVALIDATE ALL - Team count: {}", keys.size());
+        }
+    }
+
+    /**
+     * 팀 캐시 강제 갱신
+     */
+    public Optional<Team> refresh(ExternalProvider provider, String externalTeamId) {
+        delete(externalTeamId);
+        return get(provider, externalTeamId);
+    }
+
+    /**
+     * 팀 Cache Key 생성
+     */
+    private String generateCacheKey(ExternalProvider provider, String externalTeamId) {
+        return CACHE_PREFIX + provider + DELIMITER + externalTeamId;
+    }
 }

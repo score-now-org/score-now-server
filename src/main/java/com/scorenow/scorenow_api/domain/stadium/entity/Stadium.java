@@ -5,11 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "stadiums",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_external_stadium_id_sport_id",
-                        columnNames = {"external_stadium_id", "sport_id"})})
+@Table(name = "stadiums")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -19,18 +15,14 @@ public class Stadium extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "external_stadium_id", nullable = false)
-    private String externalStadiumId;   // 외부API 를 통해 전달받은 경기장 ID
-
-    @Column(name = "sport_id", nullable = false)
-    private String sportId;
+    @Column(nullable = false)
+    private Long sportId;
 
     private String name;
     private String city;
 
-    public static Stadium of(String externalStadiumId, String name, String sportId, String city) {
+    public static Stadium of(String name, Long sportId, String city) {
         return Stadium.builder()
-                .externalStadiumId(externalStadiumId)
                 .name(name)
                 .sportId(sportId)
                 .city(city)

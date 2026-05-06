@@ -6,17 +6,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import lombok.Data;
 
 @Data
 public class BetsViewResponse {
+    private final ExternalProvider provider = ExternalProvider.BETS;
+
     private List<ViewResult> results;
 
     public boolean hasResult() {
         return results != null && !results.isEmpty();
     }
 
-    public MatchDetailDocument toDocument(String matchId) {
+    public MatchDetailDocument toDocument(Long matchId) {
         ViewResult result = results.get(0);
         return MatchDetailDocument.builder()
                 .id(matchId)

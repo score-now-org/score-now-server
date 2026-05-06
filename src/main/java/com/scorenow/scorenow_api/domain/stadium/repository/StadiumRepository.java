@@ -8,11 +8,7 @@ import java.util.Optional;
 public interface StadiumRepository {
     List<Stadium> findAll();
 
-    List<Stadium> findByExternalStadiumId(String externalStadiumId);
-
     List<Stadium> findByNameContainingIgnoreCase(String stadiumName);
-
-    Optional<Stadium> findByExternalStadiumIdAndSportId(String externalStadiumId, String sportId);
 
     Stadium save(Stadium stadium);
 

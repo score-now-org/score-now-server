@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 
-public interface LeagueRepository extends JpaRepository<League, String> {
+public interface LeagueRepository extends JpaRepository<League, Long> {
 
 	@Modifying
 	@Query(value = """
@@ -17,8 +17,8 @@ public interface LeagueRepository extends JpaRepository<League, String> {
 		VALUES (:id, :sportId, :kName, :eName, :sName, :cc, true, NOW(), NOW())
 		""", nativeQuery = true)
 	void insertIgnore(
-		@Param("id") String id,
-		@Param("sportId") String sportId,
+		@Param("id") Long id,
+		@Param("sportId") Long sportId,
 		@Param("kName") String kName,
 		@Param("eName") String eName,
 		@Param("sName") String sName,

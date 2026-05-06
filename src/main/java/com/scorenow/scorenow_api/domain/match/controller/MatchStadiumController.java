@@ -26,7 +26,7 @@ public class MatchStadiumController {
      */
     @PatchMapping("/{matchId}/temporary-stadium")
     public ApiResponse<Void> assignTemporaryStadium(
-            @PathVariable String matchId,
+            @PathVariable Long matchId,
             @Valid @RequestBody AssignTemporaryStadiumRequest request) {
         matchStadiumService.assignTemporaryStadiumToMatch(matchId, request.getStadiumName(), request.getCity());
         return ApiResponse.success();
@@ -37,7 +37,7 @@ public class MatchStadiumController {
      */
     @PatchMapping("/{matchId}/stadium")
     public ApiResponse<Void> assignStadium(
-            @PathVariable String matchId,
+            @PathVariable Long matchId,
             @Valid @RequestBody AssignStadiumRequest request) {
         matchStadiumService.assignStadiumToMatch(matchId, request.getStadiumId());
         return ApiResponse.success();

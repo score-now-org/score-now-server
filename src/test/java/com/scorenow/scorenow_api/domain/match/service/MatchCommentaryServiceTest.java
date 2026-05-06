@@ -30,7 +30,7 @@ class MatchCommentaryServiceTest {
     @Test
     void 중계_정보에는_가장_최신의_중계_멘트만_조회된다() {
         MatchDetailDocument matchDetailDocument = createMatchDetailDocument();
-        String matchId = matchDetailDocument.getId();
+        Long matchId = matchDetailDocument.getId();
 
         boolean recordEnabled = true;
         matchCommentaryService.saveCommentary(matchId, "18", "손흥민 오늘 최고네요.", recordEnabled, null);
@@ -44,7 +44,7 @@ class MatchCommentaryServiceTest {
     @Test
     void 중계_멘트_저장_ON_상태에서만_등록된_중계_멘트만_조회된다() {
         MatchDetailDocument matchDetailDocument = createMatchDetailDocument();
-        String matchId = matchDetailDocument.getId();
+        Long matchId = matchDetailDocument.getId();
 
         // 중계 멘트 저장 ON (3건)
         boolean recordEnabled = true;
@@ -64,16 +64,14 @@ class MatchCommentaryServiceTest {
 
     @Test
     void 존재하지_않는_경기에_중계멘트_저장시_예외가_발생한다() {
-        String invalidMatchId = "INVALID_MATCH_ID";
+        Long invalidMatchId = 999L;
 
         assertThatRuntimeException()
                 .isThrownBy(() -> matchCommentaryService.saveCommentary(invalidMatchId, "3", "메시 오늘 좋네요.", true, null));
     }
 
     private MatchDetailDocument createMatchDetailDocument() {
-        return matchDetailRepository.save(MatchDetailDocument.builder()
-                .id(UUID.randomUUID().toString())
-                .build());
+        return matchDetailRepository.save(MatchDetailDocument.builder().build());
     }
 
 }

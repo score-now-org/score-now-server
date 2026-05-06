@@ -20,7 +20,7 @@ public class MatchStadiumService {
      * 임시 경기장 정보 할당 (Match 에 직접 할당하며, 일회성이므로 Stadium Table 에서 조회 불가능)
      */
     @Transactional
-    public void assignTemporaryStadiumToMatch(String matchId, String stadiumName, String city) {
+    public void assignTemporaryStadiumToMatch(Long matchId, String stadiumName, String city) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
@@ -31,7 +31,7 @@ public class MatchStadiumService {
      * 사전에 등록되어 있는 경기장으로 할당
      */
     @Transactional
-    public void assignStadiumToMatch(String matchId, Long stadiumId) {
+    public void assignStadiumToMatch(Long matchId, Long stadiumId) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 

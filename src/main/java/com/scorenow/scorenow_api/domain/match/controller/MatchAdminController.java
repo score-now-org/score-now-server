@@ -28,39 +28,39 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MatchAdminController {
 
-	private final MatchAdminService matchAdminService;
+    private final MatchAdminService matchAdminService;
 
-	/**
-	 * 경기 리스트 조회
-	 */
-	@GetMapping
-	public ApiResponse<Page<MatchListResponse>> getMatches(
-		@ModelAttribute MatchSearchCondition condition,
-		@PageableDefault(size = 20, sort = "startAt", direction = Sort.Direction.ASC)Pageable pageable) {
+    /**
+     * 경기 리스트 조회
+     */
+    @GetMapping
+    public ApiResponse<Page<MatchListResponse>> getMatches(
+            @ModelAttribute MatchSearchCondition condition,
+            @PageableDefault(size = 20, sort = "startAt", direction = Sort.Direction.ASC) Pageable pageable) {
 
-		Page<MatchListResponse> result = matchAdminService.getMatches(condition, pageable);
-		return ApiResponse.success(result);
-	}
+        Page<MatchListResponse> result = matchAdminService.getMatches(condition, pageable);
+        return ApiResponse.success(result);
+    }
 
 
-	/**
-	 * 경기 수동 등록
-	 */
-	@PostMapping
-	public ApiResponse<MatchListResponse> createMatch(@Valid @RequestBody MatchCreateRequest request){
-		MatchListResponse result = matchAdminService.createMatch(request);
-		return ApiResponse.success(result);
-	}
+    /**
+     * 경기 수동 등록
+     */
+    @PostMapping
+    public ApiResponse<MatchListResponse> createMatch(@Valid @RequestBody MatchCreateRequest request) {
+        MatchListResponse result = matchAdminService.createMatch(request);
+        return ApiResponse.success(result);
+    }
 
-	/**
-	 * 경기 수정
-	 */
-	@PatchMapping("/{matchId}")
-	public ApiResponse<Void> updateMatch(
-		@PathVariable String matchId,
-		@Valid @RequestBody MatchUpdateRequest request){
-		matchAdminService.updateMatch(matchId, request);
-		return ApiResponse.success(null);
-	}
+    /**
+     * 경기 수정
+     */
+    @PatchMapping("/{matchId}")
+    public ApiResponse<Void> updateMatch(
+            @PathVariable Long matchId,
+            @Valid @RequestBody MatchUpdateRequest request) {
+        matchAdminService.updateMatch(matchId, request);
+        return ApiResponse.success(null);
+    }
 
 }

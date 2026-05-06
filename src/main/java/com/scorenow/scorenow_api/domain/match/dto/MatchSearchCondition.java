@@ -6,8 +6,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MatchSearchCondition {
-	private String sportId;
-	private String leagueId;
+	private Long sportId;
+	private Long leagueId;
 	private String leagueName; // 리그명 검색
 	private String status; // NOT_STARTED, INPLAY, ENDED 등
 	private Boolean isActive; // null = 전체, true = 사용중, false = 미사용

@@ -13,19 +13,19 @@ import lombok.Setter;
 @Setter
 public class MatchCreateRequest {
 
-	@NotBlank(message = "종목 ID는 필수입니다.")
-	private String sportId;
+    @NotNull(message = "종목 ID는 필수입니다.")
+    private Long sportId;
 
-	@NotBlank(message = "리그 ID는 필수입니다.")
-	private String leagueId;
+    @NotNull(message = "리그 ID는 필수입니다.")
+    private Long leagueId;
 
-	@NotBlank(message = "홈팀 ID는 필수입니다.")
-	private String homeId;
+    @NotNull(message = "홈팀 ID는 필수입니다.")
+    private Long homeId;
 
-	@NotBlank(message = "원정팀 ID는 필수입니다.")
-	private String awayId;
+    @NotNull(message = "원정팀 ID는 필수입니다.")
+    private Long awayId;
 
-	@NotNull(message = "경기 시작 시간은 필수입니다.")
-	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-	private LocalDateTime startAt;
+    @NotNull(message = "경기 시작 시간은 필수입니다.")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime startAt;
 }

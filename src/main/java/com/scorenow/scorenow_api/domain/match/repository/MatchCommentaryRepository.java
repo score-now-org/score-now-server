@@ -7,5 +7,5 @@ import java.util.List;
 public interface MatchCommentaryRepository {
     MatchCommentaryDocument save(MatchCommentaryDocument commentary);
 
-    List<MatchCommentaryDocument> findVisibleCommentaries(String matchId);
+    List<MatchCommentaryDocument> findVisibleCommentaries(Long matchId);
 }

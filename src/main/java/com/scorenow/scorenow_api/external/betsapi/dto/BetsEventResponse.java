@@ -4,55 +4,58 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class BetsEventResponse {
-	private int success;
-	private BetsPager pager;
-	private List<Event> results;
+    private final ExternalProvider provider = ExternalProvider.BETS;
 
-	@Getter
-	@Setter
-	public static class Event {
-		private String id;
+    private int success;
+    private BetsPager pager;
+    private List<Event> results;
 
-		@JsonProperty("sport_id")
-		private String sportId;
+    @Getter
+    @Setter
+    public static class Event {
+        private String id;
 
-		private String time;
+        @JsonProperty("sport_id")
+        private String sportId;
 
-		@JsonProperty("time_status")
-		private String timeStatus;
+        private String time;
 
-		private BetsEventResponse.League league;
-		private BetsEventResponse.Team home;
-		private BetsEventResponse.Team away;
-		private String ss;
+        @JsonProperty("time_status")
+        private String timeStatus;
 
-		@JsonProperty("bet365_id")
-		private String bet365Id;
-	}
+        private BetsEventResponse.League league;
+        private BetsEventResponse.Team home;
+        private BetsEventResponse.Team away;
+        private String ss;
 
-	@Getter
-	@Setter
-	public static class League {
-		private String id;
-		private String name;
-		private String cc;
-	}
+        @JsonProperty("bet365_id")
+        private String bet365Id;
+    }
 
-	@Getter
-	@Setter
-	public static class Team {
-		private String id;
-		private String name;
+    @Getter
+    @Setter
+    public static class League {
+        private String id;
+        private String name;
+        private String cc;
+    }
 
-		@JsonProperty("image_id")
-		private String imageId;
+    @Getter
+    @Setter
+    public static class Team {
+        private String id;
+        private String name;
 
-		private String cc;
-	}
+        @JsonProperty("image_id")
+        private String imageId;
+
+        private String cc;
+    }
 }
