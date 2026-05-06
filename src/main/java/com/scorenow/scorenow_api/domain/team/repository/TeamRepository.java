@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 
-public interface TeamRepository extends JpaRepository<Team, String> {
+public interface TeamRepository extends JpaRepository<Team, Long> {
 
 	@Modifying
 	@Query(value = """

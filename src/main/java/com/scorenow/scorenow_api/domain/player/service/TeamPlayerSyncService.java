@@ -1,16 +1,23 @@
 package com.scorenow.scorenow_api.domain.player.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.player.entity.Player;
+import com.scorenow.scorenow_api.domain.player.entity.PlayerExternalMapping;
+import com.scorenow.scorenow_api.domain.player.entity.PlayerTeamDetail;
+import com.scorenow.scorenow_api.domain.player.repository.PlayerExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerRepository;
+import com.scorenow.scorenow_api.domain.player.repository.PlayerTeamDetailRepository;
+import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
+import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -21,12 +28,33 @@ import lombok.RequiredArgsConstructor;
 public class TeamPlayerSyncService {
 
 	private final BetsApiClient betsApiClient;
-	private final PlayerRepository playerRepo;
+
+	private final PlayerRepository playerRepository;
+	private final PlayerExternalMappingRepository playerExternalMappingRepository;
+	private final PlayerTeamDetailRepository playerTeamDetailRepository;
+
+	private final TeamExternalMappingRepository teamExternalMappingRepository;
+	private final LeagueRepository leagueRepository;
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public int syncTeamPlayers(String leagueId, String sportId, String seasonName, String teamApiId) {
+	public int syncTeamPlayers(Long leagueId, String seasonName, String teamApiId) {
+
+		Team team = teamExternalMappingRepository
+			.findByProviderAndApiTeamId(ExternalProvider.BETS, teamApiId)
+			.map(TeamExternalMapping::getTeam)
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"팀 매핑 정보를 찾을 수 없습니다. teamApiId=" + teamApiId
+			));
+
+		League league = leagueRepository.findById(leagueId)
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"리그 정보를 찾을 수 없습니다. leagueId=" + leagueId
+			));
 
 		BetsSquadResponse squad = betsApiClient.getSquad(teamApiId);
+
 		if (!isValidSquad(squad)) {
 			throw new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
@@ -41,34 +69,77 @@ public class TeamPlayerSyncService {
 			);
 		}
 
-		String teamId = sportId + teamApiId; // BETS1 + 17230 => BETS117230
-		playerRepo.setSquadOffByTeamId(teamId);
+		playerTeamDetailRepository.setSquadOffByTeamIdAndLeagueIdAndSeason(
+			team.getId(),
+			league.getId(),
+			seasonName
+		);
 
-		List<Player> toSave = new ArrayList<>(squad.getResults().size());
+		int savedCount = 0;
+
 		for (BetsSquadResponse.SquadPlayer sp : squad.getResults()) {
-			if (sp == null || sp.getId() == null || sp.getId().isBlank())
+			if (sp == null || sp.getId() == null || sp.getId().isBlank()) {
 				continue;
+			}
 
-			Player p = Player.builder()
-				.id(teamId + ":" + sp.getId())
-				.leagueId(leagueId)
-				.teamId(teamId)
-				.season(seasonName)
-				.eName(sp.getName())
-				.cc(sp.getCc())
-				.birthdate(sp.getBirthdate())
-				.position(sp.getPosition())
-				.height(parseNullableInt(sp.getHeight()))
-				.shirtnumber(sp.getShirtnumber())
-				.squadOn(true)
-				.build();
+			String apiPlayerId = normalizeApiId(sp.getId());
+			if (apiPlayerId == null) {
+				continue;
+			}
 
-			toSave.add(p);
+			Player player = findOrCreatePlayer(sp, apiPlayerId);
+
+			PlayerTeamDetail detail = playerTeamDetailRepository
+				.findByPlayerIdAndTeamIdAndLeagueIdAndSeason(
+					player.getId(),
+					team.getId(),
+					league.getId(),
+					seasonName
+				)
+				.orElseGet(() -> PlayerTeamDetail.builder()
+					.player(player)
+					.team(team)
+					.league(league)
+					.season(seasonName)
+					.build());
+
+			detail.setPosition(sp.getPosition());
+			detail.setShirtNumber(sp.getShirtnumber());
+			detail.setSquadOn(true);
+
+			playerTeamDetailRepository.save(detail);
+			savedCount++;
 		}
 
-		playerRepo.saveAll(toSave);
-		return toSave.size();
+		return savedCount;
+	}
 
+	private Player findOrCreatePlayer(BetsSquadResponse.SquadPlayer sp, String apiPlayerId) {
+		return playerExternalMappingRepository
+			.findByProviderAndApiPlayerId(ExternalProvider.BETS, apiPlayerId)
+			.map(PlayerExternalMapping::getPlayer)
+			.orElseGet(() -> {
+				Player player = Player.builder()
+					.eName(sp.getName())
+					.kName(null)
+					.cc(sp.getCc())
+					.birthdate(sp.getBirthdate())
+					.height(parseNullableInt(sp.getHeight()))
+					.teaguk(false)
+					.build();
+
+				Player savedPlayer = playerRepository.save(player);
+
+				PlayerExternalMapping mapping = new PlayerExternalMapping(
+					ExternalProvider.BETS,
+					apiPlayerId,
+					savedPlayer
+				);
+
+				playerExternalMappingRepository.save(mapping);
+
+				return savedPlayer;
+			});
 	}
 
 	private boolean isValidSquad(BetsSquadResponse squad) {
@@ -79,18 +150,29 @@ public class TeamPlayerSyncService {
 	}
 
 	private Integer parseNullableInt(String raw) {
-		if (raw == null)
+		if (raw == null) {
 			return null;
+		}
 
 		String s = raw.trim();
-		if (s.isEmpty())
+		if (s.isEmpty()) {
 			return null;
+		}
 
 		try {
 			return Integer.valueOf(s);
 		} catch (NumberFormatException e) {
 			return null;
 		}
-
 	}
+
+	private String normalizeApiId(String raw) {
+		if (raw == null) {
+			return null;
+		}
+
+		String s = raw.trim();
+		return s.isEmpty() ? null : s;
+	}
+
 }

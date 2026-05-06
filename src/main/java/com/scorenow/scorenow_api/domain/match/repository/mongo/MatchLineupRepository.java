@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 
-public interface MatchLineupRepository extends MongoRepository<MatchLineupDocument, String> {
+public interface MatchLineupRepository extends MongoRepository<MatchLineupDocument, Long> {
 
-	List<MatchLineupDocument> findByIdIn(Collection<String> ids);
+	List<MatchLineupDocument> findByIdIn(Collection<Long> ids);
 }

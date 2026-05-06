@@ -19,6 +19,7 @@ public class InplayScanService {
 
 	@Transactional(readOnly = true)
 	public List<InplayScanDto> scanInplayMatches() {
+
 		return matchRepo.findInplayMatchDtos(MatchStatus.IN_PLAY);
 	}
 }

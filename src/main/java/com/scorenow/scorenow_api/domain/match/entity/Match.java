@@ -1,15 +1,28 @@
 package com.scorenow.scorenow_api.domain.match.entity;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,13 +36,22 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class Match extends BaseEntity {
-	@Id
-	private String id; // BETS + sportId + eventId (예: BETS111275660)
 
-	private String leagueId; // BETS + sportId + leagueId
-	private String sportId;
-	private String homeId;   // BETS + sportId + teamId
-	private String awayId;   // BETS + sportId + teamId
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(name = "provider")
+	private ExternalProvider provider;
+
+	@Column(name = "external_match_id")
+	private String externalMatchId;
+
+	private Long leagueId;
+	private Long sportId;
+
+	private Long homeId;
+	private Long awayId;
 
 	@Enumerated(EnumType.STRING)
 	private MatchStatus statusCode;
@@ -72,28 +94,19 @@ public class Match extends BaseEntity {
 	@JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Team awayTeam;
 
-	public static String generateMatchId(String sportId, String eventId) {
-		return "BETS" + sportId + eventId;
-	}
-
-	public static String generateManualId(String sportId) {
-		String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-		return String.format("MANUAL%s%s", sportId, uuid);
-	}
-
-	public void updateSportId(String sportId) {
+	public void updateSportId(Long sportId) {
 		this.sportId = sportId;
 	}
 
-	public void updateLeagueId(String leagueId) {
+	public void updateLeagueId(Long leagueId) {
 		this.leagueId = leagueId;
 	}
 
-	public void updateHomeId(String homeId) {
+	public void updateHomeId(Long homeId) {
 		this.homeId = homeId;
 	}
 
-	public void updateAwayId(String awayId) {
+	public void updateAwayId(Long awayId) {
 		this.awayId = awayId;
 	}
 
@@ -117,18 +130,17 @@ public class Match extends BaseEntity {
 		this.isActive = isActive;
 	}
 
-    public void updateStadiumId(Long stadiumId) {
-        this.stadiumId = stadiumId;
-        this.temporaryStadium = null;
-    }
+	public void updateStadiumId(Long stadiumId) {
+		this.stadiumId = stadiumId;
+		this.temporaryStadium = null;
+	}
 
-    public void assignTemporaryStadium(String stadiumName, String city) {
-        this.stadiumId = null;  // 기존에 자동으로 매핑된 경기장 정보가 있다면 해제
-        this.temporaryStadium = new TemporaryStadium(stadiumName, city);
-    }
+	public void assignTemporaryStadium(String stadiumName, String city) {
+		this.stadiumId = null;  // 기존에 자동으로 매핑된 경기장 정보가 있다면 해제
+		this.temporaryStadium = new TemporaryStadium(stadiumName, city);
+	}
 
-    public boolean isStadiumEmpty() {
-        return stadiumId == null || temporaryStadium == null;
-    }
+	public boolean isStadiumEmpty() {
+		return stadiumId == null || temporaryStadium == null;
+	}
 }
-

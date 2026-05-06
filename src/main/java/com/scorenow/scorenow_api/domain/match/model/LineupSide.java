@@ -17,7 +17,8 @@ import lombok.Setter;
 @Builder
 public class LineupSide {
 
-	private String teamId;
+	private Long teamId;
+	private String apiTeamId;
 	private String teamEname;
 
 	private String formation;

@@ -13,12 +13,14 @@ import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
+import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
+import com.scorenow.scorenow_api.external.common.ExternalProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
-import com.scorenow.scorenow_api.global.util.IdParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,20 +37,22 @@ public class MatchLineupSyncService {
 
 	private final MatchRepository matchRepo;
 	private final TeamRepository teamRepo;
+	private final TeamExternalMappingRepository teamExternalMappingRepository;
 
-	/**
-	 * 외부 Lineup API를 호출해 라인업 도큐먼트를 upsert
-	 * - matchId에서 eventId 추출 후 lineup 조회 (matchId = sportId + eventId)
-	 * - Match의 home/away teamId로 팀 eName 매핑
-	 * - home/away 라인업을 문서에 세팅 후 저장
-	 */
 	@Transactional
-	public MatchLineupDocument syncMatchLineup(String matchId, String sportId) {
+	public MatchLineupDocument syncMatchLineup(String matchIdValue, String sportIdValue) {
 
-		if (matchId == null || matchId.isBlank() || sportId == null || sportId.isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId/sportId가 비어있습니다.");
-		}
-		if (!matchId.startsWith(sportId)) {
+		Long matchId = parseRequiredLong(matchIdValue, "matchId");
+		Long sportId = parseRequiredLong(sportIdValue, "sportId");
+
+		Match match = matchRepo.findById(matchId)
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.MATCH_NOT_FOUND,
+				"경기가 존재하지 않습니다.",
+				"matchId=" + matchId
+			));
+
+		if (!sportId.equals(match.getSportId())) {
 			throw new BusinessException(
 				ErrorCode.MATCH_LINEUP_INVALID_MATCH_SPORT,
 				"matchId/sportId가 일치하지 않습니다.",
@@ -56,30 +60,32 @@ public class MatchLineupSyncService {
 			);
 		}
 
-		Match match = matchRepo.findById(matchId)
-			.orElseThrow(() -> new BusinessException(
-				ErrorCode.MATCH_NOT_FOUND,
-				"경기가 존재하지 않습니다.",
-				matchId
-			));
+		if (match.getExternalMatchId() == null || match.getExternalMatchId().isBlank()) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"externalMatchId가 비어있습니다.",
+				"matchId=" + matchId
+			);
+		}
 
-		String homeId = match.getHomeId();
-		String awayId = match.getAwayId();
+		Long homeId = match.getHomeId();
+		Long awayId = match.getAwayId();
 
-		Map<String, String> eNameMap = teamRepo.findAllById(List.of(homeId, awayId)).stream()
-			.collect(Collectors.toMap(Team::getId, Team::getEName));
+		Map<Long, Team> teamMap = teamRepo.findAllById(List.of(homeId, awayId)).stream()
+			.collect(Collectors.toMap(Team::getId, team -> team));
 
-		String homeEname = eNameMap.get(homeId);
-		String awayEname = eNameMap.get(awayId);
+		Team homeTeam = teamMap.get(homeId);
+		Team awayTeam = teamMap.get(awayId);
 
-		if (homeEname == null || homeEname.isBlank()) {
+		if (homeTeam == null || homeTeam.getEName() == null || homeTeam.getEName().isBlank()) {
 			throw new BusinessException(
 				ErrorCode.TEAM_NOT_FOUND,
 				"홈팀 eName 누락",
 				Map.of("homeId", homeId)
 			);
 		}
-		if (awayEname == null || awayEname.isBlank()) {
+
+		if (awayTeam == null || awayTeam.getEName() == null || awayTeam.getEName().isBlank()) {
 			throw new BusinessException(
 				ErrorCode.TEAM_NOT_FOUND,
 				"원정팀 eName 누락",
@@ -87,54 +93,105 @@ public class MatchLineupSyncService {
 			);
 		}
 
-		// 라인업 API 호출
-		String eventId = IdParser.extractEventId(matchId, sportId);
-		BetsLineupResponse response = betsApiClient.getLineup(eventId);
-		validateLineupResponse(response, eventId);
+		String apiHomeTeamId = findApiTeamId(homeId);
+		String apiAwayTeamId = findApiTeamId(awayId);
 
-		BetsLineupResponse.Result results = response.getResults();
+		BetsLineupResponse homeResponse = betsApiClient.getLineup(apiHomeTeamId);
+		validateLineupResponse(homeResponse, apiHomeTeamId);
 
-		// match_lineups doc에 upsert
+		BetsLineupResponse awayResponse = betsApiClient.getLineup(apiAwayTeamId);
+		validateLineupResponse(awayResponse, apiAwayTeamId);
+
 		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
-			.orElseGet(() -> MatchLineupDocument.create(matchId));
+			.orElseGet(() -> MatchLineupDocument.create(
+				matchId,
+				sportId,
+				match.getExternalMatchId()
+			));
 
-		doc.setHome(lineupMapper.toSide(results.getHome(), homeId, homeEname));
-		doc.setAway(lineupMapper.toSide(results.getAway(), awayId, awayEname));
+		doc.setHome(lineupMapper.toSide(
+			homeResponse.getResults().getHome(),
+			homeId,
+			apiHomeTeamId,
+			homeTeam.getEName()
+		));
+
+		doc.setAway(lineupMapper.toSide(
+			awayResponse.getResults().getAway(),
+			awayId,
+			apiAwayTeamId,
+			awayTeam.getEName()
+		));
 
 		return matchLineupRepo.save(doc);
 	}
 
-	private void validateLineupResponse(BetsLineupResponse response, String eventId) {
-		if (response == null) {
-			throw new BusinessException(
+	private String findApiTeamId(Long teamId) {
+		return teamExternalMappingRepository
+			.findByProviderAndTeamId(ExternalProvider.BETS, teamId)
+			.map(TeamExternalMapping::getApiTeamId)
+			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
-				"라인업 API 응답이 null입니다.",
-				"eventId=" + eventId
+				"팀 외부 API 매핑 정보를 찾을 수 없습니다.",
+				"teamId=" + teamId
+			));
+	}
+
+	private Long parseRequiredLong(String raw, String fieldName) {
+		if (raw == null || raw.isBlank()) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				fieldName + "가 비어있습니다."
 			);
 		}
-		if (response.getSuccess() == null || response.getSuccess() != 1) {
+
+		try {
+			return Long.valueOf(raw);
+		} catch (NumberFormatException e) {
 			throw new BusinessException(
-				ErrorCode.INTERNAL_SERVER_ERROR,
-				"라인업 API 호출 실패",
-				"success=" + response.getSuccess() + ", eventId=" + eventId
-			);
-		}
-		if (response.getResults() == null
-			|| response.getResults().getHome() == null
-			|| response.getResults().getAway() == null) {
-			throw new BusinessException(
-				ErrorCode.INTERNAL_SERVER_ERROR,
-				"라인업 API 결과가 비어있습니다.",
-				"eventId=" + eventId
+				ErrorCode.INVALID_PARAMETER,
+				fieldName + "는 숫자 형식이어야 합니다.",
+				fieldName + "=" + raw
 			);
 		}
 	}
 
-	/** 라인업 도큐먼트 존재 여부(스케줄러 안전장치용) */
+	private void validateLineupResponse(BetsLineupResponse response, String apiTeamId) {
+		if (response == null) {
+			throw new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"라인업 API 응답이 null입니다.",
+				"apiTeamId=" + apiTeamId
+			);
+		}
+
+		if (response.getSuccess() == null || response.getSuccess() != 1) {
+			throw new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"라인업 API 호출 실패",
+				"success=" + response.getSuccess() + ", apiTeamId=" + apiTeamId
+			);
+		}
+
+		if (response.getResults() == null) {
+			throw new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"라인업 API 결과가 비어있습니다.",
+				"apiTeamId=" + apiTeamId
+			);
+		}
+	}
+
 	@Transactional(readOnly = true)
-	public boolean exists(String matchId) {
-		if (matchId == null || matchId.isBlank())
+	public boolean exists(String matchIdValue) {
+		if (matchIdValue == null || matchIdValue.isBlank()) {
 			return false;
-		return matchLineupRepo.existsById(matchId);
+		}
+
+		try {
+			return matchLineupRepo.existsById(Long.valueOf(matchIdValue));
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 }

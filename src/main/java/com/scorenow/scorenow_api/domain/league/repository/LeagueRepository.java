@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 
-public interface LeagueRepository extends JpaRepository<League, String> {
+public interface LeagueRepository extends JpaRepository<League, Long> {
 
 	@Modifying
 	@Query(value = """

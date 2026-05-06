@@ -6,13 +6,16 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class InplayScanDto {
-	private final String matchId;
+	private final Long matchId;
+	private final String apiMatchId;
 
-	private final String sportId;
+	private final Long sportId;
 
-	private final String homeId;    // 홈 팀 ID
-	private final String homeName;    // 홈 팀명(영문)
+	private final Long homeId;
+	private final String homeName;
+	private final String apiHomeTeamId;
 
-	private final String awayId;
+	private final Long awayId;
 	private final String awayName;
+	private final String apiAwayTeamId;
 }

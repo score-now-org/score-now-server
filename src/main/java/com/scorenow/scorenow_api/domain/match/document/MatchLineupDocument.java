@@ -18,14 +18,19 @@ import lombok.Setter;
 public class MatchLineupDocument extends BaseDocument {
 
 	@Id
-	private String id; // matchId
+	private Long id;
+
+	private Long sportId;
+	private String apiMatchId;
 
 	private LineupSide home;
 	private LineupSide away;
 
-	public static MatchLineupDocument create(String matchId) {
+	public static MatchLineupDocument create(Long matchId, Long sportId, String apiMatchId) {
 		MatchLineupDocument doc = new MatchLineupDocument();
 		doc.id = matchId;
+		doc.sportId = sportId;
+		doc.apiMatchId = apiMatchId;
 		return doc;
 	}
 }

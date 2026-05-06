@@ -14,13 +14,15 @@ public class MatchLineupMapper {
 
 	public LineupSide toSide(
 		BetsLineupResponse.LineupSide betsLineupSide,
-		String teamId,
+		Long teamId,
+		String apiTeamId,
 		String teamEname
 	) {
 		if (betsLineupSide == null) {
 
 			return LineupSide.builder()
 				.teamId(teamId)
+				.apiTeamId(apiTeamId)
 				.teamEname(teamEname)
 				.formation(null)
 				.startingLineup(new ArrayList<>())
@@ -30,25 +32,26 @@ public class MatchLineupMapper {
 
 		return LineupSide.builder()
 			.teamId(teamId)
+			.apiTeamId(apiTeamId)
 			.teamEname(teamEname)
 			.formation(betsLineupSide.getFormation())
-			.startingLineup(toPlayers(betsLineupSide.getStartinglineup(), teamId))
-			.substitutes(toPlayers(betsLineupSide.getSubstitutes(), teamId))
+			.startingLineup(toPlayers(betsLineupSide.getStartinglineup()))
+			.substitutes(toPlayers(betsLineupSide.getSubstitutes()))
 			.build();
 	}
 
-	public List<LineupPlayer> toPlayers(List<BetsLineupResponse.LineupPlayer> betsPlayers, String teamId) {
+	public List<LineupPlayer> toPlayers(List<BetsLineupResponse.LineupPlayer> betsPlayers) {
 		if (betsPlayers == null)
 			return new ArrayList<>();
 
 		List<LineupPlayer> list = new ArrayList<>(betsPlayers.size());
 		for (BetsLineupResponse.LineupPlayer betsPlayer : betsPlayers) {
-			list.add(toPlayer(betsPlayer, teamId));
+			list.add(toPlayer(betsPlayer));
 		}
 		return list;
 	}
 
-	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer, String teamId) {
+	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer) {
 		String playerApiId = null;
 		String eName = null;
 		String shirtNumber = null;
@@ -62,10 +65,9 @@ public class MatchLineupMapper {
 			}
 		}
 
-		String playerId = (teamId == null || playerApiId == null) ? null : teamId + ":" + playerApiId;
-
 		return LineupPlayer.builder()
-			.playerId(playerId)
+			.playerId(null)
+			.apiPlayerId(playerApiId)
 			.eName(eName)
 			.shirtNumber(shirtNumber)
 			.position(mapPosition(betsPlayer != null ? betsPlayer.getPos() : null))
