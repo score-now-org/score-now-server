@@ -61,7 +61,6 @@ public class Match extends BaseEntity {
 	@Builder.Default
 	private boolean isActive = true;
 
-    private String betsApiEventId;  // TODO: Bets 에서 제공하는 Match ID 를 관리하는 필드로 사용한 듯. 삭제하고 apiMatchId 로 통일하는 방안에 대해 말씀드리기.
     private String bet365Id;
 
 	// JPA 관계 추가 (Fetch join용)
