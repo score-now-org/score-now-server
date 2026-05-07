@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import lombok.Data;
 
 @Data
 public class BetsViewResponse {
-    private final ExternalProvider provider = ExternalProvider.BETS;
+    private final ApiProvider provider = ApiProvider.BETS;
 
     private List<ViewResult> results;
 

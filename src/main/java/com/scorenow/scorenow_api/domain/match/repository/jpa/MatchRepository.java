@@ -3,7 +3,7 @@ package com.scorenow.scorenow_api.domain.match.repository.jpa;
 import java.util.List;
 import java.util.Optional;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,7 +19,7 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
 	@Query("""
 			select new com.scorenow.scorenow_api.domain.match.dto.InplayScanDto(
 				m.id,
-				m.externalMatchId,
+				m.apiMatchId,
 				m.sportId,
 				h.id,
 				h.eName,
@@ -32,10 +32,10 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
 			join Team h on h.id = m.homeId
 			join Team a on a.id = m.awayId
 			join TeamExternalMapping hem
-				on hem.team.id = h.id
+				on hem.internalTeamId = h.id
 				and hem.provider = m.provider
 			join TeamExternalMapping aem
-				on aem.team.id = a.id
+				on aem.internalTeamId = a.id
 				and aem.provider = m.provider
 			where m.statusCode = :status
 			  and m.isActive = true
@@ -46,6 +46,6 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
 
     @Query("select m from Match m " +
             "where m.provider = :provider " +
-            "and m.externalMatchId = :externalMatchId")
-    Optional<Match> findByExternalInfo(ExternalProvider provider, String externalMatchId);
+            "and m.apiMatchId = :apiMatchId")
+    Optional<Match> findByExternalInfo(ApiProvider provider, String apiMatchId);
 }

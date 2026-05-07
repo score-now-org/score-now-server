@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +32,7 @@ public class TeamCacheService {
     /**
      * 팀 조회 (캐시 우선)
      */
-    public Optional<Team> get(ExternalProvider provider, String externalTeamId) {
+    public Optional<Team> get(ApiProvider provider, String externalTeamId) {
         String cacheKey = generateCacheKey(provider, externalTeamId);
 
         // 1. 캐시 조회
@@ -45,7 +45,7 @@ public class TeamCacheService {
         log.debug("Cache MISS - Team: {}", externalTeamId);
 
         // 2. DB 조회 (Mapping Table)
-        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByExternalInfo(provider, externalTeamId);
+        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(provider, externalTeamId);
         if (teamMappingInfo.isPresent()) {
             Long internalTeamId = teamMappingInfo.get().getInternalTeamId();
 
@@ -88,7 +88,7 @@ public class TeamCacheService {
     /**
      * 팀 캐시 강제 갱신
      */
-    public Optional<Team> refresh(ExternalProvider provider, String externalTeamId) {
+    public Optional<Team> refresh(ApiProvider provider, String externalTeamId) {
         delete(externalTeamId);
         return get(provider, externalTeamId);
     }
@@ -96,7 +96,7 @@ public class TeamCacheService {
     /**
      * 팀 Cache Key 생성
      */
-    private String generateCacheKey(ExternalProvider provider, String externalTeamId) {
+    private String generateCacheKey(ApiProvider provider, String externalTeamId) {
         return CACHE_PREFIX + provider + DELIMITER + externalTeamId;
     }
 }

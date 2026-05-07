@@ -1,18 +1,20 @@
 package com.scorenow.scorenow_api.domain.sport.entity;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "stadium_external_mappings",
+@Table(name = "sport_external_mappings",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_external_stadium_id_sport_id",   // TODO: 여기 이름 바꾸기 나중에
-                        columnNames = {"provider", "external_sport_id"})})
+                        name = "uk_sport_external_mappings",
+                        columnNames = {"provider", "api_sport_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
 public class SportExternalMapping {
     @Id
@@ -20,11 +22,16 @@ public class SportExternalMapping {
     private Long id;
 
     @Column(name = "provider", nullable = false)
-    private ExternalProvider provider;
+    @Enumerated(EnumType.STRING)
+    private ApiProvider provider;
 
-    @Column(name = "external_sport_id", nullable = false)
-    private String externalSportId;     // 외부API 를 통해 전달받은 종목 ID
+    @Column(name = "api_sport_id", nullable = false)
+    private String apiSportId;     // 외부API 를 통해 전달받은 종목 ID
 
     @Column(name = "internal_sport_id", nullable = false)
     private Long internalSportId;     // 시스템 내부에서 채번한 경기장 ID
+
+    public static SportExternalMapping of(ApiProvider provider, String apiSportId, Long internalSportId) {
+        return new SportExternalMapping(null, provider, apiSportId, internalSportId);
+    }
 }

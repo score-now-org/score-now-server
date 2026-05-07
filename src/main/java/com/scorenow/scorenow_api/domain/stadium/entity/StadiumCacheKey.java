@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.stadium.entity;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import lombok.*;
 
 @Getter
@@ -8,9 +8,9 @@ import lombok.*;
 @EqualsAndHashCode
 public class StadiumCacheKey {
     @NonNull
-    private final ExternalProvider provider;
+    private final ApiProvider provider;
     @NonNull
-    private final String externalSportId;
+    private final String apiSportId;
     @NonNull
-    private final String externalStadiumId;
+    private final String apiStadiumId;
 }

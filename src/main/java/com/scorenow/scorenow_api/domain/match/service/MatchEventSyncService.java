@@ -4,12 +4,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
-import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -17,13 +15,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
-import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
-import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
-import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -37,23 +32,20 @@ public class MatchEventSyncService {
     private static final String TEAM_IMAGE_BASE_URL = "https://assets.b365api.com/images/team/m/";
     private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of("Asia/Seoul");
 
-    private final MatchRepository matchRepository;
-    private final TeamRepository teamRepository;
-    private final LeagueRepository leagueRepository;
-
-    private final SportExternalMappingRepository sportExternalMappingRepository;
-    private final LeagueExternalMappingRepository leagueExternalMappingRepository;
-
     private final LeagueService leagueService;
     private final TeamService teamService;
+
+    private final MatchRepository matchRepository;
+
+    private final SportExternalMappingRepository sportExternalMappingRepository;
 
     /**
      * 개별 경기 동기화 - league → team → match 순서 보장
      * REQUIRES_NEW: 경기 1건 실패가 다른 경기에 영향 없음
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void syncEvent(ExternalProvider provider, BetsEventResponse.Event event, String externalSportId) {
-        Long internalSportId = sportExternalMappingRepository.findByProviderAndExternalSportId(provider, externalSportId)
+    public void syncEvent(ApiProvider provider, BetsEventResponse.Event event, String externalSportId) {
+        Long internalSportId = sportExternalMappingRepository.findByProviderAndApiSportId(provider, externalSportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND))
                 .getInternalSportId();
 
@@ -63,7 +55,7 @@ public class MatchEventSyncService {
         saveMatch(provider, event, internalSportId, savedLeague.getId(), savedHome.getId(), savedAway.getId());
     }
 
-    private League saveLeague(ExternalProvider provider, BetsEventResponse.League betsLeague, Long internalSportId) {
+    private League saveLeague(ApiProvider provider, BetsEventResponse.League betsLeague, Long internalSportId) {
         if (betsLeague == null) {
             throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, String.format("{} 에서 리그 정보를 제공하지 않았습니다.", provider));
         }
@@ -71,7 +63,7 @@ public class MatchEventSyncService {
         return leagueService.getOrCreateLeague(provider, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
     }
 
-    private Team saveTeam(ExternalProvider provider, BetsEventResponse.Team betsTeam, Long internalSportId) {
+    private Team saveTeam(ApiProvider provider, BetsEventResponse.Team betsTeam, Long internalSportId) {
         if (betsTeam == null) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("{} 에서 팀 정보를 제공하지 않았습니다.", provider));
         }
@@ -84,15 +76,16 @@ public class MatchEventSyncService {
         return teamService.getOrCreateTeam(provider, internalSportId, betsTeam.getId(), betsTeam.getName(), betsTeam.getCc(), imageUrl);
     }
 
-    private void saveMatch(ExternalProvider provider, BetsEventResponse.Event event, Long internalSportId, Long internalLeagueId, Long internalHomeId, Long internalAwayId) {
+    private void saveMatch(ApiProvider provider, BetsEventResponse.Event event, Long internalSportId, Long internalLeagueId, Long internalHomeId, Long internalAwayId) {
         if (event.getLeague() == null || event.getHome() == null || event.getAway() == null) {
             log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
             return;
         }
 
         Match match = matchRepository.findByExternalInfo(provider, event.getId())
-                .orElse(Match.builder()
-                        .betsApiEventId(event.getId())
+                .orElseGet(() -> Match.builder()
+                        .provider(provider)
+                        .apiMatchId(event.getId())
                         .bet365Id(event.getBet365Id())
                         .build());
 

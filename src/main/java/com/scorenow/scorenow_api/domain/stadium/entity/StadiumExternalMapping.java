@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.stadium.entity;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "stadium_external_mappings",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_external_stadium_id_sport_id",   // TODO: 유니크키 제약조건 이름 변경
-                        columnNames = {"provider", "external_sport_id", "external_stadium_id", "internal_stadium_id"})})
+                        name = "uk_stadium_external_mappings",
+                        columnNames = {"provider", "api_sport_id", "api_stadium_id", "internal_stadium_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -22,19 +22,19 @@ public class StadiumExternalMapping {
     private Long id;
 
     @Column(name = "provider", nullable = false)
-    private ExternalProvider provider;
+    private ApiProvider provider;
 
-    @Column(name = "external_sport_id", nullable = false)
-    private String externalSportId;     // 외부API 를 통해 전달받은 종목 ID
+    @Column(name = "api_sport_id", nullable = false)
+    private String apiSportId;     // 외부API 를 통해 전달받은 종목 ID
 
-    @Column(name = "external_stadium_id", nullable = false)
-    private String externalStadiumId;   // 외부API 를 통해 전달받은 경기장 ID
+    @Column(name = "api_stadium_id", nullable = false)
+    private String apiStadiumId;   // 외부API 를 통해 전달받은 경기장 ID
 
     @Column(name = "internal_stadium_id", nullable = false)
     private Long internalStadiumId;     // 시스템 내부에서 채번한 경기장 ID
 
-    public static StadiumExternalMapping of(ExternalProvider provider, String externalSportId, String externalStadiumId, Long internalStadiumId) {
-        return new StadiumExternalMapping(null, provider, externalSportId, externalStadiumId, internalStadiumId);
+    public static StadiumExternalMapping of(ApiProvider provider, String apiSportId, String apiStadiumId, Long internalStadiumId) {
+        return new StadiumExternalMapping(null, provider, apiSportId, apiStadiumId, internalStadiumId);
     }
 
 }

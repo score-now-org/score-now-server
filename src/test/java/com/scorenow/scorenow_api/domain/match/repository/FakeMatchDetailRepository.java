@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     public MatchDetailDocument save(MatchDetailDocument matchDetail) {
         Long id = idGenerator.getAndIncrement();
         database.put(id, matchDetail);
+        ReflectionTestUtils.setField(matchDetail, "id", id);
         return database.get(id);
     }
 

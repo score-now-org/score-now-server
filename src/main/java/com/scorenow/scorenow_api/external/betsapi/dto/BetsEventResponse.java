@@ -4,14 +4,14 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class BetsEventResponse {
-    private final ExternalProvider provider = ExternalProvider.BETS;
+    private final ApiProvider provider = ApiProvider.BETS;
 
     private int success;
     private BetsPager pager;

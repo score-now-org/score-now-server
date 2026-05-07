@@ -6,7 +6,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -29,10 +29,10 @@ public class Match extends BaseEntity {
 
     @Column(name = "provider")
     @Enumerated(EnumType.STRING)
-    private ExternalProvider provider;
+    private ApiProvider provider;
 
-    @Column(name = "external_match_id")
-    private String externalMatchId;
+    @Column(name = "api_match_id")
+    private String apiMatchId;
 
     private Long leagueId;
     private Long sportId;
@@ -61,7 +61,7 @@ public class Match extends BaseEntity {
     @Builder.Default
     private boolean isActive = true;
 
-    private String betsApiEventId;
+    private String betsApiEventId;  // TODO: Bets 에서 제공하는 Match ID 를 관리하는 필드로 사용한 듯. 삭제하고 apiMatchId 로 통일하는 방안에 대해 말씀드리기.
     private String bet365Id;
 
     // JPA 관계 추가 (Fetch join용)

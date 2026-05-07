@@ -29,7 +29,7 @@ public class MatchDetailService {
     @Transactional
     public void updateInplayMatchDetail(Match match) {
         Long matchId = match.getId();
-        String externalMatchId = match.getExternalMatchId();
+        String externalMatchId = match.getApiMatchId();
 
         BetsViewResponse response = betsApiClient.getEventView(externalMatchId);
 

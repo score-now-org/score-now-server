@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.stadium.repository;
 
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,13 +31,13 @@ public class FakeStadiumRepository implements StadiumRepository {
     public Stadium save(Stadium stadium) {
         long id = idGenerator.getAndIncrement();
         database.put(id, stadium);
-
+        ReflectionTestUtils.setField(stadium, "id", id);
         return database.get(id);
     }
 
     @Override
     public Optional<Stadium> findById(Long stadiumId) {
-        return Optional.of(database.get(stadiumId));
+        return Optional.ofNullable(database.get(stadiumId));
     }
 
     public int getSize() {
