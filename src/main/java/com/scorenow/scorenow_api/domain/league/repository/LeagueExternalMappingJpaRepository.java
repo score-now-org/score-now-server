@@ -12,4 +12,6 @@ public interface LeagueExternalMappingJpaRepository extends JpaRepository<League
             "where l.provider = :provider " +
             "and l.apiLeagueId = :apiLeagueId")
     Optional<LeagueExternalMapping> findByExternalInfo(ApiProvider provider, String apiLeagueId);
+
+    Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(ApiProvider provider, Long internalLeagueId);
 }

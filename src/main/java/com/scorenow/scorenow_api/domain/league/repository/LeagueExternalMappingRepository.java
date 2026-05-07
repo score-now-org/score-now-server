@@ -9,4 +9,9 @@ public interface LeagueExternalMappingRepository {
     Optional<LeagueExternalMapping> findByExternalInfo(ApiProvider provider, String apiLeagueId);
 
     LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping);
+
+    Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(
+            ApiProvider provider,
+            Long internalLeagueId
+    );
 }

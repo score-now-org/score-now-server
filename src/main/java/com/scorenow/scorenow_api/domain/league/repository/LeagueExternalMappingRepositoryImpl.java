@@ -22,4 +22,9 @@ public class LeagueExternalMappingRepositoryImpl implements LeagueExternalMappin
     public LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping) {
         return jpaRepository.save(leagueExternalMapping);
     }
+
+    @Override
+    public Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(ApiProvider provider, Long internalLeagueId) {
+        return jpaRepository.findByProviderAndInternalLeagueId(provider, internalLeagueId);
+    }
 }
