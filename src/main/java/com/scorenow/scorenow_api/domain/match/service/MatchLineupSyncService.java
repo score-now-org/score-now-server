@@ -128,7 +128,7 @@ public class MatchLineupSyncService {
 
 	private String findApiTeamId(Long teamId) {
 		return teamExternalMappingRepository
-			.findByProviderAndTeamId(ApiProvider.BETS, teamId)
+			.findByProviderAndInternalTeamId(ApiProvider.BETS, teamId)
 			.map(TeamExternalMapping::getApiTeamId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,

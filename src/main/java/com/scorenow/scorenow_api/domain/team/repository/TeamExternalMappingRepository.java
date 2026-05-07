@@ -14,12 +14,8 @@ public interface TeamExternalMappingRepository extends JpaRepository<TeamExterna
 		String apiTeamId
 	);
 
-	Optional<TeamExternalMapping> findByProviderAndTeamId(
+	Optional<TeamExternalMapping> findByProviderAndInternalTeamId(
 		ApiProvider provider,
 		Long internalTeamId
 	);
-
-	Optional<TeamExternalMapping> findByExternalInfo(ApiProvider provider, String apiTeamId);
-
-	TeamExternalMapping save(TeamExternalMapping teamExternalMapping);
 }

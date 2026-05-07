@@ -25,20 +25,20 @@ public class TeamService {
      * 팀 생성
      */
     @Transactional
-    public Team getOrCreateTeam(final ApiProvider provider, final Long internalSportId, final String externalTeamId, final String name, final String cc, final String imageUrl) {
+    public Team getOrCreateTeam(final ApiProvider provider, final Long internalSportId, final String apiTeamId, final String name, final String cc, final String imageUrl) {
         // 1. 전달받은 외부 정보를 기반으로 Team External Mapping 테이블에 데이터가 있는지 확인
-        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(provider, externalTeamId);
+        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(provider, apiTeamId);
 
         // 2. 매핑 정보에서 internal team id 를 추출하고, 이를 기반으로 Team 엔티티 반환
         if (teamMappingInfo.isPresent()) {
             Long internalTeamId = teamMappingInfo.get().getInternalTeamId();
-            return teamRepository.findById(internalTeamId).orElseGet(() -> createAndMapLeague(provider, internalSportId, externalTeamId, name, cc, imageUrl));
+            return teamRepository.findById(internalTeamId).orElseGet(() -> createAndMapLeague(provider, internalSportId, apiTeamId, name, cc, imageUrl));
         }
 
-        return createAndMapLeague(provider, internalSportId, externalTeamId, name, cc, imageUrl);
+        return createAndMapLeague(provider, internalSportId, apiTeamId, name, cc, imageUrl);
     }
 
-    private Team createAndMapLeague(ApiProvider provider, Long internalSportId, String externalTeamId, String name, String cc, String imageUrl) {
+    private Team createAndMapLeague(ApiProvider provider, Long internalSportId, String apiTeamId, String name, String cc, String imageUrl) {
         Team savedTeam = teamRepository.save(Team.builder()
                 .sport(sportRepository.getReferenceById(internalSportId))
                 .kName(name)
@@ -47,7 +47,7 @@ public class TeamService {
                 .imageUrl(imageUrl)
                 .build());
 
-        teamExternalMappingRepository.save(TeamExternalMapping.of(provider, externalTeamId, savedTeam.getId()));
+        teamExternalMappingRepository.save(TeamExternalMapping.of(provider, apiTeamId, savedTeam.getId()));
 
         return savedTeam;
     }

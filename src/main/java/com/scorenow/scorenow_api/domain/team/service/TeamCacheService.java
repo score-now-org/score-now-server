@@ -32,20 +32,20 @@ public class TeamCacheService {
     /**
      * 팀 조회 (캐시 우선)
      */
-    public Optional<Team> get(ApiProvider provider, String externalTeamId) {
-        String cacheKey = generateCacheKey(provider, externalTeamId);
+    public Optional<Team> get(ApiProvider provider, String apiTeamId) {
+        String cacheKey = generateCacheKey(provider, apiTeamId);
 
         // 1. 캐시 조회
         Team cachedTeam = (Team) redisTemplate.opsForValue().get(cacheKey);
         if (cachedTeam != null) {
-            log.debug("Cache HIT - Team: {}", externalTeamId);
+            log.debug("Cache HIT - Team: {}", apiTeamId);
             return Optional.of(cachedTeam);
         }
 
-        log.debug("Cache MISS - Team: {}", externalTeamId);
+        log.debug("Cache MISS - Team: {}", apiTeamId);
 
         // 2. DB 조회 (Mapping Table)
-        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(provider, externalTeamId);
+        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(provider, apiTeamId);
         if (teamMappingInfo.isPresent()) {
             Long internalTeamId = teamMappingInfo.get().getInternalTeamId();
 
@@ -55,7 +55,7 @@ public class TeamCacheService {
             // 4. 캐시 저장
             if (team.isPresent()) {
                 redisTemplate.opsForValue().set(cacheKey, team, CACHE_TTL);
-                log.debug("Cache SET - Team: {}", externalTeamId);
+                log.debug("Cache SET - Team: {}", apiTeamId);
             }
 
             return team;
@@ -67,10 +67,10 @@ public class TeamCacheService {
     /**
      * 팀 캐시 삭제
      */
-    public void delete(String externalTeamId) {
-        String cacheKey = CACHE_PREFIX + externalTeamId;
+    public void delete(String apiTeamId) {
+        String cacheKey = CACHE_PREFIX + apiTeamId;
         redisTemplate.delete(cacheKey);
-        log.info("Cache DELETE - Team: {}", externalTeamId);
+        log.info("Cache DELETE - Team: {}", apiTeamId);
     }
 
     /**
@@ -88,15 +88,15 @@ public class TeamCacheService {
     /**
      * 팀 캐시 강제 갱신
      */
-    public Optional<Team> refresh(ApiProvider provider, String externalTeamId) {
-        delete(externalTeamId);
-        return get(provider, externalTeamId);
+    public Optional<Team> refresh(ApiProvider provider, String apiTeamId) {
+        delete(apiTeamId);
+        return get(provider, apiTeamId);
     }
 
     /**
      * 팀 Cache Key 생성
      */
-    private String generateCacheKey(ApiProvider provider, String externalTeamId) {
-        return CACHE_PREFIX + provider + DELIMITER + externalTeamId;
+    private String generateCacheKey(ApiProvider provider, String apiTeamId) {
+        return CACHE_PREFIX + provider + DELIMITER + apiTeamId;
     }
 }

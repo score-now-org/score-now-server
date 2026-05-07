@@ -113,9 +113,9 @@ class MatchLineupSyncServiceTest {
 		when(matchRepo.findById(matchId)).thenReturn(Optional.of(match));
 		when(teamRepo.findAllById(List.of(homeId, awayId))).thenReturn(List.of(homeTeam, awayTeam));
 
-		when(teamExternalMappingRepository.findByProviderAndTeamId(ApiProvider.BETS, homeId))
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, homeId))
 			.thenReturn(Optional.of(homeMapping));
-		when(teamExternalMappingRepository.findByProviderAndTeamId(ApiProvider.BETS, awayId))
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, awayId))
 			.thenReturn(Optional.of(awayMapping));
 
 		when(betsApiClient.getLineup("17170")).thenReturn(homeResponse);

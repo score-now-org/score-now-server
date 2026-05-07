@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 	uniqueConstraints = {
 		@UniqueConstraint(
 			name = "uk_team_external_mappings",
-			columnNames = {"provider", "external_team_id", "internal_team_id"})})
+			columnNames = {"provider", "api_team_id", "internal_team_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -36,7 +36,7 @@ public class TeamExternalMapping {
 	@Enumerated(EnumType.STRING)
 	private ApiProvider provider;
 
-	@Column(name = "api_teamapiTeamId_id", nullable = false)
+	@Column(name = "api_team_id", nullable = false)
 	private String apiTeamId;   // 외부API 를 통해 전달받은 팀 ID
 
 	@Column(name = "internal_team_id", nullable = false)
