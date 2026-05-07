@@ -34,68 +34,68 @@ public class Match extends BaseEntity {
     @Column(name = "api_match_id")
     private String apiMatchId;
 
-    private Long leagueId;
-    private Long sportId;
+	private Long leagueId;
+	private Long sportId;
 
-    private Long homeId;
-    private Long awayId;
+	private Long homeId;
+	private Long awayId;
 
-    @Enumerated(EnumType.STRING)
-    private MatchStatus statusCode;
+	@Enumerated(EnumType.STRING)
+	private MatchStatus statusCode;
 
-    private Integer homeScore;
-    private Integer awayScore;
-    private LocalDateTime startAt;
+	private Integer homeScore;
+	private Integer awayScore;
+	private LocalDateTime startAt;
 
-    private Long stadiumId;
+	private Long stadiumId;
 
-    @Embedded
-    private TemporaryStadium temporaryStadium;
+	@Embedded
+	private TemporaryStadium temporaryStadium;
 
-    @Builder.Default
-    private String matchType = "A"; // 기본 A로 세팅
+	@Builder.Default
+	private String matchType = "A"; // 기본 A로 세팅
 
-    @Builder.Default
-    private boolean isManual = false;
+	@Builder.Default
+	private boolean isManual = false;
 
-    @Builder.Default
-    private boolean isActive = true;
+	@Builder.Default
+	private boolean isActive = true;
 
     private String betsApiEventId;  // TODO: Bets 에서 제공하는 Match ID 를 관리하는 필드로 사용한 듯. 삭제하고 apiMatchId 로 통일하는 방안에 대해 말씀드리기.
     private String bet365Id;
 
-    // JPA 관계 추가 (Fetch join용)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "leagueId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private League league;
+	// JPA 관계 추가 (Fetch join용)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "leagueId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+	private League league;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sportId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private Sport sport;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "sportId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+	private Sport sport;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "homeId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private Team homeTeam;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "homeId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+	private Team homeTeam;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private Team awayTeam;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+	private Team awayTeam;
 
-    public void updateSportId(Long sportId) {
-        this.sportId = sportId;
-    }
+	public void updateSportId(Long sportId) {
+		this.sportId = sportId;
+	}
 
-    public void updateLeagueId(Long leagueId) {
-        this.leagueId = leagueId;
-    }
+	public void updateLeagueId(Long leagueId) {
+		this.leagueId = leagueId;
+	}
 
-    public void updateHomeId(Long homeId) {
-        this.homeId = homeId;
-    }
+	public void updateHomeId(Long homeId) {
+		this.homeId = homeId;
+	}
 
-    public void updateAwayId(Long awayId) {
-        this.awayId = awayId;
-    }
+	public void updateAwayId(Long awayId) {
+		this.awayId = awayId;
+	}
 
     public void updateStartAt(LocalDateTime startAt) {
         this.startAt = startAt;

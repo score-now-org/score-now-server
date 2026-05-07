@@ -18,7 +18,7 @@ import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepos
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -60,7 +60,7 @@ public class MatchLineupSyncService {
 			);
 		}
 
-		if (match.getExternalMatchId() == null || match.getExternalMatchId().isBlank()) {
+		if (match.getApiMatchId() == null || match.getApiMatchId().isBlank()) {
 			throw new BusinessException(
 				ErrorCode.INVALID_PARAMETER,
 				"externalMatchId가 비어있습니다.",
@@ -106,7 +106,7 @@ public class MatchLineupSyncService {
 			.orElseGet(() -> MatchLineupDocument.create(
 				matchId,
 				sportId,
-				match.getExternalMatchId()
+				match.getApiMatchId()
 			));
 
 		doc.setHome(lineupMapper.toSide(
@@ -128,8 +128,8 @@ public class MatchLineupSyncService {
 
 	private String findApiTeamId(Long teamId) {
 		return teamExternalMappingRepository
-			.findByProviderAndTeamId(ExternalProvider.BETS, teamId)
-			.map(TeamExternalMapping::getExternalTeamId)
+			.findByProviderAndTeamId(ApiProvider.BETS, teamId)
+			.map(TeamExternalMapping::getApiTeamId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"팀 외부 API 매핑 정보를 찾을 수 없습니다.",

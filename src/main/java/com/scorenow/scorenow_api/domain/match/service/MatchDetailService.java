@@ -12,6 +12,7 @@ import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,10 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 public class MatchDetailService {
-    private final StadiumCacheService stadiumCacheService;
-    private final MatchRepository matchRepository;
-    private final MatchDetailRepository matchDetailRepository;
-    private final BetsApiClient betsApiClient;
+	private final StadiumCacheService stadiumCacheService;
+	private final MatchRepository matchRepository;
+	private final MatchDetailRepository matchDetailRepository;
+	private final BetsApiClient betsApiClient;
 
     @Transactional
     public void updateInplayMatchDetail(Match match) {

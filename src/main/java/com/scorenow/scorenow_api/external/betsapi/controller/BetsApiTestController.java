@@ -73,7 +73,7 @@ public class BetsApiTestController {
 	 * curl -X POST "http://localhost:8080/api/test/betsapi/sync/players?leagueId=BETS194"
 	 */
 	@PostMapping("/sync/players")
-	public ApiResponse<String> syncPlayer(@RequestParam String leagueId) {
+	public ApiResponse<String> syncPlayer(@RequestParam Long leagueId) {
 		int count = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
 		return ApiResponse.success(count + "건 동기화 완료");
 	}

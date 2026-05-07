@@ -15,9 +15,10 @@ import com.scorenow.scorenow_api.domain.player.repository.PlayerTeamDetailReposi
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
+import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -34,17 +35,23 @@ public class TeamPlayerSyncService {
 	private final PlayerTeamDetailRepository playerTeamDetailRepository;
 
 	private final TeamExternalMappingRepository teamExternalMappingRepository;
+	private final TeamRepository teamRepository;
 	private final LeagueRepository leagueRepository;
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public int syncTeamPlayers(Long leagueId, String seasonName, String teamApiId) {
 
-		Team team = teamExternalMappingRepository
-			.findByProviderAndApiTeamId(ExternalProvider.BETS, teamApiId)
-			.map(TeamExternalMapping::getExternalTeamId)
+		TeamExternalMapping teamMapping = teamExternalMappingRepository
+			.findByProviderAndApiTeamId(ApiProvider.BETS, teamApiId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"팀 매핑 정보를 찾을 수 없습니다. teamApiId=" + teamApiId
+			));
+
+		Team team = teamRepository.findById(teamMapping.getInternalTeamId())
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"팀 정보를 찾을 수 없습니다. internalTeamId=" + teamMapping.getInternalTeamId()
 			));
 
 		League league = leagueRepository.findById(leagueId)
@@ -116,7 +123,7 @@ public class TeamPlayerSyncService {
 
 	private Player findOrCreatePlayer(BetsSquadResponse.SquadPlayer sp, String apiPlayerId) {
 		return playerExternalMappingRepository
-			.findByProviderAndApiPlayerId(ExternalProvider.BETS, apiPlayerId)
+			.findByProviderAndApiPlayerId(ApiProvider.BETS, apiPlayerId)
 			.map(PlayerExternalMapping::getPlayer)
 			.orElseGet(() -> {
 				Player player = Player.builder()
@@ -131,7 +138,7 @@ public class TeamPlayerSyncService {
 				Player savedPlayer = playerRepository.save(player);
 
 				PlayerExternalMapping mapping = new PlayerExternalMapping(
-					ExternalProvider.BETS,
+					ApiProvider.BETS,
 					apiPlayerId,
 					savedPlayer
 				);
