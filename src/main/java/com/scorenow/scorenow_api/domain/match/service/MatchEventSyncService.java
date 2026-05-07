@@ -57,7 +57,7 @@ public class MatchEventSyncService {
 
     private League saveLeague(ApiProvider provider, BetsEventResponse.League betsLeague, Long internalSportId) {
         if (betsLeague == null) {
-            throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, String.format("{} 에서 리그 정보를 제공하지 않았습니다.", provider));
+            throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, String.format("%s 에서 리그 정보를 제공하지 않았습니다.", provider));
         }
 
         return leagueService.getOrCreateLeague(provider, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
@@ -65,7 +65,7 @@ public class MatchEventSyncService {
 
     private Team saveTeam(ApiProvider provider, BetsEventResponse.Team betsTeam, Long internalSportId) {
         if (betsTeam == null) {
-            throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("{} 에서 팀 정보를 제공하지 않았습니다.", provider));
+            throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("%s 에서 팀 정보를 제공하지 않았습니다.", provider));
         }
 
         String imageUrl = null;
