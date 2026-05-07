@@ -25,7 +25,7 @@ public class FakeSportExternalMappingRepository implements SportExternalMappingR
     public Optional<SportExternalMapping> findByProviderAndApiSportId(ApiProvider provider, String apiSportId) {
         return database.values().stream()
                 .filter(o -> provider.equals(o.getProvider()))
-                .filter(o -> apiSportId.equals(o.getExternalSportId()))
+                .filter(o -> apiSportId.equals(o.getApiSportId()))
                 .findAny();
     }
 }
