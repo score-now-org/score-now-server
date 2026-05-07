@@ -26,7 +26,7 @@ import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepos
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 
 @ExtendWith(MockitoExtension.class)
 class MatchLineupSyncServiceTest {
@@ -63,7 +63,7 @@ class MatchLineupSyncServiceTest {
 		Match match = Match.builder()
 			.id(matchId)
 			.sportId(sportId)
-			.externalMatchId("10119802")
+			.apiMatchId("10119802")
 			.homeId(homeId)
 			.awayId(awayId)
 			.build();
@@ -79,15 +79,15 @@ class MatchLineupSyncServiceTest {
 			.build();
 
 		TeamExternalMapping homeMapping = TeamExternalMapping.builder()
-			.provider(ExternalProvider.BETS)
-			.externalTeamId("17170")
-			.team(homeTeam)
+			.provider(ApiProvider.BETS)
+			.apiTeamId("17170")
+			.internalTeamId(homeId)
 			.build();
 
 		TeamExternalMapping awayMapping = TeamExternalMapping.builder()
-			.provider(ExternalProvider.BETS)
-			.externalTeamId("23451")
-			.team(awayTeam)
+			.provider(ApiProvider.BETS)
+			.apiTeamId("23451")
+			.internalTeamId(awayId)
 			.build();
 
 		BetsLineupResponse homeResponse = new BetsLineupResponse();
@@ -113,9 +113,9 @@ class MatchLineupSyncServiceTest {
 		when(matchRepo.findById(matchId)).thenReturn(Optional.of(match));
 		when(teamRepo.findAllById(List.of(homeId, awayId))).thenReturn(List.of(homeTeam, awayTeam));
 
-		when(teamExternalMappingRepository.findByProviderAndTeamId(ExternalProvider.BETS, homeId))
+		when(teamExternalMappingRepository.findByProviderAndTeamId(ApiProvider.BETS, homeId))
 			.thenReturn(Optional.of(homeMapping));
-		when(teamExternalMappingRepository.findByProviderAndTeamId(ExternalProvider.BETS, awayId))
+		when(teamExternalMappingRepository.findByProviderAndTeamId(ApiProvider.BETS, awayId))
 			.thenReturn(Optional.of(awayMapping));
 
 		when(betsApiClient.getLineup("17170")).thenReturn(homeResponse);

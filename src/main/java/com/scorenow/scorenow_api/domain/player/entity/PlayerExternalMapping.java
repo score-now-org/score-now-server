@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.player.entity;
 
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,7 +28,7 @@ public class PlayerExternalMapping {
 	private Long id;
 
 	@Enumerated(EnumType.STRING)
-	private ExternalProvider provider;
+	private ApiProvider provider;
 
 	@Column(name = "api_player_id", nullable = false)
 	private String apiPlayerId;
@@ -37,7 +37,7 @@ public class PlayerExternalMapping {
 	@JoinColumn(name = "internal_player_id", nullable = false)
 	private Player player;
 
-	public PlayerExternalMapping(ExternalProvider provider, String apiPlayerId, Player player) {
+	public PlayerExternalMapping(ApiProvider provider, String apiPlayerId, Player player) {
 		this.provider = provider;
 		this.apiPlayerId = apiPlayerId;
 		this.player = player;

@@ -28,8 +28,8 @@ public class MatchLineupQueryService {
 
 	/** matchId 기준으로 라인업 조회 */
 	@Transactional(readOnly = true)
-	public MatchLineupDocument getByMatchId(String matchId) {
-		if (matchId == null || matchId.isBlank()) {
+	public MatchLineupDocument getByMatchId(Long matchId) {
+		if (matchId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
 		}
 
@@ -43,18 +43,18 @@ public class MatchLineupQueryService {
 
 	/** 선수추가 - 모달 최초 진입 시 해당 팀 선수 목록 조회 + 현재 라인업 반영 여부(selected) 포함 */
 	@Transactional(readOnly = true)
-	public List<MatchLineupPlayerResponse> getSelectablePlayers(String matchId, String teamId) {
-		if (matchId == null || matchId.isBlank()) {
+	public List<MatchLineupPlayerResponse> getSelectablePlayers(Long matchId, Long teamId) {
+		if (matchId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
 		}
-		if (teamId == null || teamId.isBlank()) {
+		if (teamId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "teamId가 비어있습니다.");
 		}
 
 		MatchLineupDocument doc = getByMatchId(matchId);
 
 		LineupSide side = getSideByTeamId(doc, teamId);
-		Set<String> selectedPlayerIds = extractSelectedPlayerIds(side);
+		Set<Long> selectedPlayerIds = extractSelectedPlayerIds(side);
 
 		List<MatchLineupPlayerResponse> players =
 			matchLineupSearchRepository.findPlayersByTeamId(teamId, 30);
@@ -76,8 +76,8 @@ public class MatchLineupQueryService {
 
 	/** 선수추가 - 검색 시 전체 선수 풀에서 조회 + 현재 라인업 반영 여부(selected) 포함 */
 	@Transactional(readOnly = true)
-	public List<MatchLineupPlayerResponse> searchSelectablePlayers(String matchId, String keyword) {
-		if (matchId == null || matchId.isBlank()) {
+	public List<MatchLineupPlayerResponse> searchSelectablePlayers(Long matchId, String keyword) {
+		if (matchId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
 		}
 		if (keyword == null || keyword.isBlank()) {
@@ -88,10 +88,10 @@ public class MatchLineupQueryService {
 
 		MatchLineupDocument doc = getByMatchId(matchId);
 
-		Set<String> selectedPlayerIds = extractAllSelectedPlayerIds(doc);
+		Set<Long> selectedPlayerIds = extractAllSelectedPlayerIds(doc);
 
 		List<MatchLineupPlayerResponse> players =
-			matchLineupSearchRepository.searchSelectablePlayers(keyword.trim(), 30);
+			matchLineupSearchRepository.searchSelectablePlayers(keyword, 30);
 
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
@@ -108,7 +108,7 @@ public class MatchLineupQueryService {
 			.toList();
 	}
 
-	private LineupSide getSideByTeamId(MatchLineupDocument doc, String teamId) {
+	private LineupSide getSideByTeamId(MatchLineupDocument doc, Long teamId) {
 		if (doc.getHome() != null && teamId.equals(doc.getHome().getTeamId())) {
 			return doc.getHome();
 		}
@@ -118,8 +118,8 @@ public class MatchLineupQueryService {
 		return null;
 	}
 
-	private Set<String> extractSelectedPlayerIds(LineupSide side) {
-		Set<String> selectedPlayerIds = new HashSet<>();
+	private Set<Long> extractSelectedPlayerIds(LineupSide side) {
+		Set<Long> selectedPlayerIds = new HashSet<>();
 
 		if (side == null) {
 			return selectedPlayerIds;
@@ -142,8 +142,8 @@ public class MatchLineupQueryService {
 		return selectedPlayerIds;
 	}
 
-	private Set<String> extractAllSelectedPlayerIds(MatchLineupDocument doc) {
-		Set<String> selectedPlayerIds = new HashSet<>();
+	private Set<Long> extractAllSelectedPlayerIds(MatchLineupDocument doc) {
+		Set<Long> selectedPlayerIds = new HashSet<>();
 
 		if (doc.getHome() != null) {
 			selectedPlayerIds.addAll(extractSelectedPlayerIds(doc.getHome()));

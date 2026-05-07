@@ -4,11 +4,14 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
 import com.scorenow.scorenow_api.domain.player.entity.QPlayer;
+import com.scorenow.scorenow_api.domain.player.entity.QPlayerTeamDetail;
 import com.scorenow.scorenow_api.domain.team.entity.QTeam;
 
 import lombok.RequiredArgsConstructor;
@@ -20,28 +23,34 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 	private final JPAQueryFactory jpaQueryFactory;
 
 	private static final QPlayer player = QPlayer.player;
+	private static final QPlayerTeamDetail detail = QPlayerTeamDetail.playerTeamDetail;
 	private static final QTeam team = QTeam.team;
 
 	@Override
 	public List<MatchLineupPlayerResponse> findPlayersByTeamId(
-		String teamId,
+		Long teamId,
 		int limit
 	) {
 		return jpaQueryFactory
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
-				player.season,
+				detail.season,
 				player.kName,
 				player.eName,
-				player.position,
+				detail.position,
+				team.id,
 				displayTeamName(),
-				player.shirtnumber,
-				player.id.isNotNull() // selected 자리 임시값, 서비스에서 다시 세팅
+				detail.shirtNumber,
+				player.id.isNotNull()
 			))
-			.from(player)
-//			.join(team).on(player.teamId.eq(team.id))
-			.where(player.teamId.eq(teamId))
+			.from(detail)
+			.join(detail.player, player)
+			.join(detail.team, team)
+			.where(
+				team.id.eq(teamId),
+				detail.squadOn.isTrue()
+			)
 			.limit(limit)
 			.fetch();
 	}
@@ -55,17 +64,22 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
-				player.season,
+				detail.season,
 				player.kName,
 				player.eName,
-				player.position,
+				detail.position,
+				team.id,
 				displayTeamName(),
-				player.shirtnumber,
-				player.id.isNotNull() // selected 자리 임시값, 서비스에서 다시 세팅
+				detail.shirtNumber,
+				player.id.isNotNull()
 			))
-			.from(player)
-//			.join(team).on(player.teamId.eq(team.id))
-			.where(keywordCondition(keyword))
+			.from(detail)
+			.join(detail.player, player)
+			.join(detail.team, team)
+			.where(
+				keywordCondition(keyword),
+				detail.squadOn.isTrue()
+			)
 			.limit(limit)
 			.fetch();
 	}
@@ -83,15 +97,11 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.or(contains(team.eName, normalizedKeyword));
 	}
 
-	private BooleanExpression contains(com.querydsl.core.types.dsl.StringPath path, String keyword) {
-		if (path == null) {
-			return null;
-		}
+	private BooleanExpression contains(StringPath path, String keyword) {
 		return path.containsIgnoreCase(keyword);
 	}
 
-	private com.querydsl.core.types.Expression<String> displayTeamName() {
+	private Expression<String> displayTeamName() {
 		return team.kName.coalesce(team.eName);
 	}
-
 }

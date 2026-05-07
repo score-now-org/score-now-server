@@ -3,36 +3,23 @@ package com.scorenow.scorenow_api.domain.team.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 
 public interface TeamExternalMappingRepository extends JpaRepository<TeamExternalMapping, Long> {
 
 	Optional<TeamExternalMapping> findByProviderAndApiTeamId(
-		ExternalProvider provider,
+		ApiProvider provider,
 		String apiTeamId
 	);
 
-	@Query("""
-			select tem
-			from TeamExternalMapping tem
-			where tem.provider = :provider
-			  and tem.team.id = :teamId
-		""")
 	Optional<TeamExternalMapping> findByProviderAndTeamId(
-		@Param("provider") ExternalProvider provider,
-		@Param("teamId") Long teamId
+		ApiProvider provider,
+		Long internalTeamId
 	);
-import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
 
-import java.util.Optional;
+	Optional<TeamExternalMapping> findByExternalInfo(ApiProvider provider, String apiTeamId);
 
-public interface TeamExternalMappingRepository {
-    Optional<TeamExternalMapping> findByExternalInfo(ExternalProvider provider, String externalTeamId);
-
-    TeamExternalMapping save(TeamExternalMapping teamExternalMapping);
+	TeamExternalMapping save(TeamExternalMapping teamExternalMapping);
 }

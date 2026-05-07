@@ -7,7 +7,7 @@ import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResp
 public interface MatchLineupSearchRepository {
 
 	List<MatchLineupPlayerResponse> findPlayersByTeamId(
-		String teamId,
+		Long teamId,
 		int limit
 	);
 

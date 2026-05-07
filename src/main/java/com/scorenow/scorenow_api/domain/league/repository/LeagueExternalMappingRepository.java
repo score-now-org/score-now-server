@@ -1,12 +1,19 @@
 package com.scorenow.scorenow_api.domain.league.repository;
 
-import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
-import com.scorenow.scorenow_api.external.common.ExternalProvider;
-
 import java.util.Optional;
 
-public interface LeagueExternalMappingRepository {
-    Optional<LeagueExternalMapping> findByExternalInfo(ExternalProvider provider, String externalLeagueId);
+import org.springframework.data.jpa.repository.JpaRepository;
 
-    LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping);
+import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
+
+public interface LeagueExternalMappingRepository extends JpaRepository<LeagueExternalMapping, Long> {
+	Optional<LeagueExternalMapping> findByExternalInfo(ApiProvider provider, String externalLeagueId);
+
+	LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping);
+
+	Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(
+		ApiProvider provider,
+		Long internalLeagueId
+	);
 }

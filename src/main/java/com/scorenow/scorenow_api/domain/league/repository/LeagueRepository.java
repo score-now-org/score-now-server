@@ -25,8 +25,11 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
 		@Param("cc") String cc
 	);
 
-	@Query("SELECT l FROM League l WHERE " +
-		"(:keyword IS NULL OR l.kName LIKE %:keyword% OR " +
-		"l.eName LIKE %:keyword% OR l.id LIKE %:keyword%)")
+	@Query("""
+		    select l
+		    from League l
+		    where l.kName like concat('%', :keyword, '%')
+		       or l.eName like concat('%', :keyword, '%')
+		""")
 	List<League> searchByKeyword(@Param("keyword") String keyword);
 }
