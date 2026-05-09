@@ -163,11 +163,11 @@ public class MatchLineupCommandService {
 	}
 
 	@Transactional
-	public String updateLineupManual(Long matchId, Long playerId, MatchLineupUpdateRequest request) {
+	public String updateLineupManual(Long matchId, String apiPlayerId, MatchLineupUpdateRequest request) {
 		if (matchId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
 		}
-		if (playerId == null) {
+		if (apiPlayerId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "playerId가 비어있습니다.");
 		}
 		if (request == null) {
@@ -184,17 +184,17 @@ public class MatchLineupCommandService {
 		UpdateResult result = UpdateResult.notFound();
 
 		if (doc.getHome() != null) {
-			result = updatePlayerOnSide(doc.getHome(), playerId, request);
+			result = updatePlayerOnSide(doc.getHome(), apiPlayerId, request);
 		}
 		if (!result.found && doc.getAway() != null) {
-			result = updatePlayerOnSide(doc.getAway(), playerId, request);
+			result = updatePlayerOnSide(doc.getAway(), apiPlayerId, request);
 		}
 
 		if (!result.found) {
 			throw new BusinessException(
 				ErrorCode.MATCH_LINEUP_PLAYER_NOT_FOUND,
 				"라인업에서 선수를 찾지 못했습니다.",
-				"matchId=" + matchId + ", playerId=" + playerId
+				"matchId=" + matchId + ", apiPlayerId=" + apiPlayerId
 			);
 		}
 
@@ -203,7 +203,7 @@ public class MatchLineupCommandService {
 		}
 
 		matchLineupRepo.save(doc);
-		return matchId + ":" + playerId;
+		return matchId + ":" + apiPlayerId;
 	}
 
 	private static class UpdateResult {
@@ -228,12 +228,12 @@ public class MatchLineupCommandService {
 		}
 	}
 
-	private UpdateResult updatePlayerOnSide(LineupSide side, Long playerId, MatchLineupUpdateRequest req) {
+	private UpdateResult updatePlayerOnSide(LineupSide side, String apiPlayerId, MatchLineupUpdateRequest req) {
 		if (side == null) {
 			return UpdateResult.notFound();
 		}
 
-		LineupPlayer p = findPlayer(side, playerId);
+		LineupPlayer p = findPlayer(side, apiPlayerId);
 		if (p == null) {
 			return UpdateResult.notFound();
 		}
@@ -268,17 +268,17 @@ public class MatchLineupCommandService {
 		return changed ? UpdateResult.foundChanged() : UpdateResult.foundNoChange();
 	}
 
-	private LineupPlayer findPlayer(LineupSide side, Long playerId) {
+	private LineupPlayer findPlayer(LineupSide side, String apiPlayerId) {
 		if (side.getStartingLineup() != null) {
 			for (LineupPlayer p : side.getStartingLineup()) {
-				if (playerId.equals(p.getPlayerId())) {
+				if (apiPlayerId.equals(p.getApiPlayerId())) {
 					return p;
 				}
 			}
 		}
 		if (side.getSubstitutes() != null) {
 			for (LineupPlayer p : side.getSubstitutes()) {
-				if (playerId.equals(p.getPlayerId())) {
+				if (apiPlayerId.equals(p.getApiPlayerId())) {
 					return p;
 				}
 			}

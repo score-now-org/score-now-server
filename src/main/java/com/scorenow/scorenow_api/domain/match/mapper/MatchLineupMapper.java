@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.mapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,8 @@ public class MatchLineupMapper {
 		BetsLineupResponse.LineupSide betsLineupSide,
 		Long teamId,
 		String apiTeamId,
-		String teamEname
+		String teamEname,
+		Map<String, Long> playerIdMap
 	) {
 		if (betsLineupSide == null) {
 
@@ -35,23 +37,26 @@ public class MatchLineupMapper {
 			.apiTeamId(apiTeamId)
 			.teamEname(teamEname)
 			.formation(betsLineupSide.getFormation())
-			.startingLineup(toPlayers(betsLineupSide.getStartinglineup()))
-			.substitutes(toPlayers(betsLineupSide.getSubstitutes()))
+			.startingLineup(toPlayers(betsLineupSide.getStartinglineup(), playerIdMap))
+			.substitutes(toPlayers(betsLineupSide.getSubstitutes(), playerIdMap))
 			.build();
 	}
 
-	public List<LineupPlayer> toPlayers(List<BetsLineupResponse.LineupPlayer> betsPlayers) {
+	public List<LineupPlayer> toPlayers(
+		List<BetsLineupResponse.LineupPlayer> betsPlayers,
+		Map<String, Long> playerIdMap) {
 		if (betsPlayers == null)
 			return new ArrayList<>();
 
 		List<LineupPlayer> list = new ArrayList<>(betsPlayers.size());
 		for (BetsLineupResponse.LineupPlayer betsPlayer : betsPlayers) {
-			list.add(toPlayer(betsPlayer));
+			list.add(toPlayer(betsPlayer, playerIdMap));
 		}
 		return list;
 	}
 
-	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer) {
+	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer,
+		Map<String, Long> playerIdMap) {
 		String playerApiId = null;
 		String eName = null;
 		String shirtNumber = null;
@@ -65,8 +70,14 @@ public class MatchLineupMapper {
 			}
 		}
 
+		Long playerId = null;
+
+		if (playerApiId != null && playerIdMap != null) {
+			playerId = playerIdMap.get(playerApiId);
+		}
+
 		return LineupPlayer.builder()
-			.playerId(null)
+			.playerId(playerId)
 			.apiPlayerId(playerApiId)
 			.eName(eName)
 			.shirtNumber(shirtNumber)
