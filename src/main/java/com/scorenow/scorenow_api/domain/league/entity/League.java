@@ -13,14 +13,15 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class League extends BaseEntity {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	private Long sportId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private Long sportId;
 
-	private String kName;
-	private String eName;
-	private String sName; // 숏네임
+    private String kName;
 
-	private String cc;
+    private String eName;
+    private String sName; // 숏네임
+
+    private String cc;
 }

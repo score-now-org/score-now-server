@@ -13,6 +13,9 @@ public class MatchDetailController {
 
     private final MatchDetailService matchDetailService;
 
+    /**
+     * TODO: MatchDetailDocument 에 점수 정보가 안보임
+     */
     @PatchMapping("/{matchId}/detail")
     public ApiResponse<Long> updateMatchDetail(
             @PathVariable Long matchId,

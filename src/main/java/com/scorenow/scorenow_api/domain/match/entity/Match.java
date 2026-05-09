@@ -127,7 +127,7 @@ public class Match extends BaseEntity {
     }
 
     public boolean isStadiumEmpty() {
-        return stadiumId == null || temporaryStadium == null;
+        return stadiumId == null && temporaryStadium == null;
     }
 }
 

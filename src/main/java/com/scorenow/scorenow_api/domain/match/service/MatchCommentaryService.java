@@ -23,6 +23,10 @@ public class MatchCommentaryService {
     private final FileStorage fileStorage;
 
     /**
+     * TODO: matchId 가 유효한지 먼저 검증하는 로직을 추가하는 것도 괜찮을 듯? 기능 자체는 잘 돌아감.
+     */
+
+    /**
      * 중계 멘트 저장 <br>
      * (단, 중계 멘트 저장 ON/OFF 에 따라서 작성한 중계글 모음에서 조회 여부가 결정)
      */

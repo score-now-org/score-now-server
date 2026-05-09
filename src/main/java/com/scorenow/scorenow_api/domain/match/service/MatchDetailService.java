@@ -22,24 +22,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 public class MatchDetailService {
-	private final StadiumCacheService stadiumCacheService;
-	private final MatchRepository matchRepository;
-	private final MatchDetailRepository matchDetailRepository;
-	private final BetsApiClient betsApiClient;
+    private final StadiumCacheService stadiumCacheService;
+    private final MatchRepository matchRepository;
+    private final MatchDetailRepository matchDetailRepository;
+    private final BetsApiClient betsApiClient;
 
     @Transactional
-    public void updateInplayMatchDetail(Match match) {
-        Long matchId = match.getId();
-        String externalMatchId = match.getApiMatchId();
-
-        BetsViewResponse response = betsApiClient.getEventView(externalMatchId);
+    public void updateInplayMatchDetail(Long matchId, String apiMatchId) {
+        BetsViewResponse response = betsApiClient.getEventView(apiMatchId);
 
         if (response == null || !response.hasResult()) {
-            log.warn("❌ 실패: ID {}에 대한 API 응답 데이터가 없습니다.", externalMatchId);
+            log.warn("❌ 실패: ID {}에 대한 API 응답 데이터가 없습니다.", apiMatchId);
             return;
         }
 
         BetsViewResponse.ViewResult apiResult = response.getResults().get(0);
+
+        // Match 영속화를 위한 조회
+        Match match = matchRepository.findById(matchId).orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
         // 홈-어웨이 스코어 변경
         match.updateHomeScore(apiResult.getHomeScore());
@@ -47,9 +47,10 @@ public class MatchDetailService {
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
         BetsViewResponse.StadiumData stadiumData = apiResult.getExtra().getStadiumData();
+        log.info("stadiumData: {}", stadiumData);
         if (stadiumData != null) {
             Stadium stadium = stadiumCacheService.getOrCreateStadium(response.getProvider(), apiResult.getSportId(), stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
-
+            log.info("stadium = {}", stadium);
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
             if (match.isStadiumEmpty()) {
                 match.updateStadiumId(stadium.getId());
@@ -57,7 +58,7 @@ public class MatchDetailService {
         }
 
         // 경기 정보 반영
-        MatchDetailDocument detail = response.toDocument(matchId);
+        MatchDetailDocument detail = response.toDocument(matchId, apiResult.getHomeScore(), apiResult.getAwayScore());
         matchDetailRepository.save(detail);
 
         log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", matchId);

@@ -10,6 +10,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
 @Builder
+@ToString
 public class Stadium extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

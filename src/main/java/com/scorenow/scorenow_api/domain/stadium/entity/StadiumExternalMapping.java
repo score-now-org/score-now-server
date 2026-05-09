@@ -22,6 +22,7 @@ public class StadiumExternalMapping {
     private Long id;
 
     @Column(name = "provider", nullable = false)
+    @Enumerated(EnumType.STRING)
     private ApiProvider provider;
 
     @Column(name = "api_sport_id", nullable = false)

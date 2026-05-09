@@ -44,6 +44,9 @@ public class MatchAdminController {
 
 
     /**
+     * TODO: 응답값 기준 homeName, awayName 이 빈 문자열로 나감
+     *          => 캐싱된 값이 반환 되어서 QueryDSL 로 조회한 값이 사용되지 않음 (QueryDSL 의 쿼리는 나가긴 함)
+     *          => 기존에 작성하신 분의 의도를 몰라서 일단 급한건 아니니 수정은 안하고 반영
      * 경기 수동 등록
      */
     @PostMapping

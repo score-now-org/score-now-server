@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.controller;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,15 +21,12 @@ import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import jakarta.validation.Valid;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/admin/leagues")
 public class LeagueAdminController {
 
     private final LeagueAdminService leagueAdminService;
-
-    public LeagueAdminController(LeagueAdminService leagueAdminService) {
-        this.leagueAdminService = leagueAdminService;
-    }
 
     @GetMapping
     public ApiResponse<List<LeagueAdminResponse>> getLeagues(@RequestParam(required = false) String keyword) {

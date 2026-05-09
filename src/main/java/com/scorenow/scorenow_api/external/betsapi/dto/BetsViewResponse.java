@@ -19,7 +19,7 @@ public class BetsViewResponse {
 		return results != null && !results.isEmpty();
 	}
 
-	public MatchDetailDocument toDocument(Long matchId) {
+	public MatchDetailDocument toDocument(Long matchId, Integer homeScore, Integer awayScore) {
 		ViewResult result = results.get(0);
 		return MatchDetailDocument.builder()
 			.id(matchId)
