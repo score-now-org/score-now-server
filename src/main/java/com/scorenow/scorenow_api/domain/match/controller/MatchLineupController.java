@@ -31,13 +31,13 @@ public class MatchLineupController {
 	private final MatchLineupQueryService lineupQuerySvc;
 
 	/** 라인업 수동 업데이트 */
-	@PatchMapping("/{matchId}/lineup/players/{playerId}")
+	@PatchMapping("/{matchId}/lineup/players/{apiPlayerId}")
 	public ApiResponse<String> updateLineupPlayer(
 		@PathVariable Long matchId,
-		@PathVariable Long playerId,
+		@PathVariable String apiPlayerId,
 		@RequestBody MatchLineupUpdateRequest request
 	) {
-		String updateId = lineupCommandSvc.updateLineupManual(matchId, playerId, request);
+		String updateId = lineupCommandSvc.updateLineupManual(matchId, apiPlayerId, request);
 		return ApiResponse.success(updateId);
 	}
 

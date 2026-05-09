@@ -113,7 +113,7 @@ class MatchLineupSyncServiceTest {
 		when(matchRepo.findById(matchId)).thenReturn(Optional.of(match));
 		when(teamRepo.findAllById(List.of(homeId, awayId))).thenReturn(List.of(homeTeam, awayTeam));
 
-		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, homeId))
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, homeId)) // 메서드명 수정
 			.thenReturn(Optional.of(homeMapping));
 		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, awayId))
 			.thenReturn(Optional.of(awayMapping));
@@ -123,9 +123,10 @@ class MatchLineupSyncServiceTest {
 
 		when(matchLineupRepo.findById(matchId)).thenReturn(Optional.empty());
 
-		when(lineupMapper.toSide(any(), eq(homeId), eq("17170"), eq("Fulham")))
+		when(lineupMapper.toSide(any(), eq(homeId), eq("17170"), eq("Fulham"), anyMap()))
 			.thenReturn(homeSide);
-		when(lineupMapper.toSide(any(), eq(awayId), eq("23451"), eq("Liverpool")))
+
+		when(lineupMapper.toSide(any(), eq(awayId), eq("23451"), eq("Liverpool"), anyMap()))
 			.thenReturn(awaySide);
 
 		when(matchLineupRepo.save(any(MatchLineupDocument.class)))

@@ -1,7 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +14,8 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
+import com.scorenow.scorenow_api.domain.player.entity.PlayerExternalMapping;
+import com.scorenow.scorenow_api.domain.player.repository.PlayerExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
@@ -38,6 +42,7 @@ public class MatchLineupSyncService {
 	private final MatchRepository matchRepo;
 	private final TeamRepository teamRepo;
 	private final TeamExternalMappingRepository teamExternalMappingRepository;
+	private final PlayerExternalMappingRepository playerExternalMappingRepository;
 
 	@Transactional
 	public MatchLineupDocument syncMatchLineup(String matchIdValue, String sportIdValue) {
@@ -63,7 +68,7 @@ public class MatchLineupSyncService {
 		if (match.getApiMatchId() == null || match.getApiMatchId().isBlank()) {
 			throw new BusinessException(
 				ErrorCode.INVALID_PARAMETER,
-				"externalMatchId가 비어있습니다.",
+				"apiMatchId가 비어있습니다.",
 				"matchId=" + matchId
 			);
 		}
@@ -93,14 +98,14 @@ public class MatchLineupSyncService {
 			);
 		}
 
-		String apiHomeTeamId = findApiTeamId(homeId);
-		String apiAwayTeamId = findApiTeamId(awayId);
+		String apiHomeId = findApiTeamId(homeId);
+		String apiAwayId = findApiTeamId(awayId);
+		String apiMatchId = match.getApiMatchId();
 
-		BetsLineupResponse homeResponse = betsApiClient.getLineup(apiHomeTeamId);
-		validateLineupResponse(homeResponse, apiHomeTeamId);
+		BetsLineupResponse lineupResponse = betsApiClient.getLineup(apiMatchId);
+		validateLineupResponse(lineupResponse, apiMatchId);
 
-		BetsLineupResponse awayResponse = betsApiClient.getLineup(apiAwayTeamId);
-		validateLineupResponse(awayResponse, apiAwayTeamId);
+		Map<String, Long> playerIdMap = resolvePlayerIdMap(lineupResponse);
 
 		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
 			.orElseGet(() -> MatchLineupDocument.create(
@@ -110,25 +115,91 @@ public class MatchLineupSyncService {
 			));
 
 		doc.setHome(lineupMapper.toSide(
-			homeResponse.getResults().getHome(),
+			lineupResponse.getResults().getHome(),
 			homeId,
-			apiHomeTeamId,
-			homeTeam.getEName()
+			apiHomeId,
+			homeTeam.getEName(),
+			playerIdMap
 		));
 
 		doc.setAway(lineupMapper.toSide(
-			awayResponse.getResults().getAway(),
+			lineupResponse.getResults().getAway(),
 			awayId,
-			apiAwayTeamId,
-			awayTeam.getEName()
+			apiAwayId,
+			awayTeam.getEName(),
+			playerIdMap
 		));
 
 		return matchLineupRepo.save(doc);
 	}
 
+	private Map<String, Long> resolvePlayerIdMap(BetsLineupResponse lineupResponse) {
+		Set<String> apiPlayerIds = extractApiPlayerIds(lineupResponse);
+
+		if (apiPlayerIds.isEmpty()) {
+			return Map.of();
+		}
+
+		return playerExternalMappingRepository
+			.findByProviderAndApiPlayerIdIn(ApiProvider.BETS, apiPlayerIds)
+			.stream()
+			.filter(mapping -> mapping.getPlayer() != null)
+			.collect(Collectors.toMap(
+				PlayerExternalMapping::getApiPlayerId,
+				mapping -> mapping.getPlayer().getId(),
+				(existing, replacement) -> existing
+			));
+	}
+
+	private Set<String> extractApiPlayerIds(BetsLineupResponse lineupResponse) {
+		Set<String> apiPlayerIds = new HashSet<>();
+
+		if (lineupResponse == null || lineupResponse.getResults() == null) {
+			return apiPlayerIds;
+		}
+
+		collectApiPlayerIds(lineupResponse.getResults().getHome(), apiPlayerIds);
+		collectApiPlayerIds(lineupResponse.getResults().getAway(), apiPlayerIds);
+
+		return apiPlayerIds;
+	}
+
+	private void collectApiPlayerIds(
+		BetsLineupResponse.LineupSide side,
+		Set<String> apiPlayerIds
+	) {
+		if (side == null) {
+			return;
+		}
+
+		addApiPlayerIds(side.getStartinglineup(), apiPlayerIds);
+		addApiPlayerIds(side.getSubstitutes(), apiPlayerIds);
+	}
+
+	private void addApiPlayerIds(
+		List<BetsLineupResponse.LineupPlayer> players,
+		Set<String> apiPlayerIds
+	) {
+		if (players == null) {
+			return;
+		}
+
+		for (BetsLineupResponse.LineupPlayer player : players) {
+			if (player == null || player.getPlayer() == null) {
+				continue;
+			}
+
+			String apiPlayerId = player.getPlayer().getId();
+
+			if (apiPlayerId != null && !apiPlayerId.isBlank()) {
+				apiPlayerIds.add(apiPlayerId);
+			}
+		}
+	}
+
 	private String findApiTeamId(Long teamId) {
 		return teamExternalMappingRepository
-			.findByProviderAndInternalTeamId(ApiProvider.BETS, teamId)
+			.findByProviderAndInternalTeamId(ApiProvider.BETS, teamId) // 메서드명 수정
 			.map(TeamExternalMapping::getApiTeamId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
@@ -156,12 +227,12 @@ public class MatchLineupSyncService {
 		}
 	}
 
-	private void validateLineupResponse(BetsLineupResponse response, String apiTeamId) {
+	private void validateLineupResponse(BetsLineupResponse response, String apiMatchId) {
 		if (response == null) {
 			throw new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"라인업 API 응답이 null입니다.",
-				"apiTeamId=" + apiTeamId
+				"apiMatchId=" + apiMatchId
 			);
 		}
 
@@ -169,7 +240,7 @@ public class MatchLineupSyncService {
 			throw new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"라인업 API 호출 실패",
-				"success=" + response.getSuccess() + ", apiTeamId=" + apiTeamId
+				"success=" + response.getSuccess() + ", apiMatchId=" + apiMatchId
 			);
 		}
 
@@ -177,7 +248,7 @@ public class MatchLineupSyncService {
 			throw new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"라인업 API 결과가 비어있습니다.",
-				"apiTeamId=" + apiTeamId
+				"apiMatchId=" + apiMatchId
 			);
 		}
 	}

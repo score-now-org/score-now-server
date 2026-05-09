@@ -1,6 +1,8 @@
 package com.scorenow.scorenow_api.domain.player.repository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,5 +14,10 @@ public interface PlayerExternalMappingRepository extends JpaRepository<PlayerExt
 	Optional<PlayerExternalMapping> findByProviderAndApiPlayerId(
 		ApiProvider provider,
 		String apiPlayerId
+	);
+
+	List<PlayerExternalMapping> findByProviderAndApiPlayerIdIn(
+		ApiProvider provider,
+		Set<String> apiPlayerIds
 	);
 }
