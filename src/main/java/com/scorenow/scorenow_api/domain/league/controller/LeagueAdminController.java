@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.controller;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,35 +21,32 @@ import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import jakarta.validation.Valid;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/admin/leagues")
 public class LeagueAdminController {
 
-	private final LeagueAdminService leagueAdminService;
+    private final LeagueAdminService leagueAdminService;
 
-	public LeagueAdminController(LeagueAdminService leagueAdminService) {
-		this.leagueAdminService = leagueAdminService;
-	}
+    @GetMapping
+    public ApiResponse<List<LeagueAdminResponse>> getLeagues(@RequestParam(required = false) String keyword) {
+        return ApiResponse.success(leagueAdminService.getLeagues(keyword));
+    }
 
-	@GetMapping
-	public ApiResponse<List<LeagueAdminResponse>> getLeagues(@RequestParam(required = false) String keyword){
-		return ApiResponse.success(leagueAdminService.getLeagues(keyword));
-	}
+    @PostMapping
+    public ApiResponse<LeagueAdminResponse> createLeague(@RequestBody @Valid LeagueCreateRequest request) {
+        return ApiResponse.success(leagueAdminService.createLeague(request));
+    }
 
-	@PostMapping
-	public ApiResponse<LeagueAdminResponse> createLeague(@RequestBody @Valid LeagueCreateRequest request){
-		return ApiResponse.success(leagueAdminService.createLeague(request));
-	}
+    @PutMapping("/{leagueId}")
+    public ApiResponse<Void> updateLeague(@PathVariable Long leagueId, @RequestBody @Valid LeagueUpdateRequest request) {
+        leagueAdminService.updateLeague(leagueId, request);
+        return ApiResponse.success();
+    }
 
-	@PutMapping("/{id}")
-	public ApiResponse<Void> updateLeague(@PathVariable String id, @RequestBody @Valid LeagueUpdateRequest request){
-		leagueAdminService.updateLeague(id, request);
-		return ApiResponse.success();
-	}
-
-	@DeleteMapping("/{id}")
-	public ApiResponse<Void> deleteLeague(@PathVariable String id){
-		leagueAdminService.deleteLeague(id);
-		return ApiResponse.success();
-	}
+    @DeleteMapping("/{leagueId}")
+    public ApiResponse<Void> deleteLeague(@PathVariable Long leagueId) {
+        leagueAdminService.deleteLeague(leagueId);
+        return ApiResponse.success();
+    }
 }

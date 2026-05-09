@@ -15,7 +15,10 @@ import lombok.Setter;
 public class LineupPlayer {
 
 	private String rowId;
-	private String playerId;
+
+	private Long playerId;
+	private String apiPlayerId;
+
 	private String eName;
 	private String kName;
 

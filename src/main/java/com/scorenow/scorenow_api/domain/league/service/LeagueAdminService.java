@@ -20,50 +20,44 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class LeagueAdminService {
 
-	private final LeagueRepository leagueRepository;
+    private final LeagueRepository leagueRepository;
 
-	public List<LeagueAdminResponse> getLeagues(String keyword){
-		return leagueRepository.searchByKeyword(keyword)
-			.stream()
-			.map(LeagueAdminResponse::from)
-			.toList();
-	}
+    public List<LeagueAdminResponse> getLeagues(String keyword) {
+        return leagueRepository.searchByKeyword(keyword)
+                .stream()
+                .map(LeagueAdminResponse::from)
+                .toList();
+    }
 
-	@Transactional
-	public LeagueAdminResponse createLeague(LeagueCreateRequest request){
-		String id = League.generateLeagueId(request.getSportId(), request.getLeagueId());
+    @Transactional
+    public LeagueAdminResponse createLeague(LeagueCreateRequest request) {
 
-		if(leagueRepository.existsById(id)){
-			throw new BusinessException(ErrorCode.LEAGUE_ALREADY_EXISTS);
-		}
+        League league = League.builder()
+                .sportId(request.getSportId())
+                .eName(request.getEName())
+                .kName(request.getKName())
+                .sName(request.getSName())
+                .build();
 
-		League league = League.builder()
-			.id(id)
-			.sportId(request.getSportId())
-			.eName(request.getEName())
-			.kName(request.getKName())
-			.sName(request.getSName())
-			.build();
+        return LeagueAdminResponse.from(leagueRepository.save(league));
+    }
 
-		return LeagueAdminResponse.from(leagueRepository.save(league));
-	}
+    @Transactional
+    public void updateLeague(Long leagueId, LeagueUpdateRequest request) {
+        League league = leagueRepository.findById(leagueId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
 
-	@Transactional
-	public void updateLeague(String id, LeagueUpdateRequest request){
-		League league = leagueRepository.findById(id)
-			.orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
+        if (request.getSportId() != null) league.setSportId(request.getSportId());
+        if (request.getEName() != null) league.setEName(request.getEName());
+        if (request.getKName() != null) league.setKName(request.getKName());
+        if (request.getSName() != null) league.setSName(request.getSName());
+    }
 
-		if(request.getSportId() != null) league.setSportId(request.getSportId());
-		if(request.getEName() != null) league.setEName(request.getEName());
-		if(request.getKName() != null) league.setKName(request.getKName());
-		if(request.getSName() != null) league.setSName(request.getSName());
-	}
-
-	@Transactional
-	public void deleteLeague(String id){
-		if(!leagueRepository.existsById(id)){
-			throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
-		}
-		leagueRepository.deleteById(id);
-	}
+    @Transactional
+    public void deleteLeague(Long leagueId) {
+        if (!leagueRepository.existsById(leagueId)) {
+            throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
+        }
+        leagueRepository.deleteById(leagueId);
+    }
 }

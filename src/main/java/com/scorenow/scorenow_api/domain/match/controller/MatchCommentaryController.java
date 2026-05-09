@@ -22,7 +22,7 @@ public class MatchCommentaryController implements MatchCommentaryApiDocs {
      */
     @PostMapping("/{matchId}/commentaries")
     public ApiResponse<String> createCommentary(
-            @PathVariable String matchId,
+            @PathVariable Long matchId,
             @Valid @RequestPart(value = "data") CommentaryCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
@@ -34,7 +34,7 @@ public class MatchCommentaryController implements MatchCommentaryApiDocs {
      * 작성한 중계 멘트 목록 조회
      */
     @GetMapping("/{matchId}/commentaries")
-    public ApiResponse<List<String>> getCommentaries(@PathVariable String matchId) {
+    public ApiResponse<List<String>> getCommentaries(@PathVariable Long matchId) {
         return ApiResponse.success(commentaryService.getCommentariesByMatchId(matchId));
     }
 }

@@ -1,12 +1,12 @@
 package com.scorenow.scorenow_api.domain.match.entity;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -23,13 +23,22 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class Match extends BaseEntity {
-	@Id
-	private String id; // BETS + sportId + eventId (예: BETS111275660)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	private String leagueId; // BETS + sportId + leagueId
-	private String sportId;
-	private String homeId;   // BETS + sportId + teamId
-	private String awayId;   // BETS + sportId + teamId
+    @Column(name = "provider")
+    @Enumerated(EnumType.STRING)
+    private ApiProvider provider;
+
+    @Column(name = "api_match_id")
+    private String apiMatchId;
+
+	private Long leagueId;
+	private Long sportId;
+
+	private Long homeId;
+	private Long awayId;
 
 	@Enumerated(EnumType.STRING)
 	private MatchStatus statusCode;
@@ -52,8 +61,7 @@ public class Match extends BaseEntity {
 	@Builder.Default
 	private boolean isActive = true;
 
-	private String betsApiEventId;
-	private String bet365Id;
+    private String bet365Id;
 
 	// JPA 관계 추가 (Fetch join용)
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -72,50 +80,41 @@ public class Match extends BaseEntity {
 	@JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Team awayTeam;
 
-	public static String generateMatchId(String sportId, String eventId) {
-		return "BETS" + sportId + eventId;
-	}
-
-	public static String generateManualId(String sportId) {
-		String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-		return String.format("MANUAL%s%s", sportId, uuid);
-	}
-
-	public void updateSportId(String sportId) {
+	public void updateSportId(Long sportId) {
 		this.sportId = sportId;
 	}
 
-	public void updateLeagueId(String leagueId) {
+	public void updateLeagueId(Long leagueId) {
 		this.leagueId = leagueId;
 	}
 
-	public void updateHomeId(String homeId) {
+	public void updateHomeId(Long homeId) {
 		this.homeId = homeId;
 	}
 
-	public void updateAwayId(String awayId) {
+	public void updateAwayId(Long awayId) {
 		this.awayId = awayId;
 	}
 
-	public void updateStartAt(LocalDateTime startAt) {
-		this.startAt = startAt;
-	}
+    public void updateStartAt(LocalDateTime startAt) {
+        this.startAt = startAt;
+    }
 
-	public void updateStatus(MatchStatus statusCode) {
-		this.statusCode = statusCode;
-	}
+    public void updateStatus(MatchStatus statusCode) {
+        this.statusCode = statusCode;
+    }
 
-	public void updateHomeScore(Integer homeScore) {
-		this.homeScore = homeScore;
-	}
+    public void updateHomeScore(Integer homeScore) {
+        this.homeScore = homeScore;
+    }
 
-	public void updateAwayScore(Integer awayScore) {
-		this.awayScore = awayScore;
-	}
+    public void updateAwayScore(Integer awayScore) {
+        this.awayScore = awayScore;
+    }
 
-	public void updateIsActive(boolean isActive) {
-		this.isActive = isActive;
-	}
+    public void updateIsActive(boolean isActive) {
+        this.isActive = isActive;
+    }
 
     public void updateStadiumId(Long stadiumId) {
         this.stadiumId = stadiumId;
@@ -128,7 +127,7 @@ public class Match extends BaseEntity {
     }
 
     public boolean isStadiumEmpty() {
-        return stadiumId == null || temporaryStadium == null;
+        return stadiumId == null && temporaryStadium == null;
     }
 }
 

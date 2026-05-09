@@ -26,10 +26,10 @@ public class BetsApiClient {
 	/**
 	 * 예정 경기 조회
 	 */
-	public BetsEventResponse getUpcomingEvents(String sportId, String leagueId, String day) {
+	public BetsEventResponse getUpcomingEvents(String externalSportId, String externalLeagueId, String day) {
 		String url = buildUrl("/v3/events/upcoming")
-			.queryParam("sport_id", sportId)
-			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(leagueId))
+			.queryParam("sport_id", externalSportId)
+			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(externalLeagueId))
 			.queryParamIfPresent("day", java.util.Optional.ofNullable(day))
 			.build().toUriString();
 
@@ -40,10 +40,10 @@ public class BetsApiClient {
 	/**
 	 * 진행 중 경기 조회
 	 */
-	public BetsEventResponse getInplayEvents(String sportId, String leagueId) {
+	public BetsEventResponse getInplayEvents(String externalSportId, String externalLeagueId) {
 		String url = buildUrl("/v3/events/inplay")
-			.queryParam("sport_id", sportId)
-			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(leagueId))
+			.queryParam("sport_id", externalSportId)
+			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(externalLeagueId))
 			.build().toUriString();
 
 		log.debug("BetsAPI 호출: {}", maskToken(url));
@@ -53,10 +53,10 @@ public class BetsApiClient {
 	/**
 	 * 종료 경기 조회
 	 */
-	public BetsEventResponse getEndedEvents(String sportId, String leagueId, String day) {
+	public BetsEventResponse getEndedEvents(String externalSportId, String externalLeagueId, String day) {
 		String url = buildUrl("/v3/events/ended")
-			.queryParam("sport_id", sportId)
-			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(leagueId))
+			.queryParam("sport_id", externalSportId)
+			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(externalLeagueId))
 			.queryParamIfPresent("day", java.util.Optional.ofNullable(day))
 			.build().toUriString();
 
@@ -67,9 +67,9 @@ public class BetsApiClient {
 	/**
 	 * 리그 목록 조회
 	 */
-	public BetsLeagueResponse getLeagues(String sportId, int page) {
+	public BetsLeagueResponse getLeagues(String externalSportId, int page) {
 		String url = buildUrl("/v4/league")
-			.queryParam("sport_id", sportId)
+			.queryParam("sport_id", externalSportId)
 			.queryParam("page", page)
 			.build().toUriString();
 
@@ -80,9 +80,9 @@ public class BetsApiClient {
 	/**
 	 * 팀 목록 조회
 	 */
-	public BetsTeamResponse getTeams(String sportId, String maxId) {
+	public BetsTeamResponse getTeams(String externalSportId, String maxId) {
 		String url = buildUrl("/v3/team")
-			.queryParam("sport_id", sportId)
+			.queryParam("sport_id", externalSportId)
 			.queryParamIfPresent("max_id", java.util.Optional.ofNullable(maxId))
 			.build().toUriString();
 

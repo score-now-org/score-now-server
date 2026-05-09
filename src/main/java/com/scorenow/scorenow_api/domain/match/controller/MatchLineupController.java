@@ -31,27 +31,27 @@ public class MatchLineupController {
 	private final MatchLineupQueryService lineupQuerySvc;
 
 	/** 라인업 수동 업데이트 */
-	@PatchMapping("/{matchId}/lineup/players/{playerId}")
+	@PatchMapping("/{matchId}/lineup/players/{apiPlayerId}")
 	public ApiResponse<String> updateLineupPlayer(
-		@PathVariable String matchId,
-		@PathVariable String playerId,
+		@PathVariable Long matchId,
+		@PathVariable String apiPlayerId,
 		@RequestBody MatchLineupUpdateRequest request
 	) {
-		String updateId = lineupCommandSvc.updateLineupManual(matchId, playerId, request);
+		String updateId = lineupCommandSvc.updateLineupManual(matchId, apiPlayerId, request);
 		return ApiResponse.success(updateId);
 	}
 
 	/** 라인업 조회 */
 	@GetMapping("/{matchId}/lineup")
-	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable String matchId) {
+	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable Long matchId) {
 		return ApiResponse.success(lineupQuerySvc.getByMatchId(matchId));
 	}
 
 	/** 라인업>선수추가 - 팀 선수 조회 */
 	@GetMapping("/{matchId}/lineup/teams/{teamId}/players")
 	public ApiResponse<List<MatchLineupPlayerResponse>> getSelectablePlayers(
-		@PathVariable String matchId,
-		@PathVariable String teamId
+		@PathVariable Long matchId,
+		@PathVariable Long teamId
 	) {
 		return ApiResponse.success(
 			lineupQuerySvc.getSelectablePlayers(matchId, teamId)
@@ -61,7 +61,7 @@ public class MatchLineupController {
 	/** 라인업 > 선수추가 - 검색 시 전체 선수 풀에서 조회 */
 	@GetMapping("/{matchId}/lineup/players/search")
 	public ApiResponse<List<MatchLineupPlayerResponse>> searchSelectablePlayers(
-		@PathVariable String matchId,
+		@PathVariable Long matchId,
 		@RequestParam String keyword
 	) {
 		return ApiResponse.success(
@@ -72,8 +72,8 @@ public class MatchLineupController {
 	/** 라인업>선수추가 - 선수 반영 */
 	@PostMapping("/{matchId}/lineup/teams/{teamId}/players")
 	public ApiResponse<String> addLineupPlayer(
-		@PathVariable String matchId,
-		@PathVariable String teamId,
+		@PathVariable Long matchId,
+		@PathVariable Long teamId,
 		@RequestBody LineupPlayer request
 	) {
 		return ApiResponse.success(
@@ -84,8 +84,8 @@ public class MatchLineupController {
 	/** 라인업>선수추가 - 선수 해제 */
 	@DeleteMapping("/{matchId}/lineup/players/{playerId}")
 	public ApiResponse<String> deleteLineupPlayer(
-		@PathVariable String matchId,
-		@PathVariable String playerId
+		@PathVariable Long matchId,
+		@PathVariable Long playerId
 	) {
 		return ApiResponse.success(
 			lineupCommandSvc.removePlayerFromLineup(matchId, playerId)

@@ -18,7 +18,7 @@ public class MatchCommentaryRepositoryImpl implements MatchCommentaryRepository 
     }
 
     @Override
-    public List<MatchCommentaryDocument> findVisibleCommentaries(String matchId) {
+    public List<MatchCommentaryDocument> findVisibleCommentaries(Long matchId) {
         return mongoRepository.findVisibleCommentaries(matchId);
     }
 }

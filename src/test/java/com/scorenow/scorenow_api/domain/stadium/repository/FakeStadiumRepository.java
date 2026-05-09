@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.stadium.repository;
 
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,14 +20,6 @@ public class FakeStadiumRepository implements StadiumRepository {
     }
 
     @Override
-    public List<Stadium> findByExternalStadiumId(String externalStadiumId) {
-        List<Stadium> stadiums = database.values().stream().toList();
-        return stadiums.stream()
-                .filter(stadium -> externalStadiumId.equals(stadium.getExternalStadiumId()))
-                .toList();
-    }
-
-    @Override
     public List<Stadium> findByNameContainingIgnoreCase(String stadiumName) {
         List<Stadium> stadiums = database.values().stream().toList();
         return stadiums.stream()
@@ -35,26 +28,16 @@ public class FakeStadiumRepository implements StadiumRepository {
     }
 
     @Override
-    public Optional<Stadium> findByExternalStadiumIdAndSportId(String externalStadiumId, String sportId) {
-        List<Stadium> stadiums = database.values().stream().toList();
-        return stadiums.stream()
-                .filter(stadium ->
-                        externalStadiumId.equals(stadium.getExternalStadiumId()) &&
-                                sportId.equals(stadium.getSportId()))
-                .findAny();
-    }
-
-    @Override
     public Stadium save(Stadium stadium) {
         long id = idGenerator.getAndIncrement();
         database.put(id, stadium);
-
+        ReflectionTestUtils.setField(stadium, "id", id);
         return database.get(id);
     }
 
     @Override
     public Optional<Stadium> findById(Long stadiumId) {
-        return Optional.of(database.get(stadiumId));
+        return Optional.ofNullable(database.get(stadiumId));
     }
 
     public int getSize() {

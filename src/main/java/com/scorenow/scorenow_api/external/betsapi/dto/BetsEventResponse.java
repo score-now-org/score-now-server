@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.external.betsapi.dto;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +11,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BetsEventResponse {
+	private final ApiProvider provider = ApiProvider.BETS;
+
 	private int success;
 	private BetsPager pager;
 	private List<Event> results;

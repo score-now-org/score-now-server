@@ -31,7 +31,7 @@ public class MatchDetailScheduler {
 
         for (Match match : inplayMatches) {
             log.info("상세 업데이트 시작 - 경기 ID: {}", match.getId());
-            matchDetailService.updateInplayMatchDetail(match.getSportId(), match.getId());
+            matchDetailService.updateInplayMatchDetail(match.getId(), match.getApiMatchId());
         }
     }
 }
