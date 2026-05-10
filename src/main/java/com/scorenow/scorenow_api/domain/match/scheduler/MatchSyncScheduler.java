@@ -29,24 +29,9 @@ public class MatchSyncScheduler {
 
 	/**
 	 * 매일 2회 배치 실행(4시, 16시)
+	 * 테스트 시 임시 사용: @Scheduled(initialDelay = 10000, fixedRate = 1000000)
 	 */
-	// @Scheduled(cron = "0 0 4,16 * * *")
-	// public void runMatchSyncJob() {
-	// 	log.info("=== Match Sync Batch Job 시작 ===");
-	//
-	// 	try {
-	// 		JobParameters params = new JobParametersBuilder()
-	// 			.addString("runTime", LocalDateTime.now().toString())
-	// 			.toJobParameters();
-	//
-	// 		jobLauncher.run(matchSyncJob, params);
-	//
-	// 		log.info("=== Match Sync Batch Job 완료 ===");
-	// 	} catch (Exception e) {
-	// 		log.error("Batch Job 실패", e);
-	// 	}
-	// }
-	@Scheduled(cron = "0 35 13 * * *")
+	@Scheduled(cron = "0 0 4,16 * * *")
 	public void runMatchSyncJob() {
 		log.info("=== Match Sync Batch Job 시작 ===");
 
