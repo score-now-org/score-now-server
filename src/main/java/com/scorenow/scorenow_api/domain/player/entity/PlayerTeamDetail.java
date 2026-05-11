@@ -5,8 +5,10 @@ import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -34,15 +36,24 @@ public class PlayerTeamDetail extends BaseEntity {
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "player_id", nullable = false)
+	@JoinColumn(
+		name = "player_id",
+		nullable = false,
+		foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Player player;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "team_id", nullable = false)
+	@JoinColumn(
+		name = "team_id",
+		nullable = false,
+		foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Team team;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "league_id", nullable = false)
+	@JoinColumn(
+		name = "league_id",
+		nullable = false,
+		foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private League league;
 
 	private String season;
