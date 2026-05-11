@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 	uniqueConstraints = {
 		@UniqueConstraint(
 			name = "uk_league_external_mappings",
-			columnNames = {"provider", "api_league_id", "internal_league_id"})})
+			columnNames = {"provider", "api_league_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
