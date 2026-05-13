@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import com.scorenow.scorenow_api.domain.match.service.InplayScanService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!test")
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -50,11 +52,11 @@ public class InplayScanScheduler {
 			.stream()
 			.toList();
 
-		List<String> inplayMatchIds = unique.stream()
+		List<Long> inplayMatchIds = unique.stream()
 			.map(InplayScanDto::getMatchId)
 			.toList();
 
-		Set<String> existingIds = lineupRepo.findByIdIn(inplayMatchIds).stream()
+		Set<Long> existingIds = lineupRepo.findByIdIn(inplayMatchIds).stream()
 			.map(MatchLineupDocument::getId)
 			.collect(Collectors.toSet());
 
@@ -66,12 +68,16 @@ public class InplayScanScheduler {
 
 		for (InplayScanDto dto : unique) {
 
-			String matchId = dto.getMatchId();
-			String sportId = dto.getSportId();
-			String basePayload = matchId + "|" + sportId;
+			Long matchId = dto.getMatchId();
+			Long sportId = dto.getSportId();
+
+			String matchIdValue = String.valueOf(matchId);
+			String sportIdValue = String.valueOf(sportId);
+
+			String basePayload = matchIdValue + "|" + sportIdValue;
 
 			// ✅[ADD] 이번 스캔에서 IN_PLAY로 본 경기 -> alive TTL 갱신(heartbeat)
-			redisSvc.touchInplayAlive(matchId);
+			redisSvc.touchInplayAlive(matchIdValue);
 
 			// ✅ GOALS는 IN_PLAY 감지 시점부터 주기 호출 대상 등록 (없을 때만)
 			redisSvc.scheduleNextIfAbsent(
@@ -86,7 +92,7 @@ public class InplayScanScheduler {
 				continue;
 			}
 
-			boolean first = redisSvc.markSeenAndEnqueue(matchId, sportId);
+			boolean first = redisSvc.markSeenAndEnqueue(matchIdValue, sportIdValue);
 			if (first)
 				newlyQueued++;
 			else

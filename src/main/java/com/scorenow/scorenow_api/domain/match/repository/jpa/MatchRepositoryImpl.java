@@ -72,14 +72,14 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 	}
 
 	@Override
-	public Optional<Match> findByIdWithRelations(String id){
+	public Optional<Match> findByIdWithRelations(Long matchId){
 		Match result = queryFactory
 			.selectFrom(match)
 			.leftJoin(match.sport, sport).fetchJoin()
 			.leftJoin(match.league, league).fetchJoin()
 			.leftJoin(match.homeTeam).fetchJoin()
 			.leftJoin(match.awayTeam).fetchJoin()
-			.where(match.id.eq(id))
+			.where(match.id.eq(matchId))
 			.fetchOne();
 
 		return Optional.ofNullable(result);
@@ -88,11 +88,11 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 
 	// === Private Helper Methods ===
 
-	private BooleanExpression sportIdEq(String sportId){
+	private BooleanExpression sportIdEq(Long sportId){
 		return sportId != null ? match.sportId.eq(sportId) : null;
 	}
 
-	private BooleanExpression leagueIdEq(String leagueId){
+	private BooleanExpression leagueIdEq(Long leagueId){
 		return leagueId != null ? match.leagueId.eq(leagueId) : null;
 	}
 

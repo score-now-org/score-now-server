@@ -4,6 +4,7 @@ import java.util.List;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,40 +23,37 @@ import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import jakarta.validation.Valid;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/admin/leagues")
 @Tag(name = "Admin - League ", description = "관리자 리그 관리 API")
 public class LeagueAdminController {
 
-	private final LeagueAdminService leagueAdminService;
+    private final LeagueAdminService leagueAdminService;
 
-	public LeagueAdminController(LeagueAdminService leagueAdminService) {
-		this.leagueAdminService = leagueAdminService;
-	}
-
-	@GetMapping
+    @GetMapping
     @Operation(summary = "리그 목록 조회", description = "keyword로 리그 이름 검색 가능 (없으면 전체 조회)")
-	public ApiResponse<List<LeagueAdminResponse>> getLeagues(@RequestParam(required = false) String keyword){
-		return ApiResponse.success(leagueAdminService.getLeagues(keyword));
-	}
+    public ApiResponse<List<LeagueAdminResponse>> getLeagues(@RequestParam(required = false) String keyword) {
+        return ApiResponse.success(leagueAdminService.getLeagues(keyword));
+    }
 
+    @PostMapping
     @Operation(summary = "리그 생성", description = "새로운 리그를 생성합니다.")
-	@PostMapping
-	public ApiResponse<LeagueAdminResponse> createLeague(@RequestBody @Valid LeagueCreateRequest request){
-		return ApiResponse.success(leagueAdminService.createLeague(request));
-	}
+    public ApiResponse<LeagueAdminResponse> createLeague(@RequestBody @Valid LeagueCreateRequest request) {
+        return ApiResponse.success(leagueAdminService.createLeague(request));
+    }
 
+    @PutMapping("/{leagueId}")
     @Operation(summary = "리그 수정", description = "리그 ID로 리그 정보를 수정합니다.")
-    @PutMapping("/{id}")
-	public ApiResponse<Void> updateLeague(@PathVariable String id, @RequestBody @Valid LeagueUpdateRequest request){
-		leagueAdminService.updateLeague(id, request);
-		return ApiResponse.success();
-	}
+    public ApiResponse<Void> updateLeague(@PathVariable Long leagueId, @RequestBody @Valid LeagueUpdateRequest request) {
+        leagueAdminService.updateLeague(leagueId, request);
+        return ApiResponse.success();
+    }
 
+    @DeleteMapping("/{leagueId}")
     @Operation(summary = "리그 삭제", description = "리그 ID로 리그를 삭제합니다.")
-	@DeleteMapping("/{id}")
-	public ApiResponse<Void> deleteLeague(@PathVariable String id){
-		leagueAdminService.deleteLeague(id);
-		return ApiResponse.success();
-	}
+    public ApiResponse<Void> deleteLeague(@PathVariable Long leagueId) {
+        leagueAdminService.deleteLeague(leagueId);
+        return ApiResponse.success();
+    }
 }

@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.mapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -14,13 +15,16 @@ public class MatchLineupMapper {
 
 	public LineupSide toSide(
 		BetsLineupResponse.LineupSide betsLineupSide,
-		String teamId,
-		String teamEname
+		Long teamId,
+		String apiTeamId,
+		String teamEname,
+		Map<String, Long> playerIdMap
 	) {
 		if (betsLineupSide == null) {
 
 			return LineupSide.builder()
 				.teamId(teamId)
+				.apiTeamId(apiTeamId)
 				.teamEname(teamEname)
 				.formation(null)
 				.startingLineup(new ArrayList<>())
@@ -30,52 +34,56 @@ public class MatchLineupMapper {
 
 		return LineupSide.builder()
 			.teamId(teamId)
+			.apiTeamId(apiTeamId)
 			.teamEname(teamEname)
 			.formation(betsLineupSide.getFormation())
-			.startingLineup(toPlayers(betsLineupSide.getStartinglineup(), teamId))
-			.substitutes(toPlayers(betsLineupSide.getSubstitutes(), teamId))
+			.startingLineup(toPlayers(betsLineupSide.getStartinglineup(), playerIdMap))
+			.substitutes(toPlayers(betsLineupSide.getSubstitutes(), playerIdMap))
 			.build();
 	}
 
-	public List<LineupPlayer> toPlayers(List<BetsLineupResponse.LineupPlayer> betsPlayers, String teamId) {
+	public List<LineupPlayer> toPlayers(
+		List<BetsLineupResponse.LineupPlayer> betsPlayers,
+		Map<String, Long> playerIdMap) {
 		if (betsPlayers == null)
 			return new ArrayList<>();
 
 		List<LineupPlayer> list = new ArrayList<>(betsPlayers.size());
 		for (BetsLineupResponse.LineupPlayer betsPlayer : betsPlayers) {
-			list.add(toPlayer(betsPlayer, teamId));
+			list.add(toPlayer(betsPlayer, playerIdMap));
 		}
 		return list;
 	}
 
-	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer, String teamId) {
+	public LineupPlayer toPlayer(BetsLineupResponse.LineupPlayer betsPlayer,
+		Map<String, Long> playerIdMap) {
 		String playerApiId = null;
 		String eName = null;
+		String shirtNumber = null;
 
-		if (betsPlayer != null && betsPlayer.getPlayer() != null) {
-			playerApiId = betsPlayer.getPlayer().getId();
-			eName = betsPlayer.getPlayer().getName();
+		if (betsPlayer != null) {
+			shirtNumber = betsPlayer.getShirtnumber();
+
+			if (betsPlayer.getPlayer() != null) {
+				playerApiId = betsPlayer.getPlayer().getId();
+				eName = betsPlayer.getPlayer().getName();
+			}
 		}
 
-		String playerId = (teamId == null || playerApiId == null) ? null : teamId + ":" + playerApiId;
+		Long playerId = null;
+
+		if (playerApiId != null && playerIdMap != null) {
+			playerId = playerIdMap.get(playerApiId);
+		}
 
 		return LineupPlayer.builder()
 			.playerId(playerId)
+			.apiPlayerId(playerApiId)
 			.eName(eName)
-			.shirtNumber(parseIntOrNull(betsPlayer != null ? betsPlayer.getShirtnumber() : null))
+			.shirtNumber(shirtNumber)
 			.position(mapPosition(betsPlayer != null ? betsPlayer.getPos() : null))
 			.goals(0)
 			.build();
-	}
-
-	private Integer parseIntOrNull(String v) {
-		if (v == null || v.isBlank())
-			return null;
-		try {
-			return Integer.valueOf(v);
-		} catch (NumberFormatException e) {
-			return null;
-		}
 	}
 
 	private String mapPosition(String pos) {

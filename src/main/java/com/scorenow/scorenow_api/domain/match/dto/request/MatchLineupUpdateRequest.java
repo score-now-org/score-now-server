@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 public class MatchLineupUpdateRequest {
 
 	private String position;
-	private Integer shirtNumber;
+	private String shirtNumber;
 	private Integer goals;
 
 }

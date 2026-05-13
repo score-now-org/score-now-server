@@ -9,6 +9,7 @@ import com.scorenow.scorenow_api.domain.match.dto.MatchSearchCondition;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 
 public interface MatchRepositoryCustom {
-	Page<Match> searchMatches(MatchSearchCondition condition, Pageable pageable);
-	Optional<Match> findByIdWithRelations(String id);
+    Page<Match> searchMatches(MatchSearchCondition condition, Pageable pageable);
+
+    Optional<Match> findByIdWithRelations(Long matchId);
 }

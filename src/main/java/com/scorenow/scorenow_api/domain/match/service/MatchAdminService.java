@@ -63,7 +63,7 @@ public class MatchAdminService {
 	 * 경기 수정
 	 */
 	@Transactional
-	public void updateMatch(String matchId, MatchUpdateRequest request) {
+	public void updateMatch(Long matchId, MatchUpdateRequest request) {
 		Match match = findMatchById(matchId);
 
 		applyUpdates(match, request);
@@ -90,7 +90,7 @@ public class MatchAdminService {
 
 	// === Helper Methods ===
 
-	private Match findMatchById(String matchId) {
+	private Match findMatchById(Long matchId) {
 		return matchRepository.findById(matchId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 	}

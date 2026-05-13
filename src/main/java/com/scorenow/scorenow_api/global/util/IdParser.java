@@ -1,4 +1,4 @@
-package com.scorenow.scorenow_api.domain.match.util;
+package com.scorenow.scorenow_api.global.util;
 
 public class IdParser {
 

@@ -5,21 +5,24 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 
 import lombok.Data;
 
 @Data
 public class BetsViewResponse {
+	private final ApiProvider provider = ApiProvider.BETS;
+
 	private List<ViewResult> results;
 
 	public boolean hasResult() {
 		return results != null && !results.isEmpty();
 	}
 
-	public MatchDetailDocument toDocument(String eventId) {
+	public MatchDetailDocument toDocument(Long matchId, Integer homeScore, Integer awayScore) {
 		ViewResult result = results.get(0);
 		return MatchDetailDocument.builder()
-			.id(eventId)
+			.id(matchId)
 			.homeStats(result.toMatchStats(0))
 			.awayStats(result.toMatchStats(1))
 			.extraTime(result.toExtraTime())   // 추가시간
@@ -28,17 +31,24 @@ public class BetsViewResponse {
 
 	@Data
 	public static class ViewResult {
-		private String id;
-		private String ss;
+		private String id;      // 경기 고유 ID
+
+		@JsonProperty("sport_id")
+		private String sportId; // 종목 ID
+		private String time;    // 경기 시작 시간 (UNIX TIMESTAMP)
+
+		private String ss;      // 현재 스코어 정보 home:away
 		private Stats stats;
 		private Timer timer;
+		private Extra extra;
 
 		@JsonProperty("events")
-		private List<EventText> events;
+		private List<EventText> events; // 경기 중 발생한 이벤트 리스트
 
 		public MatchStats toMatchStats(int idx) {
 			if (this.stats == null)
 				return MatchStats.builder().build();
+
 			return MatchStats.builder()
 				.yellowCards(parse(stats.yellowCards, idx))
 				.redCards(parse(stats.redCards, idx))
@@ -128,15 +138,28 @@ public class BetsViewResponse {
 
 	@Data
 	public static class Timer {
-		private Integer tm;
-		private Integer ts;
-		private String tt;
-		private Integer ta;
+		private Integer tm;     // 경과 분
+		private Integer ts;     // 경과 초
+		private String tt;      // 타이머 상태 (0:정지,1:진행)
+		private Integer ta;     // 추가시간
 	}
 
 	@Data
 	public static class EventText {
 		private String id;
 		private String text;
+	}
+
+	@Data
+	public static class Extra {
+		@JsonProperty("stadium_data")
+		private StadiumData stadiumData;
+	}
+
+	@Data
+	public static class StadiumData {
+		private String id;              // 경기장 ID
+		private String name;            // 경기장명
+		private String city;            // 경기장이 위치한 도시
 	}
 }
