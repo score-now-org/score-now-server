@@ -70,10 +70,10 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             	  join SportExternalMapping sem
             		on sem.internalSportId = m.sportId
             	  where m.statusCode = :matchStatus
-            		and m.startAt between :now and :targetTime
+            		and m.startAt between :startAt and :targetTime
             		and m.isManual = false
             """)
-    List<MatchCandidate> findMatchesStartingWithin(MatchStatus matchStatus, LocalDateTime now, LocalDateTime targetTime);
+    List<MatchCandidate> findMatchesStartingWithin(MatchStatus matchStatus, LocalDateTime startAt, LocalDateTime targetTime);
 
     @Modifying(clearAutomatically = true)
     @Query("update Match m set m.status = :status, m.updatedAt = CURRENT_TIMESTAMP where m.id IN :matchIds")
