@@ -19,7 +19,9 @@ import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.NOT_STAR
 @Service
 @RequiredArgsConstructor
 public class InplayMatchCandidateLoadService {
+
     private static final ZoneId SEOUL_TIME_ZONE_ID = ZoneId.of(SEOUL_TIME_ZONE);
+
     private final MatchRepository matchRepository;
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 

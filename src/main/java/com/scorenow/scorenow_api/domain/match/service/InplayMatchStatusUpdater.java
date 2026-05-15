@@ -15,6 +15,7 @@ import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.*;
 @Service
 @RequiredArgsConstructor
 public class InplayMatchStatusUpdater {
+
     private final MatchRepository matchRepository;
 
     @Transactional
