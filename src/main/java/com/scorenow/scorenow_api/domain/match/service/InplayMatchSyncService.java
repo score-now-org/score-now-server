@@ -82,7 +82,12 @@ public class InplayMatchSyncService {
         // 4. 분류 결과를 기반으로 Redis 와 DB 에 반영
         if (!inplayMatches.isEmpty() || !toBeFixedMatches.isEmpty()) {
             inplayMatchStatusUpdater.updateMatchStatuses(inplayMatches, toBeFixedMatches);
+            removeFromZSet(inplayMatches);
+            removeFromZSet(toBeFixedMatches);
         }
+    }
 
+    private void removeFromZSet(List<MatchCandidate> targets) {
+        redisTemplate.opsForZSet().remove(INPLAY_CANDIDATES_KEY, targets.toArray());
     }
 }
