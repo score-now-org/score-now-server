@@ -1,11 +1,11 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.dto.MatchCandidate;
+import com.scorenow.scorenow_api.domain.match.repository.redis.InplayMatchRedisRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,27 +23,15 @@ import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
 @RequiredArgsConstructor
 public class InplayMatchSyncService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-
     private final BetsApiClient betsApiClient;
-
     private final InplayMatchStatusUpdater inplayMatchStatusUpdater;
+    private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
     public void syncInplayMatches() {
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.of(SEOUL_TIME_ZONE));
 
         // 1. 동기화 대상 조회 (현재 시간 기준 INPLAY 일 것으로 예상되는 경기들)
-        Set<Object> matchCandidates = redisTemplate.opsForZSet()
-                .rangeByScore(INPLAY_CANDIDATES_KEY, 0, (double) now.plusSeconds(1).toInstant().toEpochMilli());
-
-        if (matchCandidates == null || matchCandidates.isEmpty()) {
-            log.info("{} 기준 시작 여부 검증 대상 경기가 없습니다. ❌", now);
-            return;
-        }
-
-        List<MatchCandidate> candidates = matchCandidates.stream()
-                .map(obj -> (MatchCandidate) obj)
-                .toList();
+        List<MatchCandidate> candidates = inplayMatchRedisRepository.findCandidatesToSync(now);
 
         // 2. 외부 API 중복 호출 방지를 위해 Sport ID만 추출 (종목별 INPLAY API 호출 필요)
         List<String> apiSportIds = candidates.stream()
@@ -80,12 +68,10 @@ public class InplayMatchSyncService {
         // 5. 분류 결과를 기반으로 DB 반영 및 Redis 캐시 정리
         if (!inplayMatches.isEmpty() || !toBeFixedMatches.isEmpty()) {
             inplayMatchStatusUpdater.updateMatchStatuses(inplayMatches, toBeFixedMatches);
-            removeFromZSet(inplayMatches);
-            removeFromZSet(toBeFixedMatches);
+
+            inplayMatchRedisRepository.removeCandidates(inplayMatches);
+            inplayMatchRedisRepository.removeCandidates(toBeFixedMatches);
         }
     }
 
-    private void removeFromZSet(List<MatchCandidate> targets) {
-        redisTemplate.opsForZSet().remove(INPLAY_CANDIDATES_KEY, targets.toArray());
-    }
 }
