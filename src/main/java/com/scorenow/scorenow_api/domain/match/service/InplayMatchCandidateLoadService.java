@@ -25,9 +25,11 @@ public class InplayMatchCandidateLoadService {
     private final MatchRepository matchRepository;
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
-    public void loadInplayCandidatesToCache() {
-        ZonedDateTime now = LocalDateTime.now().atZone(SEOUL_TIME_ZONE_ID);
-        List<MatchCandidate> candidates = matchRepository.findMatchesStartingWithin(NOT_STARTED, now.toLocalDateTime(), now.toLocalDateTime().plusHours(INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS));
+    public void loadInplayCandidatesToCache(LocalDateTime standardTime) {
+        ZonedDateTime start = standardTime.atZone(SEOUL_TIME_ZONE_ID);
+        ZonedDateTime end = start.plusHours(INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS);
+
+        List<MatchCandidate> candidates = matchRepository.findMatchesStartingWithin(NOT_STARTED, start.toLocalDateTime(), end.toLocalDateTime());
 
         log.info("{}시간 이내 시작 예정 경기 건수 : {}", INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS, candidates.size());
 

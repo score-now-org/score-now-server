@@ -77,7 +77,7 @@ public class MatchSyncScheduler {
         log.info("📅 INPLAY 예정 경기 캐싱 시작");
 
         try {
-            inplayMatchCandidateLoadService.loadInplayCandidatesToCache();
+            inplayMatchCandidateLoadService.loadInplayCandidatesToCache(LocalDateTime.now());
         } catch (Exception e) {
             log.error("시작 예정 경기 캐싱 작업 중 예외 발생 ❌", e);
         }
@@ -92,7 +92,7 @@ public class MatchSyncScheduler {
         log.info("📅 INPLAY 경기 동기화 시작");
 
         try {
-            inplayMatchSyncService.syncInplayMatches();
+            inplayMatchSyncService.syncInplayMatches(LocalDateTime.now());
         } catch (Exception e) {
             log.error("INPLAY 경기 동기화 처리 중 예외 발생 ❌", e);
         }
