@@ -59,12 +59,13 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     );
 
     @Query("""
-            	 select new com.scorenow.scorenow_api.domain.match.scheduler.MatchCandidateScheduler.MatchCandidate(
+            	 select new com.scorenow.scorenow_api.domain.match.dto.MatchCandidate(
             		m.id,
             		m.sportId,
             		m.provider,
             		m.apiMatchId,
-            		sem.apiSportId
+            		sem.apiSportId,
+                    m.startAt
             	)
             	  from Match m
             	  join SportExternalMapping sem
@@ -76,6 +77,6 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     List<MatchCandidate> findMatchesStartingWithin(MatchStatus matchStatus, LocalDateTime startAt, LocalDateTime targetTime);
 
     @Modifying(clearAutomatically = true)
-    @Query("update Match m set m.status = :status, m.updatedAt = CURRENT_TIMESTAMP where m.id IN :matchIds")
+    @Query("update Match m set m.statusCode = :status, m.updatedAt = CURRENT_TIMESTAMP where m.id IN :matchIds")
     void updateStatusBulk(List<Long> matchIds, MatchStatus status);
 }
