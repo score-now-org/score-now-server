@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.scorenow.scorenow_api.external.common.ApiProvider.BETS;
@@ -51,7 +52,7 @@ class InplayMatchSyncServiceTest {
         // INPLAY API 응답값 세팅
         BetsEventResponse inplaySoccer = getBetsEventResponse(List.of("100", "101"));
         BetsEventResponse inplayBaseball = getBetsEventResponse(List.of("200"));
-        BetsEventResponse inplayBasketball = getBetsEventResponse(List.of("300"));
+        BetsEventResponse inplayBasketball = getBetsEventResponse(Collections.emptyList());  // 유예기간 초과의 경우
 
         given(betsApiClient.getInplayEvents("SOCCER", null)).willReturn(inplaySoccer);
         given(betsApiClient.getInplayEvents("BASEBALL", null)).willReturn(inplayBaseball);
@@ -59,8 +60,10 @@ class InplayMatchSyncServiceTest {
 
         service.syncInplayMatches(now.toLocalDateTime());
 
-        // API 3회 호출 (축구 1회, 야구 1회, 농구 1회)
-        then(betsApiClient).should(times(3)).getInplayEvents(any(), any());
+        // API 총 3회 호출 (축구 1회, 야구 1회, 농구 1회)
+        then(betsApiClient).should(times(1)).getInplayEvents("SOCCER", null);
+        then(betsApiClient).should(times(1)).getInplayEvents("BASEBALL", null);
+        then(betsApiClient).should(times(1)).getInplayEvents("BASKETBALL", null);
 
         // InplayMatchStatusUpdater.updateMatchStatuses 1회 호출 검증
         then(inplayMatchStatusUpdater).should(times(1)).updateMatchStatuses(any(), any());
