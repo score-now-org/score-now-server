@@ -13,6 +13,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,15 @@ public class InplayMatchSyncService {
 
         // 3. 종목별 INPLAY API 호출 및 실제 진행 중인 경기 ID 취합
         Set<String> inplayMatchIds = apiSportIds.stream()
-                .map(sportId -> betsApiClient.getInplayEvents(sportId, null))
+                .map(sportId -> {
+                    try {
+                        return betsApiClient.getInplayEvents(sportId, null);
+                    } catch (Exception e) {
+                        log.error("[종목ID:{}] INPLAY API 호출 실패. 해당 종목은 이번 동기화에서 제외", sportId, e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .flatMap(response -> response.getResults().stream())
                 .map(BetsEventResponse.Event::getId)
                 .collect(Collectors.toSet());
