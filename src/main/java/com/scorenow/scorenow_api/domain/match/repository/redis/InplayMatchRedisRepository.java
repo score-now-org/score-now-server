@@ -22,13 +22,13 @@ public class InplayMatchRedisRepository {
     private final RedisTemplate<String, Object> redisTemplate;
 
     public void addCandidate(MatchCandidate candidate, ZonedDateTime startAt) {
-        double score = (double) startAt.toInstant().toEpochMilli();
+        double score = (double) startAt.toEpochSecond();
         redisTemplate.opsForZSet().addIfAbsent(INPLAY_CANDIDATES_KEY, candidate, score);
     }
 
     public List<MatchCandidate> findCandidatesToSync(ZonedDateTime now) {
         Set<Object> matchCandidates = redisTemplate.opsForZSet()
-                .rangeByScore(INPLAY_CANDIDATES_KEY, 0, (double) now.plusSeconds(1).toInstant().toEpochMilli());
+                .rangeByScore(INPLAY_CANDIDATES_KEY, 0, (double) now.plusSeconds(1).toEpochSecond());
 
         if (matchCandidates == null || matchCandidates.isEmpty()) {
             log.info("{} 기준 시작 여부 검증 대상 경기가 없습니다. ❌", now);
@@ -41,6 +41,7 @@ public class InplayMatchRedisRepository {
     }
 
     public void removeCandidates(List<MatchCandidate> targets) {
+        if (targets.isEmpty()) return;
         redisTemplate.opsForZSet().remove(INPLAY_CANDIDATES_KEY, targets.toArray());
     }
 }
