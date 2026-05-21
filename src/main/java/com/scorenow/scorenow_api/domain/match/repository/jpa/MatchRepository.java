@@ -52,6 +52,7 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             	from Match m
             	where m.provider = :provider
             	  and m.apiMatchId = :apiMatchId
+                  and m.isManual = false
             """)
     Optional<Match> findByExternalInfo(
             @Param("provider") ApiProvider provider,
@@ -79,4 +80,6 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     @Modifying(clearAutomatically = true)
     @Query("update Match m set m.statusCode = :status, m.updatedAt = CURRENT_TIMESTAMP where m.id IN :matchIds")
     void updateStatusBulk(List<Long> matchIds, MatchStatus status);
+
+    List<Match> findByStatusCodeAndIsManualFalse(MatchStatus matchStatus);
 }
