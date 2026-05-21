@@ -112,10 +112,6 @@ public class MatchDetailSyncService {
         }
     }
 
-    private boolean requiresLineupInit(boolean isLineupProvided, boolean hasLineupAlready) {
-        return isLineupProvided && !hasLineupAlready;
-    }
-
     /**
      * 로직은 아래와 같다.
      * apiMatchIds : ["100","101","102","103","104","105","106","107","108","109","110"]
