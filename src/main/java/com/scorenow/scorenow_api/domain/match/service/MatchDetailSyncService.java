@@ -66,13 +66,19 @@ public class MatchDetailSyncService {
 
         Map<String, ViewResult> matchDetails = betsViewResponses.stream()
                 .flatMap(viewResponse -> viewResponse.getResults().stream())
-                .collect(Collectors.toMap(ViewResult::getId, viewResult -> viewResult));
+                .collect(Collectors.toMap(
+                        ViewResult::getId,
+                        viewResult -> viewResult,
+                        (existing, replacement) -> existing));
 
         // 5. Inplay 인 경기 정보를 기반으로 MatchLineupDocument 를 조회한다. (라인업-골 정보 업데이트를 위하여 조회)
         List<Long> matchIds = inplayMatches.stream().map(Match::getId).toList();
 
         Map<Long, MatchLineupDocument> matchLineupDocuments = matchLineupRepository.findByIdIn(matchIds).stream()
-                .collect(Collectors.toMap(MatchLineupDocument::getId, matchLineupDocument -> matchLineupDocument));
+                .collect(Collectors.toMap(
+                        MatchLineupDocument::getId,
+                        matchLineupDocument -> matchLineupDocument,
+                        (existing, replacement) -> existing));
 
         // 6. 각 Inplay 경기의 세부 정보 및 라인업-골 정보를 업데이트 한다.
         for (Match inplayMatch : inplayMatches) {
@@ -87,19 +93,19 @@ public class MatchDetailSyncService {
             }
 
             try {
-                // 경기 세부 정보 업데이트
-                matchDetailService.updateInplayMatchDetail(ApiProvider.BETS, matchDetail);
+                matchDetailService.updateInplayMatchDetail(ApiProvider.BETS, matchDetail);  // 경기 세부 정보 업데이트
 
-                // Lineup 이 없는 경우, MatchLineupSyncScheduler 가 처리할 수 있게 레디스 큐에 삽입해준다.
-                if (requiresLineupInit(matchDetail.hasLineup(), matchLineupDocuments.containsKey(matchId))) {
-                    boolean isEnqueued = inplayRedisService.markSeenAndEnqueue(String.valueOf(matchId), String.valueOf(sportId));
-                    log.debug("LineupQueue 에 삽입 {} - matchId:{}", isEnqueued ? "성공" : "실패", matchId);
-                    continue;
+                if (matchDetail.hasLineup()) {
+                    if (!matchLineupDocuments.containsKey(matchId)) {   // Lineup 이 없는 경우, MatchLineupSyncScheduler 가 처리할 수 있게 레디스 큐에 삽입해준다.
+                        boolean isEnqueued = inplayRedisService.markSeenAndEnqueue(String.valueOf(matchId), String.valueOf(sportId));
+                        log.debug("LineupQueue 에 삽입 {} - matchId:{}", isEnqueued ? "성공" : "실패", matchId);
+                        continue;
+                    }
+
+                    // 라인업-골 정보 업데이트
+                    MatchLineupDocument matchLineupDocument = matchLineupDocuments.get(matchId);
+                    matchLineupGoalsService.updateLineupGoals(matchLineupDocument, matchDetail);
                 }
-
-                // 라인업-골 정보 업데이트
-                MatchLineupDocument matchLineupDocument = matchLineupDocuments.get(matchId);
-                matchLineupGoalsService.updateLineupGoals(matchLineupDocument, matchDetail);
             } catch (Exception e) {
                 log.error("❌ INPLAY 경기 세부 정보 업데이트 처리 중 실패 - matchId: {}", inplayMatch.getId(), e);
             }
