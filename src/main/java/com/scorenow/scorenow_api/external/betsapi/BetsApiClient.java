@@ -92,6 +92,7 @@ public class BetsApiClient {
 
 	/**
 	 * 경기 상세 정보 조회
+	 * 다건 조회 가능 (event_id=11915004,11914547,11914527,11914156)
 	 */
 	public BetsViewResponse getEventView(String eventId) {
 		String url = buildUrl("/v1/event/view")
