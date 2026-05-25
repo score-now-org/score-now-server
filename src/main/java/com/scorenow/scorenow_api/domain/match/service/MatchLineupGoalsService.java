@@ -109,7 +109,7 @@ public class MatchLineupGoalsService {
 		List<BetsViewResponse.EventText> events = matchDetail.getEvents();
 
 		if (events == null || events.isEmpty()) {
-			log.debug("⏭[GOALS] events empty apiMatchId={}", matchDetail.getId());
+			log.info("⏭[GOALS] events empty apiMatchId={}", matchDetail.getId());
 			return;
 		}
 
@@ -121,9 +121,9 @@ public class MatchLineupGoalsService {
 
 		if (changed) {
 			matchLineupRepo.save(matchLineupDocument);
-			log.debug("✅[GOALS] 반영 완료 matchId={}, goalPlayers={}", matchLineupDocument.getId(), goalCounts.size());
+			log.info("✅[GOALS] 반영 완료 matchId={}, goalPlayers={}", matchLineupDocument.getId(), goalCounts.size());
 		} else {
-			log.debug("⏭[GOALS] 변경 없음 matchId={}", matchLineupDocument.getId());
+			log.info("⏭[GOALS] 변경 없음 matchId={}", matchLineupDocument.getId());
 		}
 	}
 
