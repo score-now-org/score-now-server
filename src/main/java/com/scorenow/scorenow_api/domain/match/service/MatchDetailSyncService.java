@@ -98,7 +98,7 @@ public class MatchDetailSyncService {
                 if (matchDetail.hasLineup()) {
                     if (!matchLineupDocuments.containsKey(matchId)) {   // Lineup 이 없는 경우, MatchLineupSyncScheduler 가 처리할 수 있게 레디스 큐에 삽입해준다.
                         boolean isEnqueued = inplayRedisService.markSeenAndEnqueue(String.valueOf(matchId), String.valueOf(sportId));
-                        log.debug("LineupQueue 에 삽입 {} - matchId:{}", isEnqueued ? "성공" : "실패", matchId);
+                        log.info("LineupQueue 에 삽입 {} - matchId:{}", isEnqueued ? "성공" : "실패", matchId);
                         continue;
                     }
 
