@@ -19,18 +19,6 @@ public class BetsViewResponse {
         return results != null && !results.isEmpty();
     }
 
-    public MatchDetailDocument toDocument(Long matchId, Integer homeScore, Integer awayScore) {
-        ViewResult result = results.get(0);
-        return MatchDetailDocument.builder()
-                .id(matchId)
-                .homeScore(homeScore)
-                .homeStats(result.toMatchStats(0))
-                .awayScore(awayScore)
-                .awayStats(result.toMatchStats(1))
-                .extraTime(result.toExtraTime())   // 추가시간
-                .build();
-    }
-
     @Data
     public static class ViewResult {
         private String id;      // 경기 고유 ID
@@ -71,8 +59,8 @@ public class BetsViewResponse {
             return MatchStats.builder()
                     .yellowCards(parse(stats.yellowCards, idx))
                     .redCards(parse(stats.redCards, idx))
-                    .shots(parse(stats.shots, idx))
-                    .shotsOnTarget(parse(stats.shotsOnTarget, idx))
+                    .shots(parse(stats.offTarget, idx))
+                    .shotsOnTarget(parse(stats.onTarget, idx))
                     .possession(parse(stats.possession, idx))
                     .offsides(parse(stats.offsides, idx))
                     .fouls(parse(stats.fouls, idx))
@@ -82,22 +70,30 @@ public class BetsViewResponse {
         }
 
         public MatchDetailDocument.ExtraTime toExtraTime() {
-            if (this.timer == null)
-                return defaultExtraTime();
+            // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료)
+            if (this.timer == null) {
+                return null;
+            }
 
             return MatchDetailDocument.ExtraTime.builder()
-                    .firstHalf(this.timer.getTa() != null ? this.timer.getTa() : 0)
-                    .secondHalf(0)
+                    .firstHalf(getFirstHalfExtraTime())
+                    .secondHalf(getSecondHalfExtraTime())
                     .overTime(0)
                     .build();
         }
 
-        private MatchDetailDocument.ExtraTime defaultExtraTime() {
-            return MatchDetailDocument.ExtraTime.builder()
-                    .firstHalf(0)
-                    .secondHalf(0)
-                    .overTime(0)
-                    .build();
+        private Integer getFirstHalfExtraTime() {
+            if (timer.isFirstHalf()) {
+                return timer.ta != null ? timer.ta : null;
+            }
+            return null;
+        }
+
+        private Integer getSecondHalfExtraTime() {
+            if (timer.isSecondHalf()) {
+                return timer.ta != null ? timer.ta : null;
+            }
+            return null;
         }
 
         private Integer parse(List<String> list, int i) {
@@ -139,14 +135,14 @@ public class BetsViewResponse {
 
     @Data
     public static class Stats {
-        @JsonProperty("yellow_cards")
+        @JsonProperty("yellowcards")
         private List<String> yellowCards;
-        @JsonProperty("red_cards")
+        @JsonProperty("redcards")
         private List<String> redCards;
-        @JsonProperty("shott_total")
-        private List<String> shots;
-        @JsonProperty("shott_on_target")
-        private List<String> shotsOnTarget;
+        @JsonProperty("off_target")
+        private List<String> offTarget;
+        @JsonProperty("on_target")
+        private List<String> onTarget;
         @JsonProperty("possession_rt")
         private List<String> possession;
         @JsonProperty("offsides")
@@ -155,7 +151,7 @@ public class BetsViewResponse {
         private List<String> fouls;
         @JsonProperty("corners")
         private List<String> corners;
-        @JsonProperty("free_kicks")
+        @JsonProperty("freekicks")
         private List<String> freeKicks;
     }
 
@@ -165,6 +161,15 @@ public class BetsViewResponse {
         private Integer ts;     // 경과 초
         private String tt;      // 타이머 상태 (0:정지,1:진행)
         private Integer ta;     // 추가시간
+        private Integer md;     // 전후반 구분 (0:전반,1:후반)
+
+        public boolean isFirstHalf() {
+            return this.md == 0;
+        }
+
+        public boolean isSecondHalf() {
+            return this.md == 1;
+        }
     }
 
     @Data

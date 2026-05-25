@@ -57,7 +57,7 @@ public class MatchDetailService {
 
         // 경기 정보 반영
         MatchDetailDocument detail = matchDetail.toDocument(match.getId());
-        matchDetailRepository.save(detail);
+        matchDetailRepository.upsertMatchDetail(detail);
 
         log.info("✅ 경기 상세 데이터(MySQL & MongoDB) 동기화 완료 matchId:{}, apiMatchId:{}", match.getId(), apiMatchId);
     }

@@ -10,4 +10,6 @@ public interface MatchDetailRepository {
     MatchDetailDocument save(MatchDetailDocument detail);
 
     long updateCurrentCommentary(Long matchId, String content, String commentaryId);
+
+    void upsertMatchDetail(MatchDetailDocument matchDetailDocument);
 }
