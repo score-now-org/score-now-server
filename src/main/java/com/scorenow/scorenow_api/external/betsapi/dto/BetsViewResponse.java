@@ -164,10 +164,12 @@ public class BetsViewResponse {
         private Integer md;     // 전후반 구분 (0:전반,1:후반)
 
         public boolean isFirstHalf() {
+            if (this.md == null) return false;
             return this.md == 0;
         }
 
         public boolean isSecondHalf() {
+            if (this.md == null) return false;
             return this.md == 1;
         }
     }
