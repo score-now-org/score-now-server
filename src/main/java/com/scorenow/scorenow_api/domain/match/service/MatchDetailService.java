@@ -8,8 +8,9 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
-import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.StadiumData;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
+import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -18,39 +19,36 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.NOT_STARTED;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class MatchDetailService {
+
     private final StadiumCacheService stadiumCacheService;
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
-    private final BetsApiClient betsApiClient;
 
     @Transactional
-    public void updateInplayMatchDetail(Long matchId, String apiMatchId) {
-        BetsViewResponse response = betsApiClient.getEventView(apiMatchId);
+    public void updateInplayMatchDetail(ApiProvider provider, ViewResult matchDetail) {
+        String apiMatchId = matchDetail.getId();
 
-        if (response == null || !response.hasResult()) {
-            log.warn("❌ 실패: ID {}에 대한 API 응답 데이터가 없습니다.", apiMatchId);
-            return;
+        Match match = matchRepository.findByExternalInfo(provider, apiMatchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        MatchStatus matchStatus = MatchStatus.fromCode(matchDetail.getTimeStatus());
+        if (matchStatus != NOT_STARTED) {
+            match.updateStatus(matchStatus);
         }
-
-        BetsViewResponse.ViewResult apiResult = response.getResults().get(0);
-
-        // Match 영속화를 위한 조회
-        Match match = matchRepository.findById(matchId).orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
-
-        // 홈-어웨이 스코어 변경
-        match.updateHomeScore(apiResult.getHomeScore());
-        match.updateAwayScore(apiResult.getAwayScore());
+        match.updateHomeScore(matchDetail.getHomeScore());
+        match.updateAwayScore(matchDetail.getAwayScore());
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
-        BetsViewResponse.StadiumData stadiumData = apiResult.getExtra().getStadiumData();
-        log.info("stadiumData: {}", stadiumData);
+        StadiumData stadiumData = matchDetail.getExtra().getStadiumData();
         if (stadiumData != null) {
-            Stadium stadium = stadiumCacheService.getOrCreateStadium(response.getProvider(), apiResult.getSportId(), stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
-            log.info("stadium = {}", stadium);
+            Stadium stadium = stadiumCacheService.getOrCreateStadium(provider, matchDetail.getSportId(), stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
+
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
             if (match.isStadiumEmpty()) {
                 match.updateStadiumId(stadium.getId());
@@ -58,10 +56,10 @@ public class MatchDetailService {
         }
 
         // 경기 정보 반영
-        MatchDetailDocument detail = response.toDocument(matchId, apiResult.getHomeScore(), apiResult.getAwayScore());
-        matchDetailRepository.save(detail);
+        MatchDetailDocument detail = matchDetail.toDocument(match.getId());
+        matchDetailRepository.upsertMatchDetail(detail);
 
-        log.info("✅ 성공: {} 경기 상세 데이터(MySQL & MongoDB) 동기화 완료", matchId);
+        log.info("✅ 경기 상세 데이터(MySQL & MongoDB) 동기화 완료 matchId:{}, apiMatchId:{}", match.getId(), apiMatchId);
     }
 
     /**
@@ -93,7 +91,7 @@ public class MatchDetailService {
 
         detail.updateFrom(request);
 
-        log.info("📊 MongoDB 상세 지표 수동 수정 완료: {}", matchId);
+        log.info("📊 MatchDetailDocument 수동 수정 완료: {}", matchId);
         return matchDetailRepository.save(detail).getId();
     }
 
