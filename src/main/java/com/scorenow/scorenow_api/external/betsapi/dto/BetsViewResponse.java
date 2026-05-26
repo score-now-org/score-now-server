@@ -15,7 +15,7 @@ public class BetsViewResponse {
 
     private List<ViewResult> results;
 
-    public boolean hasResult() {
+    public boolean hasResults() {
         return results != null && !results.isEmpty();
     }
 
@@ -129,7 +129,7 @@ public class BetsViewResponse {
         }
 
         public boolean hasLineup() {
-            return hasLineup == 1;
+            return hasLineup != null && hasLineup == 1;
         }
     }
 

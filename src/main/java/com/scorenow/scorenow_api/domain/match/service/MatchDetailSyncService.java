@@ -65,7 +65,9 @@ public class MatchDetailSyncService {
         }
 
         Map<String, ViewResult> matchDetails = betsViewResponses.stream()
+                .filter(viewResponse -> viewResponse != null && viewResponse.hasResults())
                 .flatMap(viewResponse -> viewResponse.getResults().stream())
+                .filter(viewResult -> viewResult != null && viewResult.getId() != null)
                 .collect(Collectors.toMap(
                         ViewResult::getId,
                         viewResult -> viewResult,
@@ -96,7 +98,8 @@ public class MatchDetailSyncService {
                 matchDetailService.updateInplayMatchDetail(ApiProvider.BETS, matchDetail);  // 경기 세부 정보 업데이트
 
                 if (matchDetail.hasLineup()) {
-                    if (!matchLineupDocuments.containsKey(matchId)) {   // Lineup 이 없는 경우, MatchLineupSyncScheduler 가 처리할 수 있게 레디스 큐에 삽입해준다.
+                    // Lineup 이 없는 경우, MatchLineupSyncScheduler 가 처리할 수 있게 레디스 큐에 삽입해준다.
+                    if (!matchLineupDocuments.containsKey(matchId)) {
                         boolean isEnqueued = inplayRedisService.markSeenAndEnqueue(String.valueOf(matchId), String.valueOf(sportId));
                         log.info("LineupQueue 에 삽입 {} - matchId:{}", isEnqueued ? "성공" : "실패", matchId);
                         continue;
