@@ -28,10 +28,10 @@ public class MatchSyncScheduler {
 	private final MatchSyncService matchSyncService;
 
 	/**
-	 * 매일 2회 배치 실행(4시, 16시)
+	 * 매일 2회 배치 실행(4시, 16시): @Scheduled(cron = "0 0 4,16 * * *")
 	 * 테스트 시 임시 사용: @Scheduled(initialDelay = 10000, fixedRate = 1000000)
 	 */
-	@Scheduled(cron = "0 0 4,16 * * *")
+	@Scheduled(initialDelay = 10000, fixedRate = 1000000)
 	public void runMatchSyncJob() {
 		log.info("=== Match Sync Batch Job 시작 ===");
 

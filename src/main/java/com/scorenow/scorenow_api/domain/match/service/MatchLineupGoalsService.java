@@ -146,8 +146,19 @@ public class MatchLineupGoalsService {
 			return false;
 		}
 
-		String nameKey = normalize(p.getEName());
-		int newGoals = goalCounts.getOrDefault(nameKey, 0);
+		// String nameKey = normalize(p.getEName());
+		// int newGoals = goalCounts.getOrDefault(nameKey, 0);
+
+		String playerName = normalize(p.getEName());
+
+		int newGoals = 0;
+		for (Map.Entry<String, Integer> entry : goalCounts.entrySet()) {
+			String scorerName = entry.getKey();
+
+			if (playerName.contains(scorerName)) {
+				newGoals += entry.getValue();
+			}
+		}
 
 		Integer cur = (p.getGoals() == null ? 0 : p.getGoals());
 		if (!cur.equals(newGoals)) {
@@ -158,10 +169,7 @@ public class MatchLineupGoalsService {
 	}
 
 	private String normalize(String s) {
-		if (s == null) {
-			return "";
-		}
-		return s.trim().toUpperCase().replaceAll("\\s+", " ");
+		return s == null ? "" : s.trim().toUpperCase();
 	}
 
 	private Map<String, Integer> buildGoalCounts(List<BetsViewResponse.EventText> events) {
