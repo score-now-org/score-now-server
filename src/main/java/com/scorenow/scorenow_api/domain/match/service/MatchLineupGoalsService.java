@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -100,6 +101,29 @@ public class MatchLineupGoalsService {
 		} catch (Exception e) {
 			log.warn("⚠[GOALS] 처리 중 예외 matchId={}, sportId={}, reason={}",
 				matchId, sportId, e.toString());
+		}
+	}
+
+	@Transactional
+	public void updateLineupGoals(MatchLineupDocument matchLineupDocument, ViewResult matchDetail) {
+		List<BetsViewResponse.EventText> events = matchDetail.getEvents();
+
+		if (events == null || events.isEmpty()) {
+			log.info("⏭[GOALS] events empty apiMatchId={}", matchDetail.getId());
+			return;
+		}
+
+		Map<String, Integer> goalCounts = buildGoalCounts(events);
+
+		boolean changed = false;
+		changed |= applyGoalCountsToSide(matchLineupDocument.getHome(), goalCounts);
+		changed |= applyGoalCountsToSide(matchLineupDocument.getAway(), goalCounts);
+
+		if (changed) {
+			matchLineupRepo.save(matchLineupDocument);
+			log.info("✅[GOALS] 반영 완료 matchId={}, goalPlayers={}", matchLineupDocument.getId(), goalCounts.size());
+		} else {
+			log.info("⏭[GOALS] 변경 없음 matchId={}", matchLineupDocument.getId());
 		}
 	}
 

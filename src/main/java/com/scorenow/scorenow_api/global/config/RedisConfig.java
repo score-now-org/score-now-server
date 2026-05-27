@@ -2,6 +2,9 @@ package com.scorenow.scorenow_api.global.config;
 
 import java.time.Duration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -19,53 +22,62 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableCaching
 public class RedisConfig {
 
-	/**
-	 * RedisTemplate 설정
-	 * - Key: String (StringRedisSerializer)
-	 * - Value: JSON (GenericJackson2JsonRedisSerializer)
-	 */
-	@Bean
-	public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-		RedisTemplate<String, Object> template = new RedisTemplate<>();
-		template.setConnectionFactory(connectionFactory);
+    /**
+     * RedisTemplate 설정
+     * - Key: String (StringRedisSerializer)
+     * - Value: JSON (GenericJackson2JsonRedisSerializer)
+     */
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
 
-		// Key는 String으로 직렬화
-		template.setKeySerializer(new StringRedisSerializer());
-		template.setHashKeySerializer(new StringRedisSerializer());
+        // Key는 String으로 직렬화
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
 
-		// Value는 JSON으로 직렬화
-		GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer();
-		template.setValueSerializer(serializer);
-		template.setHashValueSerializer(serializer);
+        // ObjectMapper 커스텀 설정 : java.time.* 패키지 타입 직렬화 에러 대응
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.activateDefaultTyping(
+                mapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL
+        );
 
-		return template;
-	}
+        // Value는 JSON으로 직렬화
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(mapper);
+        template.setValueSerializer(serializer);
+        template.setHashValueSerializer(serializer);
 
-	/**
-	 * CacheManager 설정
-	 * - TTL: 10분
-	 * - JSON: 직렬화
-	 */
-	@Bean
-	public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-		RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-			.entryTtl(Duration.ofMinutes(10)) // 기본 TTL 10분
-			.serializeKeysWith(
-				RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer())
-			)
-			.serializeValuesWith(
-				RedisSerializationContext.SerializationPair.fromSerializer(
-					new GenericJackson2JsonRedisSerializer()
-				)
-			);
+        return template;
+    }
 
-		return RedisCacheManager.builder(connectionFactory)
-			.cacheDefaults(config)
-			.build();
-	}
+    /**
+     * CacheManager 설정
+     * - TTL: 10분
+     * - JSON: 직렬화
+     */
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10)) // 기본 TTL 10분
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer())
+                )
+                .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                new GenericJackson2JsonRedisSerializer()
+                        )
+                );
 
-	@Bean
-	public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
-		return new StringRedisTemplate(connectionFactory);
-	}
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(config)
+                .build();
+    }
+
+    @Bean
+    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
+        return new StringRedisTemplate(connectionFactory);
+    }
 }

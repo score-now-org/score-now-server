@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
+import com.scorenow.scorenow_api.domain.match.constant.MatchConstants;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.common.ApiProvider;
@@ -30,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MatchEventSyncService {
 
     private static final String TEAM_IMAGE_BASE_URL = "https://assets.b365api.com/images/team/m/";
-    private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of(MatchConstants.SEOUL_TIME_ZONE);
 
     private final LeagueService leagueService;
     private final TeamService teamService;
