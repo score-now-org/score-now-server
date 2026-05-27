@@ -70,7 +70,9 @@ public class BetsApiTestController {
 
 	/**
 	 * 선수 동기화
-	 * curl -X POST "http://localhost:8080/api/test/betsapi/sync/players?leagueId=BETS194"
+	 * 내부 리그 ID 기준으로 선수 동기화
+	 *
+	 * curl -X POST "http://localhost:8080/api/test/betsapi/sync/players?leagueId=1"
 	 */
 	@PostMapping("/sync/players")
 	public ApiResponse<String> syncPlayer(@RequestParam Long leagueId) {

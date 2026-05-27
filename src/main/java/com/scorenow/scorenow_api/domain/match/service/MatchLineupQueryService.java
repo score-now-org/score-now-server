@@ -26,7 +26,9 @@ public class MatchLineupQueryService {
 	private final MatchLineupSearchRepository matchLineupSearchRepository;
 	private final MatchLineupRepository matchLineupRepo;
 
-	/** matchId 기준으로 라인업 조회 */
+	/**
+	 * matchId 기준으로 라인업 조회
+	 */
 	@Transactional(readOnly = true)
 	public MatchLineupDocument getByMatchId(Long matchId) {
 		if (matchId == null) {
@@ -41,7 +43,11 @@ public class MatchLineupQueryService {
 			));
 	}
 
-	/** 선수추가 - 모달 최초 진입 시 해당 팀 선수 목록 조회 + 현재 라인업 반영 여부(selected) 포함 */
+	/**
+	 * 라인업 > 선수추가
+	 * - 모달 최초 진입 시 해당 팀 선수 목록 조회
+	 * - 현재 라인업 반영 여부(selected) 포함
+	 */
 	@Transactional(readOnly = true)
 	public List<MatchLineupPlayerResponse> getSelectablePlayers(Long matchId, Long teamId) {
 		if (matchId == null) {
@@ -74,7 +80,11 @@ public class MatchLineupQueryService {
 			.toList();
 	}
 
-	/** 선수추가 - 검색 시 전체 선수 풀에서 조회 + 현재 라인업 반영 여부(selected) 포함 */
+	/**
+	 * 라인업 > 선수추가
+	 * - 검색 시 전체 선수 풀에서 조회
+	 * - 현재 라인업 반영 여부(selected) 포함
+	 */
 	@Transactional(readOnly = true)
 	public List<MatchLineupPlayerResponse> searchSelectablePlayers(Long matchId, String keyword) {
 		if (matchId == null) {
