@@ -43,18 +43,20 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
         update.set("homeStats", matchDetailDocument.getHomeStats());
         update.set("awayScore", matchDetailDocument.getAwayScore());
         update.set("awayStats", matchDetailDocument.getAwayStats());
+        update.set("matchClock", matchDetailDocument.getMatchClock());
 
-        ExtraTime extraTime = matchDetailDocument.getExtraTime();
-        if (extraTime != null) {
-            Integer firstHalf = extraTime.getFirstHalf();
-            Integer secondHalf = extraTime.getSecondHalf();
+        // 추가시간의 경우 기존에 저장한 전반 추가시간이나 후반 추가시간이 사라지면 안되기 때문에, 값을 확인하고 부분적으로 수정해주는 방식으로 한다.
+        AdditionalTime additionalTime = matchDetailDocument.getAdditionalTime();
+        if (additionalTime != null) {
+            Integer firstHalf = additionalTime.getFirstHalf();
+            Integer secondHalf = additionalTime.getSecondHalf();
 
             if (firstHalf != null) {
-                update.set("extraTime.firstHalf", firstHalf);
+                update.set("additionalTime.firstHalf", firstHalf);
             }
 
             if (secondHalf != null) {
-                update.set("extraTime.secondHalf", secondHalf);
+                update.set("additionalTime.secondHalf", secondHalf);
             }
         }
 

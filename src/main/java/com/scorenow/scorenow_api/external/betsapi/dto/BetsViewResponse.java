@@ -1,9 +1,12 @@
 package com.scorenow.scorenow_api.external.betsapi.dto;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 import com.scorenow.scorenow_api.external.common.ApiProvider;
 
@@ -41,14 +44,18 @@ public class BetsViewResponse {
         @JsonProperty("has_lineup")
         private Integer hasLineup;  // 라인업 제공 여부 (0:제공안함, 1:제공함)
 
-        public MatchDetailDocument toDocument(Long matchId) {
+        @JsonProperty("inplay_updated_at")
+        private String inplayUpdatedAt;
+
+        public MatchDetailDocument toDocument(Long matchId, LocalDateTime startAt) {
             return MatchDetailDocument.builder()
                     .id(matchId)
                     .homeScore(getHomeScore())
                     .homeStats(toMatchStats(0))
                     .awayScore(getAwayScore())
                     .awayStats(toMatchStats(1))
-                    .extraTime(toExtraTime())   // 추가시간
+                    .matchClock(toMatchClock(startAt))
+                    .additionalTime(toAdditionalTime())
                     .build();
         }
 
@@ -69,27 +76,54 @@ public class BetsViewResponse {
                     .build();
         }
 
-        public MatchDetailDocument.ExtraTime toExtraTime() {
+        public MatchDetailDocument.MatchClock toMatchClock(LocalDateTime startAt) {
             // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료)
             if (this.timer == null) {
                 return null;
             }
 
-            return MatchDetailDocument.ExtraTime.builder()
-                    .firstHalf(getFirstHalfExtraTime())
-                    .secondHalf(getSecondHalfExtraTime())
-                    .overTime(0)
+            return MatchDetailDocument.MatchClock.builder()
+                    .startAt(startAt.toString())
+                    .elapsedMinutes(timer.tm)
+                    .elapsedSeconds(timer.ts)
+                    .period(MatchPeriod.fromCode(timer.md))
+                    .running(Timer.RUNNING.equals(timer.tt))
+                    .providerUpdatedAt(toProviderUpdatedAt())
                     .build();
         }
 
-        private Integer getFirstHalfExtraTime() {
+        private Instant toProviderUpdatedAt() {
+            if (inplayUpdatedAt == null || inplayUpdatedAt.isBlank()) {
+                return null;
+            }
+
+            try {
+                return Instant.ofEpochSecond(Long.parseLong(inplayUpdatedAt));
+            } catch (Exception e) {
+                return Instant.now();
+            }
+        }
+
+        public MatchDetailDocument.AdditionalTime toAdditionalTime() {
+            // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료)
+            if (this.timer == null) {
+                return null;
+            }
+
+            return MatchDetailDocument.AdditionalTime.builder()
+                    .firstHalf(getFirstHalfAdditionalTime())
+                    .secondHalf(getSecondHalfAdditionalTime())
+                    .build();
+        }
+
+        private Integer getFirstHalfAdditionalTime() {
             if (timer.isFirstHalf()) {
                 return timer.ta != null ? timer.ta : null;
             }
             return null;
         }
 
-        private Integer getSecondHalfExtraTime() {
+        private Integer getSecondHalfAdditionalTime() {
             if (timer.isSecondHalf()) {
                 return timer.ta != null ? timer.ta : null;
             }
@@ -157,6 +191,7 @@ public class BetsViewResponse {
 
     @Data
     public static class Timer {
+        public static final String RUNNING = "1";
         private Integer tm;     // 경과 분
         private Integer ts;     // 경과 초
         private String tt;      // 타이머 상태 (0:정지,1:진행)
