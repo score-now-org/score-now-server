@@ -60,7 +60,7 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
 
             if (existingAdditionalTime == null) {
                 // 기존 추가시간 객체가 아예 없었다면 객체 자체를 통째로 할당
-                ReflectionTestUtils.setField(saved, "extraTime", newAdditionalTime);
+                ReflectionTestUtils.setField(saved, "additionalTime", newAdditionalTime);
             } else {
                 // 기존 추가시간 객체가 있다면, 하위 필드(전반/후반) 별로 null이 아닐 때만 병합
                 if (newAdditionalTime.getFirstHalf() != null) {
@@ -68,6 +68,12 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
                 }
                 if (newAdditionalTime.getSecondHalf() != null) {
                     ReflectionTestUtils.setField(existingAdditionalTime, "secondHalf", newAdditionalTime.getSecondHalf());
+                }
+                if (newAdditionalTime.getExtraFirstHalf() != null) {
+                    ReflectionTestUtils.setField(existingAdditionalTime, "extraFirstHalf", newAdditionalTime.getExtraFirstHalf());
+                }
+                if (newAdditionalTime.getExtraSecondHalf() != null) {
+                    ReflectionTestUtils.setField(existingAdditionalTime, "extraSecondHalf", newAdditionalTime.getExtraSecondHalf());
                 }
             }
         }

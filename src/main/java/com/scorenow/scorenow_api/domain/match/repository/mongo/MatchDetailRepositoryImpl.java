@@ -50,6 +50,8 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
         if (additionalTime != null) {
             Integer firstHalf = additionalTime.getFirstHalf();
             Integer secondHalf = additionalTime.getSecondHalf();
+            Integer extraFirstHalf = additionalTime.getExtraFirstHalf();
+            Integer extraSecondHalf = additionalTime.getExtraSecondHalf();
 
             if (firstHalf != null) {
                 update.set("additionalTime.firstHalf", firstHalf);
@@ -57,6 +59,14 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
 
             if (secondHalf != null) {
                 update.set("additionalTime.secondHalf", secondHalf);
+            }
+
+            if (extraFirstHalf != null) {
+                update.set("additionalTime.extraFirstHalf", extraFirstHalf);
+            }
+
+            if (extraSecondHalf != null) {
+                update.set("additionalTime.extraSecondHalf", extraSecondHalf);
             }
         }
 

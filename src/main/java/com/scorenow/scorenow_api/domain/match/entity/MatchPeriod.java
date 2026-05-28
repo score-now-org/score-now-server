@@ -1,5 +1,8 @@
 package com.scorenow.scorenow_api.domain.match.entity;
 
+import lombok.Getter;
+
+@Getter
 public enum MatchPeriod {
     FIRST_HALF(0, "전반전"),
     SECOND_HALF(1, "후반전");
@@ -19,6 +22,6 @@ public enum MatchPeriod {
             }
         }
 
-        throw new IllegalArgumentException("MatchPeriod 변환에 실패하였습니다. code:" + code);
+        return null;
     }
 }

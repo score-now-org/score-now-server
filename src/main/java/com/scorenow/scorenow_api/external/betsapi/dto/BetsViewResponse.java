@@ -83,7 +83,7 @@ public class BetsViewResponse {
             }
 
             return MatchDetailDocument.MatchClock.builder()
-                    .startAt(startAt.toString())
+                    .startAt(startAt != null ? startAt.toString() : null)
                     .elapsedMinutes(timer.tm)
                     .elapsedSeconds(timer.ts)
                     .period(MatchPeriod.fromCode(timer.md))
