@@ -37,6 +37,7 @@ public class LeagueAdminService {
                 .eName(request.getEName())
                 .kName(request.getKName())
                 .sName(request.getSName())
+                .teamDisplayOrder(request.getTeamDisplayOrder())
                 .build();
 
         return LeagueAdminResponse.from(leagueRepository.save(league));
