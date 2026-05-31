@@ -35,6 +35,7 @@ public class MatchEventSyncService {
 
     private final LeagueService leagueService;
     private final TeamService teamService;
+    private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
 
     private final MatchRepository matchRepository;
 
@@ -53,12 +54,14 @@ public class MatchEventSyncService {
         League savedLeague = saveLeague(provider, event.getLeague(), internalSportId);
         Team savedHome = saveTeam(provider, event.getHome(), internalSportId);
         Team savedAway = saveTeam(provider, event.getAway(), internalSportId);
-        saveMatch(provider, event, internalSportId, savedLeague.getId(), savedHome.getId(), savedAway.getId());
+        saveMatch(provider, event, internalSportId, savedLeague, savedHome, savedAway);
     }
 
     private League saveLeague(ApiProvider provider, BetsEventResponse.League betsLeague, Long internalSportId) {
         if (betsLeague == null) {
-            throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, String.format("%s 에서 리그 정보를 제공하지 않았습니다.", provider));
+            throw new BusinessException(
+                    ErrorCode.LEAGUE_NOT_FOUND,
+                    String.format("%s 에서 리그 정보를 제공하지 않았습니다.", provider));
         }
 
         return leagueService.getOrCreateLeague(provider, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
@@ -77,7 +80,14 @@ public class MatchEventSyncService {
         return teamService.getOrCreateTeam(provider, internalSportId, betsTeam.getId(), betsTeam.getName(), betsTeam.getCc(), imageUrl);
     }
 
-    private void saveMatch(ApiProvider provider, BetsEventResponse.Event event, Long internalSportId, Long internalLeagueId, Long internalHomeId, Long internalAwayId) {
+    private void saveMatch(
+            ApiProvider provider,
+            BetsEventResponse.Event event,
+            Long internalSportId,
+            League league,
+            Team homeTeam,
+            Team awayTeam) {
+
         if (event.getLeague() == null || event.getHome() == null || event.getAway() == null) {
             log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
             return;
@@ -88,12 +98,13 @@ public class MatchEventSyncService {
                         .provider(provider)
                         .apiMatchId(event.getId())
                         .bet365Id(event.getBet365Id())
+                        .teamDisplayOrder(matchTeamDisplayOrderPolicy.decide(league))
                         .build());
 
         match.updateSportId(internalSportId);
-        match.updateLeagueId(internalLeagueId);
-        match.updateHomeId(internalHomeId);
-        match.updateAwayId(internalAwayId);
+        match.updateLeagueId(league.getId());
+        match.updateHomeId(homeTeam.getId());
+        match.updateAwayId(awayTeam.getId());
         match.updateStatus(MatchStatus.fromCode(event.getTimeStatus()));
 
         if (event.getTime() != null) {

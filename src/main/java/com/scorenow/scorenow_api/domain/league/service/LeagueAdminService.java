@@ -37,6 +37,7 @@ public class LeagueAdminService {
                 .eName(request.getEName())
                 .kName(request.getKName())
                 .sName(request.getSName())
+                .teamDisplayOrder(request.getTeamDisplayOrder())
                 .build();
 
         return LeagueAdminResponse.from(leagueRepository.save(league));
@@ -47,10 +48,11 @@ public class LeagueAdminService {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
 
-        if (request.getSportId() != null) league.setSportId(request.getSportId());
-        if (request.getEName() != null) league.setEName(request.getEName());
-        if (request.getKName() != null) league.setKName(request.getKName());
-        if (request.getSName() != null) league.setSName(request.getSName());
+        if (request.getSportId() != null) league.updateSportId(request.getSportId());
+        if (request.getEName() != null) league.updateEName(request.getEName());
+        if (request.getKName() != null) league.updateKName(request.getKName());
+        if (request.getSName() != null) league.updateSName(request.getSName());
+        if (request.getTeamDisplayOrder() != null) league.updateTeamDisplayOrder(request.getTeamDisplayOrder());
     }
 
     @Transactional

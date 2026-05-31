@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,6 +20,9 @@ public class MatchUpdateRequest {
 	private Integer awayScore;
 
 	private Boolean isActive;
+
+	@JsonProperty("teamDisplayOrder")
+	private TeamDisplayOrder teamDisplayOrder;
 
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 	private LocalDateTime startAt;

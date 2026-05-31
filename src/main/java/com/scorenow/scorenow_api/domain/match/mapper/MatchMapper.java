@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.mapper;
 
+import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import org.springframework.stereotype.Component;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
@@ -9,6 +10,8 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
+
+import java.util.List;
 
 @Component
 public class MatchMapper {
@@ -34,6 +37,7 @@ public class MatchMapper {
                 .awayScore(match.getAwayScore())
                 .isManual(match.isManual())
                 .isActive(match.isActive())
+                .teamDisplayOrder(getTeamDisplayOrder(match))
                 .build();
     }
 
@@ -66,4 +70,11 @@ public class MatchMapper {
     private String getTeamImageUrl(Team team) {
         return team != null ? team.getImageUrl() : null;
     }
+
+    private List<String> getTeamDisplayOrder(Match match) {
+        return match.getTeamDisplayOrder() != null
+                ? match.getTeamDisplayOrder().toDisplaySides()
+                : TeamDisplayOrder.HOME_AWAY.toDisplaySides();
+    }
+
 }

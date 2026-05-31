@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.entity;
 
 import java.time.LocalDateTime;
 
+import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
@@ -34,67 +35,71 @@ public class Match extends BaseEntity {
     @Column(name = "api_match_id")
     private String apiMatchId;
 
-	private Long leagueId;
-	private Long sportId;
+    private Long leagueId;
+    private Long sportId;
 
-	private Long homeId;
-	private Long awayId;
+    private Long homeId;
+    private Long awayId;
 
-	@Enumerated(EnumType.STRING)
-	private MatchStatus statusCode;
+    @Enumerated(EnumType.STRING)
+    private MatchStatus statusCode;
 
-	private Integer homeScore;
-	private Integer awayScore;
-	private LocalDateTime startAt;
+    private Integer homeScore;
+    private Integer awayScore;
+    private LocalDateTime startAt;
 
-	private Long stadiumId;
+    private Long stadiumId;
 
-	@Embedded
-	private TemporaryStadium temporaryStadium;
+    @Embedded
+    private TemporaryStadium temporaryStadium;
 
-	@Builder.Default
-	private String matchType = "A"; // 기본 A로 세팅
+    @Builder.Default
+    private String matchType = "A"; // 기본 A로 세팅
 
-	@Builder.Default
-	private boolean isManual = false;
+    @Builder.Default
+    private boolean isManual = false;
 
-	@Builder.Default
-	private boolean isActive = true;
+    @Builder.Default
+    private boolean isActive = true;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private TeamDisplayOrder teamDisplayOrder = TeamDisplayOrder.HOME_AWAY;
 
     private String bet365Id;
 
-	// JPA 관계 추가 (Fetch join용)
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "leagueId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-	private League league;
+    // JPA 관계 추가 (Fetch join용)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "leagueId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private League league;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "sportId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-	private Sport sport;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sportId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private Sport sport;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "homeId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-	private Team homeTeam;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "homeId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private Team homeTeam;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-	private Team awayTeam;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "awayId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private Team awayTeam;
 
-	public void updateSportId(Long sportId) {
-		this.sportId = sportId;
-	}
+    public void updateSportId(Long sportId) {
+        this.sportId = sportId;
+    }
 
-	public void updateLeagueId(Long leagueId) {
-		this.leagueId = leagueId;
-	}
+    public void updateLeagueId(Long leagueId) {
+        this.leagueId = leagueId;
+    }
 
-	public void updateHomeId(Long homeId) {
-		this.homeId = homeId;
-	}
+    public void updateHomeId(Long homeId) {
+        this.homeId = homeId;
+    }
 
-	public void updateAwayId(Long awayId) {
-		this.awayId = awayId;
-	}
+    public void updateAwayId(Long awayId) {
+        this.awayId = awayId;
+    }
 
     public void updateStartAt(LocalDateTime startAt) {
         this.startAt = startAt;
@@ -124,6 +129,10 @@ public class Match extends BaseEntity {
     public void assignTemporaryStadium(String stadiumName, String city) {
         this.stadiumId = null;  // 기존에 자동으로 매핑된 경기장 정보가 있다면 해제
         this.temporaryStadium = new TemporaryStadium(stadiumName, city);
+    }
+
+    public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
+        this.teamDisplayOrder = teamDisplayOrder;
     }
 
     public boolean isStadiumEmpty() {
