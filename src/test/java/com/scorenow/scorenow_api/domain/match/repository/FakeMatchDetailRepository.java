@@ -37,17 +37,6 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public long updateCurrentCommentary(Long matchId, String content, String commentaryId) {
-        List<MatchDetailDocument> matchDetailDocuments = database.values().stream()
-                .filter(matchDetail -> matchId.equals(matchDetail.getId()))
-                .toList();
-
-        matchDetailDocuments.forEach(matchDetailDocument -> matchDetailDocument.updateCurrentCommentary(content, commentaryId));
-
-        return matchDetailDocuments.size();
-    }
-
-    @Override
     public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
         MatchDetailDocument saved = database.get(matchId);
 
