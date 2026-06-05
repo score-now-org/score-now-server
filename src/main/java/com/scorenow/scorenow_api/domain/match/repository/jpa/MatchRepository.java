@@ -82,4 +82,36 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     void updateStatusBulk(List<Long> matchIds, MatchStatus status);
 
     List<Match> findByStatusCodeAndIsManualFalse(MatchStatus matchStatus);
+
+    @Query("""
+            select distinct m
+            from Match m
+            left join fetch m.league
+            left join fetch m.homeTeam
+            left join fetch m.awayTeam
+            where m.isActive = true
+              and m.startAt >= :startAt
+              and m.startAt < :endAt
+              and (:sportId is null or m.sportId = :sportId)
+              and (:leagueId is null or m.leagueId = :leagueId)
+              and m.statusCode in :statuses
+            order by
+              case
+                when m.statusCode = :inPlay then 0
+                when m.statusCode = :notStarted then 1
+                when m.statusCode = :ended then 2
+                else 3
+              end asc,
+              m.startAt asc
+            """)
+    List<Match> findAppMatches(
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt,
+            @Param("sportId") Long sportId,
+            @Param("leagueId") Long leagueId,
+            @Param("statuses") List<MatchStatus> statuses,
+            @Param("inPlay") MatchStatus inPlay,
+            @Param("notStarted") MatchStatus notStarted,
+            @Param("ended") MatchStatus ended
+    );
 }
