@@ -36,11 +36,6 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public long updateCurrentCommentary(Long matchId, String content, String commentaryId) {
-        return mongoRepository.updateCurrentCommentary(matchId, content, commentaryId);
-    }
-
-    @Override
     public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
         Query query = new Query(Criteria.where("_id").is(matchId));
         Update update = new Update()
