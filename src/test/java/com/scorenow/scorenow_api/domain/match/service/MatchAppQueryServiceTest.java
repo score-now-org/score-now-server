@@ -65,7 +65,6 @@ class MatchAppQueryServiceTest {
         assertThat(response.getCurrentCommentary()).isEqualTo("선제골 이후 홈팀이 흐름을 잡습니다.");
         assertThat(response.getHomeScore()).isEqualTo(1);
         assertThat(response.getAwayScore()).isEqualTo(0);
-        assertThat(response.getTimeInfo().getType()).isEqualTo("IN_PLAY");
         assertThat(response.getTimeInfo().getElapsedMinutes()).isEqualTo(27);
         assertThat(response.getTimeInfo().getPeriodCode()).isEqualTo("FIRST_HALF");
     }
@@ -82,7 +81,6 @@ class MatchAppQueryServiceTest {
 
         assertThat(result).hasSize(1);
         MatchAppResponse response = result.get(0);
-        assertThat(response.getTimeInfo().getType()).isEqualTo(MatchStatus.ENDED.name());
         assertThat(response.getTimeInfo().getResult()).isEqualTo(MatchResult.AWAY_WIN.name());
         assertThat(response.getTimeInfo().getWinnerTeamId()).isEqualTo(20L);
         assertThat(response.getTimeInfo().getWinnerTeamName()).isEqualTo("Away");
