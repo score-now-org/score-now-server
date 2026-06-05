@@ -11,7 +11,7 @@ public enum MatchResult {
             return UNKNOWN;
         }
 
-        if (homeScore == awayScore) {
+        if (homeScore.equals(awayScore)) {
             return DRAW;
         }
 
