@@ -21,14 +21,6 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public List<MatchDetailDocument> findAllById(List<Long> matchIds) {
-        return matchIds.stream()
-                .map(database::get)
-                .filter(matchDetailDocument -> matchDetailDocument != null)
-                .toList();
-    }
-
-    @Override
     public MatchDetailDocument save(MatchDetailDocument matchDetail) {
         Long id = idGenerator.getAndIncrement();
         database.put(id, matchDetail);
@@ -37,21 +29,14 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
-        MatchDetailDocument saved = database.get(matchId);
+    public long updateCurrentCommentary(Long matchId, String content, String commentaryId) {
+        List<MatchDetailDocument> matchDetailDocuments = database.values().stream()
+                .filter(matchDetail -> matchId.equals(matchDetail.getId()))
+                .toList();
 
-        if (saved == null) {
-            MatchDetailDocument matchDetailDocument = MatchDetailDocument.builder()
-                    .id(matchId)
-                    .currentCommentary(content)
-                    .currentCommentaryId(commentaryId)
-                    .build();
+        matchDetailDocuments.forEach(matchDetailDocument -> matchDetailDocument.updateCurrentCommentary(content, commentaryId));
 
-            database.put(matchId, matchDetailDocument);
-            return;
-        }
-
-        saved.updateCurrentCommentary(content, commentaryId);
+        return matchDetailDocuments.size();
     }
 
     @Override

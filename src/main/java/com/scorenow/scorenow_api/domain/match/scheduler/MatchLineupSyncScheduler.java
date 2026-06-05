@@ -34,7 +34,7 @@ public class MatchLineupSyncScheduler {
 	@Value("${scorenow.inplay.worker.lineup.lockTtlMs:10000}")
 	private long lockTtlMs;
 
-	@Scheduled(fixedDelayString = "${scorenow.inplay.worker.lineup.fixedDelayMs:10000}", zone = "Asia/Seoul")
+	@Scheduled(fixedDelayString = "${scorenow.inplay.worker.lineup.fixedDelayMs:10000}")
 	public void run() {
 
 		for (int i = 0; i < initBatchSize; i++) {

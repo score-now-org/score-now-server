@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument.*;
@@ -31,19 +30,8 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public List<MatchDetailDocument> findAllById(List<Long> matchIds) {
-        return mongoRepository.findAllById(matchIds);
-    }
-
-    @Override
-    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
-        Query query = new Query(Criteria.where("_id").is(matchId));
-        Update update = new Update()
-                .set("currentCommentary", content)
-                .set("currentCommentaryId", commentaryId)
-                .setOnInsert("_id", matchId);
-
-        mongoTemplate.upsert(query, update, MatchDetailDocument.class);
+    public long updateCurrentCommentary(Long matchId, String content, String commentaryId) {
+        return mongoRepository.updateCurrentCommentary(matchId, content, commentaryId);
     }
 
     @Override

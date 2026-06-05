@@ -4,7 +4,6 @@ package com.scorenow.scorenow_api.domain.match.service;
 import com.scorenow.scorenow_api.domain.match.document.MatchCommentaryDocument;
 import com.scorenow.scorenow_api.domain.match.repository.MatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
-import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
@@ -14,16 +13,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchCommentaryService {
-
     private final MatchCommentaryRepository commentaryRepository;
     private final MatchDetailRepository matchDetailRepository;
-    private final MatchRepository matchRepository;
-
     private final FileStorage fileStorage;
+
+    /**
+     * TODO: matchId 가 유효한지 먼저 검증하는 로직을 추가하는 것도 괜찮을 듯? 기능 자체는 잘 돌아감.
+     */
 
     /**
      * 중계 멘트 저장 <br>
@@ -36,10 +37,7 @@ public class MatchCommentaryService {
             imageUrl = fileStorage.uploadFile(file);
         }
 
-        // 1. matchId 기반으로 존재하는 경기인지 먼저 확인
-        validateMatchExists(matchId);
-
-        // 2. mongoDB 에 저장할 MatchCommentaryDocument 인스턴스 생성 후 저장
+        // 1. mongoDB 에 저장할 Document 인스턴스 생성
         MatchCommentaryDocument commentary = MatchCommentaryDocument.builder()
                 .matchId(matchId)
                 .currentMatchTime(minute)
@@ -48,10 +46,15 @@ public class MatchCommentaryService {
                 .visible(recordEnabled)
                 .build();
 
+        // 2. MatchCommentary Document 저장
         MatchCommentaryDocument savedCommentary = commentaryRepository.save(commentary);
 
-        // 3. MatchDetailDocument 가 있으면 현재 중계 멘트만 갱신하고, 없으면 현재 중계 멘트만 가진 문서를 생성한다.
-        matchDetailRepository.upsertCurrentCommentary(matchId, content, savedCommentary.getId());
+        // 3. MatchDetail 에서 관리되는 현재 중계 멘트 업데이트
+        long updatedCount = matchDetailRepository.updateCurrentCommentary(matchId, savedCommentary.getContent(), savedCommentary.getId());
+        if (updatedCount == 0) {
+            log.warn("최신 중계 문구를 업데이트할 경기 정보를 찾을 수 없습니다. matchId:{}", matchId);
+            throw new BusinessException(ErrorCode.MATCH_NOT_FOUND, "최신 중계 문구를 업데이트할 경기 정보를 찾을 수 없습니다.");
+        }
 
         return savedCommentary.getId();
     }
@@ -64,11 +67,5 @@ public class MatchCommentaryService {
         return commentaryRepository.findVisibleCommentaries(matchId).stream()
                 .map(MatchCommentaryDocument::getContent)
                 .toList();
-    }
-
-    private void validateMatchExists(Long matchId) {
-        if (!matchRepository.existsById(matchId)) {
-            throw new BusinessException(ErrorCode.MATCH_NOT_FOUND);
-        }
     }
 }
