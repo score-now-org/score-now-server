@@ -148,23 +148,6 @@ public class MatchAppResponse {
 
             return null;
         }
-
-
-        private static String resolveResult(Integer homeScore, Integer awayScore) {
-            if (homeScore == null || awayScore == null) {
-                return "UNKNOWN";
-            }
-
-            if (homeScore > awayScore) {
-                return "HOME_WIN";
-            }
-
-            if (homeScore < awayScore) {
-                return "AWAY_WIN";
-            }
-
-            return "DRAW";
-        }
     }
 
     public static MatchAppResponse from(Match match, MatchDetailDocument detail) {
