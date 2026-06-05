@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/app/matches")
 @RequiredArgsConstructor
-public class MatchAppController {
+public class MatchAppController implements MatchAppApiDocs {
 
     private final MatchAppQueryService matchAppQueryService;
 
