@@ -8,6 +8,7 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
@@ -55,16 +56,21 @@ class MatchAppQueryServiceTest {
                         .build())
                 .build();
 
-        givenAppMatches(date, match);
+        givenAppMatches(date, 1L, 2L, match);
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of(detail));
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
-        MatchAppResponse response = result.get(0);
+        MatchAppResponse leagueGroup = result.get(0);
+        assertThat(leagueGroup.getLeagueId()).isEqualTo(2L);
+        assertThat(leagueGroup.getLeagueName()).isEqualTo("Premier League");
+
+        MatchAppResponse.MatchItemResponse response = leagueGroup.getMatches().get(0);
         assertThat(response.getCurrentCommentary()).isEqualTo("선제골 이후 홈팀이 흐름을 잡습니다.");
         assertThat(response.getHomeScore()).isEqualTo(1);
         assertThat(response.getAwayScore()).isEqualTo(0);
+        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("전반 27");
         assertThat(response.getTimeInfo().getElapsedMinutes()).isEqualTo(27);
         assertThat(response.getTimeInfo().getPeriodCode()).isEqualTo("FIRST_HALF");
     }
@@ -74,40 +80,85 @@ class MatchAppQueryServiceTest {
         LocalDate date = LocalDate.of(2026, 6, 2);
         Match match = createMatch(2L, MatchStatus.ENDED, LocalDateTime.of(2026, 6, 2, 18, 0), 2, 3);
 
-        givenAppMatches(date, match);
+        givenAppMatches(date, 1L, 2L, match);
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
-        MatchAppResponse response = result.get(0);
+        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("홈팀 패");
         assertThat(response.getTimeInfo().getResult()).isEqualTo(MatchResult.AWAY_WIN.name());
         assertThat(response.getTimeInfo().getWinnerTeamId()).isEqualTo(20L);
         assertThat(response.getTimeInfo().getWinnerTeamName()).isEqualTo("Away");
     }
 
-    private void givenAppMatches(LocalDate date, Match match) {
+    @Test
+    void 예정_경기는_경기_시작_시간을_HH_mm_형식으로_내려준다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatch(4L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 9, 5), 0, 0);
+
+        givenAppMatches(date, 1L, 2L, match);
+        given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
+
+        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        assertThat(result).hasSize(1);
+        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("09:05");
+        assertThat(response.getTimeInfo().getStartAt()).isEqualTo(LocalDateTime.of(2026, 6, 2, 9, 5));
+    }
+
+    @Test
+    void 경기_목록을_리그별로_그룹핑하고_각_리그_하위의_조회_우선순위를_유지한다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match eplInPlay = createMatch(1L, 2L, "Premier League", MatchStatus.IN_PLAY, LocalDateTime.of(2026, 6, 2, 20, 0), 1, 0);
+        Match laLigaScheduled = createMatch(2L, 3L, "La Liga", MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 21, 0), 0, 0);
+        Match eplEnded = createMatch(3L, 2L, "Premier League", MatchStatus.ENDED, LocalDateTime.of(2026, 6, 2, 18, 0), 2, 1);
+
+        givenAppMatches(date, 1L, null, eplInPlay, laLigaScheduled, eplEnded);
+        given(matchDetailRepository.findAllById(List.of(1L, 2L, 3L))).willReturn(List.of());
+
+        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, null);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getLeagueId()).isEqualTo(2L);
+        assertThat(result.get(0).getLeagueName()).isEqualTo("Premier League");
+        assertThat(result.get(0).getMatches()).extracting(MatchAppResponse.MatchItemResponse::getId)
+                .containsExactly(1L, 3L);
+
+        assertThat(result.get(1).getLeagueId()).isEqualTo(3L);
+        assertThat(result.get(1).getLeagueName()).isEqualTo("La Liga");
+        assertThat(result.get(1).getMatches()).extracting(MatchAppResponse.MatchItemResponse::getId)
+                .containsExactly(2L);
+    }
+
+    private void givenAppMatches(LocalDate date, Long sportId, Long leagueId, Match... matches) {
         given(matchRepository.findAppMatches(
                 date.atStartOfDay(),
                 date.plusDays(1).atStartOfDay(),
-                1L,
-                2L,
-                List.of(MatchStatus.IN_PLAY, MatchStatus.NOT_STARTED, MatchStatus.ENDED),
-                MatchStatus.IN_PLAY,
-                MatchStatus.NOT_STARTED,
-                MatchStatus.ENDED
-        )).willReturn(List.of(match));
+                sportId,
+                leagueId,
+                MatchAppStatusGroup.allStatuses(),
+                MatchAppStatusGroup.IN_PLAY.getStatuses(),
+                MatchAppStatusGroup.SCHEDULED.getStatuses(),
+                MatchAppStatusGroup.ENDED.getStatuses()
+        )).willReturn(List.of(matches));
     }
 
     private Match createMatch(Long id, MatchStatus status, LocalDateTime startAt, Integer homeScore, Integer awayScore) {
+        return createMatch(id, 2L, "Premier League", status, startAt, homeScore, awayScore);
+    }
+
+    private Match createMatch(Long id, Long leagueId, String leagueName, MatchStatus status, LocalDateTime startAt, Integer homeScore, Integer awayScore) {
         return Match.builder()
                 .id(id)
                 .sportId(1L)
-                .leagueId(2L)
+                .leagueId(leagueId)
                 .league(League.builder()
-                        .id(2L)
-                        .sName("EPL")
-                        .eName("Premier League")
+                        .id(leagueId)
+                        .sName(leagueName)
+                        .eName(leagueName)
                         .build())
                 .homeId(10L)
                 .homeTeam(Team.builder()
