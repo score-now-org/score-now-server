@@ -13,10 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.SEOUL_TIME_ZONE;
 import static java.util.stream.Collectors.toMap;
 
 @Slf4j
@@ -29,7 +31,7 @@ public class MatchAppQueryService {
     private final MatchDetailRepository matchDetailRepository;
 
     public List<MatchAppResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
-        LocalDate targetDate = date != null ? date : LocalDate.now();
+        LocalDate targetDate = date != null ? date : LocalDate.now(ZoneId.of(SEOUL_TIME_ZONE));
         LocalDateTime startAt = targetDate.atStartOfDay();
         LocalDateTime endAt = targetDate.plusDays(1).atStartOfDay();
 
