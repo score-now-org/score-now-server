@@ -97,9 +97,9 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
               and m.statusCode in :statuses
             order by
               case
-                when m.statusCode = :inPlay then 0
-                when m.statusCode = :notStarted then 1
-                when m.statusCode = :ended then 2
+                when m.statusCode in :inPlayStatuses then 0
+                when m.statusCode in :scheduledStatuses then 1
+                when m.statusCode in :endedStatuses then 2
                 else 3
               end asc,
               m.startAt asc
@@ -110,8 +110,8 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             @Param("sportId") Long sportId,
             @Param("leagueId") Long leagueId,
             @Param("statuses") List<MatchStatus> statuses,
-            @Param("inPlay") MatchStatus inPlay,
-            @Param("notStarted") MatchStatus notStarted,
-            @Param("ended") MatchStatus ended
+            @Param("inPlayStatuses") List<MatchStatus> inPlayStatuses,
+            @Param("scheduledStatuses") List<MatchStatus> scheduledStatuses,
+            @Param("endedStatuses") List<MatchStatus> endedStatuses
     );
 }

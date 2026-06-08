@@ -26,7 +26,6 @@ public class MatchAppController implements MatchAppApiDocs {
             @RequestParam(required = false) Long sportId,
             @RequestParam(required = false) Long leagueId
     ) {
-        List<MatchAppResponse> matches = matchAppQueryService.getMatches(date, sportId, leagueId);
-        return ApiResponse.success(matches);
+        return ApiResponse.success(matchAppQueryService.getMatches(date, sportId, leagueId));
     }
 }

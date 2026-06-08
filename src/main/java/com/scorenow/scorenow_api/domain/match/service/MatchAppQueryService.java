@@ -3,7 +3,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
-import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -41,10 +43,10 @@ public class MatchAppQueryService {
                 endAt,
                 sportId,
                 leagueId,
-                List.of(MatchStatus.IN_PLAY, MatchStatus.NOT_STARTED, MatchStatus.ENDED),
-                MatchStatus.IN_PLAY,
-                MatchStatus.NOT_STARTED,
-                MatchStatus.ENDED
+                MatchAppStatusGroup.allStatuses(),
+                MatchAppStatusGroup.IN_PLAY.getStatuses(),
+                MatchAppStatusGroup.SCHEDULED.getStatuses(),
+                MatchAppStatusGroup.ENDED.getStatuses()
         );
 
         if (matches.isEmpty()) {
@@ -63,9 +65,23 @@ public class MatchAppQueryService {
                         Function.identity(),
                         (first, second) -> first));
 
-        // 3. (1)과 (2)에서 얻어 온 결과값을 활용하여 응답을 만든 후 반환한다.
-        return matches.stream()
-                .map(match -> MatchAppResponse.from(match, detailMap.get(match.getId())))
+
+        // 3. 조회 정렬 순서를 유지하면서 리그별 경기 목록으로 그룹핑한다.
+        Map<Long, List<Match>> matchesByLeague = new LinkedHashMap<>();
+        for (Match match : matches) {
+            matchesByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new ArrayList<>())
+                    .add(match);
+        }
+
+        // 4. 리그 정보를 최상위로 두고, 각 리그 하위에 경기 목록을 반환한다.
+        return matchesByLeague.values().stream()
+                .map(leagueMatches -> {
+                    List<MatchAppResponse.MatchItemResponse> appMatches = leagueMatches.stream()
+                            .map(match -> MatchAppResponse.MatchItemResponse.from(match, detailMap.get(match.getId())))
+                            .toList();
+
+                    return MatchAppResponse.from(leagueMatches.get(0).getLeague(), appMatches);
+                })
                 .toList();
     }
 
