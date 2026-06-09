@@ -65,10 +65,10 @@ public class MatchAppResponse {
         @Schema(description = "어웨이팀 점수", example = "0")
         private Integer awayScore;
 
-        @Schema(description = "경기 상태 코드", example = "NOT_STARTED, IN_PLAY, ENDED")
+        @Schema(description = "경기 상태 코드", example = "NOT_STARTED, IN_PLAY, ENDED, INTERRUPTED, POSTPONED, CANCELLED, ABANDONED")
         private String statusCode;
 
-        @Schema(description = "경기 상태명", example = "경기전, 진행중, 종료")
+        @Schema(description = "경기 상태명", example = "경기전, 진행중, 종료, 중지, 연기, 취소, 취소")
         private String statusName;
 
         @Schema(description = "현재 앱에 보여줄 중계 멘트", example = "홈팀이 선제골 이후 흐름을 잡습니다.")
@@ -141,22 +141,22 @@ public class MatchAppResponse {
         @Schema(description = "경기 경과 시간 초", example = "14")
         private Integer elapsedSeconds;
 
-        @Schema(description = "경기 구간 코드", example = "FIRST_HALF")
+        @Schema(description = "경기 구간 코드", example = "FIRST_HALF, SECOND_HALF, EXTRA_FIRST_HALF, EXTRA_SECOND_HALF, PENALTY_SHOOTOUT")
         private String periodCode;
 
-        @Schema(description = "경기 구간명", example = "전반전")
+        @Schema(description = "경기 구간명", example = "전반, 후반, 연장 전반, 연장 후반, 승부차기")
         private String periodName;
 
         @Schema(description = "타이머 진행 여부", example = "true")
         private Boolean running;
 
-        @Schema(description = "경기 결과. HOME_WIN, AWAY_WIN, DRAW, UNKNOWN 중 하나입니다.", example = "HOME_WIN")
+        @Schema(description = "경기 결과", example = "HOME_WIN, AWAY_WIN, DRAW, UNKNOWN")
         private String result;
 
-        @Schema(description = "승리팀 ID. 무승부나 결과 미확정이면 null입니다.", example = "10")
+        @Schema(description = "승리팀 ID. 무승부나 결과 미확정이면 null", example = "10")
         private Long winnerTeamId;
 
-        @Schema(description = "승리팀 이름. 무승부나 결과 미확정이면 null입니다.", example = "대한민국")
+        @Schema(description = "승리팀 이름. 무승부나 결과 미확정이면 null", example = "대한민국")
         private String winnerTeamName;
 
         public static MatchTimeInfoResponse from(Match match, MatchDetailDocument detail, Integer homeScore, Integer awayScore) {
