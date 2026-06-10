@@ -1,5 +1,9 @@
 package com.scorenow.scorenow_api.external.betsapi.controller;
 
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -8,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
+import com.scorenow.scorenow_api.domain.player.dto.response.LeaguePlayerSyncResult;
 import com.scorenow.scorenow_api.domain.player.service.LeaguePlayerSyncService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
@@ -24,6 +29,8 @@ public class BetsApiTestController {
 	private final BetsApiClient betsApiClient;
 	private final MatchSyncService matchSyncService;
 	private final LeaguePlayerSyncService leaguePlayerSyncService;
+	private final JobLauncher jobLauncher;
+	private final Job playerSyncJob;
 
 	@GetMapping("/upcoming")
 	public ApiResponse<BetsEventResponse> testUpcoming(
@@ -74,9 +81,21 @@ public class BetsApiTestController {
 	 *
 	 * curl -X POST "http://localhost:8080/api/test/betsapi/sync/players?leagueId=1"
 	 */
+	// TODO : 팀 기준으로 선수 저장
 	@PostMapping("/sync/players")
 	public ApiResponse<String> syncPlayer(@RequestParam Long leagueId) {
-		int count = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
-		return ApiResponse.success(count + "건 동기화 완료");
+		LeaguePlayerSyncResult result = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
+		return ApiResponse.success(result.getProcessedPlayerCount() + "건 동기화 완료");
+	}
+
+	@PostMapping("/sync/players/all")
+	public ApiResponse<String> syncAllPlayers() throws Exception {
+		JobParameters jobParameters = new JobParametersBuilder()
+			.addLong("time", System.currentTimeMillis())
+			.toJobParameters();
+
+		jobLauncher.run(playerSyncJob, jobParameters);
+
+		return ApiResponse.success("전체 선수 동기화 배치 실행 완료");
 	}
 }
