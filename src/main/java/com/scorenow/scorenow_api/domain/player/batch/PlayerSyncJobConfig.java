@@ -20,9 +20,9 @@ public class PlayerSyncJobConfig {
 	private final PlayerSyncTasklet playerSyncTasklet;
 
 	@Bean
-	public Job playerSyncJob() {
+	public Job playerSyncJob(Step playerSyncStep) {
 		return new JobBuilder("playerSyncJob", jobRepository)
-			.start(playerSyncStep())
+			.start(playerSyncStep)
 			.build();
 	}
 
