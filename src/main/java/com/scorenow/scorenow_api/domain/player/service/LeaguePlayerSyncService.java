@@ -11,6 +11,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
+import com.scorenow.scorenow_api.domain.player.dto.response.LeaguePlayerSyncResult;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import com.scorenow.scorenow_api.external.common.ApiProvider;
@@ -31,7 +32,7 @@ public class LeaguePlayerSyncService {
 	private final TeamPlayerSyncService teamPlayerSyncService;
 
 	@Transactional(readOnly = true)
-	public int syncPlayersByLeague(Long leagueId) {
+	public LeaguePlayerSyncResult syncPlayersByLeague(Long leagueId) {
 
 		if (leagueId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "leagueId가 비어있습니다.");
@@ -60,26 +61,37 @@ public class LeaguePlayerSyncService {
 		String seasonName = extractSeasonName(standings);
 
 		Set<String> teamApiIds = extractTeamApiIds(standings);
-		if (teamApiIds.isEmpty()) {
-			return 0;
-		}
 
-		int upsertCount = 0;
+		LeaguePlayerSyncResult result = new LeaguePlayerSyncResult(
+			league.getId(),
+			leagueApiId,
+			seasonName,
+			teamApiIds.size()
+		);
+
+		if (teamApiIds.isEmpty()) {
+			return result;
+		}
 
 		for (String teamApiId : teamApiIds) {
 			try {
-				upsertCount += teamPlayerSyncService.syncTeamPlayers(
+				int processedCount = teamPlayerSyncService.syncTeamPlayers(
 					league.getId(),
 					seasonName,
 					teamApiId
 				);
+
+				result.addSuccessTeam(processedCount);
+
 			} catch (Exception e) {
-				log.warn("팀 선수 동기화 실패. leagueId={}, teamApiId={}, cause={}",
-					leagueId, teamApiId, e.toString(), e);
+				result.addFailedTeam(teamApiId);
+
+				log.warn("팀 선수 동기화 실패. leagueId={}, leagueApiId={}, teamApiId={}, cause={}",
+					leagueId, leagueApiId, teamApiId, e.toString(), e);
 			}
 		}
 
-		return upsertCount;
+		return result;
 	}
 
 	private String extractSeasonName(BetsStandingsResponse standings) {
