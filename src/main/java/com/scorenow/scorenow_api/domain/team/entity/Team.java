@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.team.entity;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
@@ -38,6 +39,9 @@ public class Team extends BaseEntity {
 
 	private String cc; // 국가코드
 	private String imageUrl;
+
+	@Enumerated(EnumType.STRING)
+	private DataOrigin dataOrigin;	// 데이터 원천 (외부 API, 수동등록)
 
 	@Builder.Default
 	private boolean isActive = true;

@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.team.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.team.entity.TeamType;
 
@@ -27,6 +28,6 @@ public class TeamUpdateRequest {
     @JsonProperty("imageUrl")
     private String imageUrl;
 
-    @JsonProperty("countryCode")
+    @JsonProperty("cc")
     private String cc;
 }

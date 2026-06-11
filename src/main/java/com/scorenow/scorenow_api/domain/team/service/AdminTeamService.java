@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.MANUAL;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -43,6 +45,7 @@ public class AdminTeamService {
                 .sName(request.getSName())
                 .imageUrl(request.getImageUrl())
                 .cc(request.getCc())
+                .dataOrigin(MANUAL)
                 .build();
 
         return AdminTeamResponse.from(teamRepository.save(team));

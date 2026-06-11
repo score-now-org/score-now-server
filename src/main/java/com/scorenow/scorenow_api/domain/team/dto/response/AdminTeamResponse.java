@@ -17,7 +17,7 @@ public class AdminTeamResponse {
     private String eName;
     private String sName;
     private String imageUrl;
-    private String countryCode;
+    private String cc;
 
     public static AdminTeamResponse from(Team team) {
         return AdminTeamResponse.builder()
@@ -28,7 +28,7 @@ public class AdminTeamResponse {
                 .eName(team.getEName())
                 .sName(team.getSName())
                 .imageUrl(team.getImageUrl())
-                .countryCode(team.getCc())
+                .cc(team.getCc())
                 .build();
     }
 }
