@@ -17,6 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Service
 public class TeamService {
+
     private final TeamRepository teamRepository;
     private final TeamExternalMappingRepository teamExternalMappingRepository;
     private final SportRepository sportRepository;
@@ -32,13 +33,13 @@ public class TeamService {
         // 2. 매핑 정보에서 internal team id 를 추출하고, 이를 기반으로 Team 엔티티 반환
         if (teamMappingInfo.isPresent()) {
             Long internalTeamId = teamMappingInfo.get().getInternalTeamId();
-            return teamRepository.findById(internalTeamId).orElseGet(() -> createAndMapLeague(provider, internalSportId, apiTeamId, name, cc, imageUrl));
+            return teamRepository.findById(internalTeamId).orElseGet(() -> createAndMapTeam(provider, internalSportId, apiTeamId, name, cc, imageUrl));
         }
 
-        return createAndMapLeague(provider, internalSportId, apiTeamId, name, cc, imageUrl);
+        return createAndMapTeam(provider, internalSportId, apiTeamId, name, cc, imageUrl);
     }
 
-    private Team createAndMapLeague(ApiProvider provider, Long internalSportId, String apiTeamId, String name, String cc, String imageUrl) {
+    private Team createAndMapTeam(ApiProvider provider, Long internalSportId, String apiTeamId, String name, String cc, String imageUrl) {
         Team savedTeam = teamRepository.save(Team.builder()
                 .sport(sportRepository.getReferenceById(internalSportId))
                 .kName(name)
