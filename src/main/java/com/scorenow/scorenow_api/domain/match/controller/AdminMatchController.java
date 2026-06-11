@@ -17,7 +17,7 @@ import com.scorenow.scorenow_api.domain.match.dto.MatchSearchCondition;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
-import com.scorenow.scorenow_api.domain.match.service.MatchAdminService;
+import com.scorenow.scorenow_api.domain.match.service.AdminMatchService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -26,9 +26,9 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/admin/matches")
 @RequiredArgsConstructor
-public class MatchAdminController {
+public class AdminMatchController {
 
-    private final MatchAdminService matchAdminService;
+    private final AdminMatchService adminMatchService;
 
     /**
      * 경기 리스트 조회
@@ -38,7 +38,7 @@ public class MatchAdminController {
             @ModelAttribute MatchSearchCondition condition,
             @PageableDefault(size = 20, sort = "startAt", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        Page<MatchListResponse> result = matchAdminService.getMatches(condition, pageable);
+        Page<MatchListResponse> result = adminMatchService.getMatches(condition, pageable);
         return ApiResponse.success(result);
     }
 
@@ -51,7 +51,7 @@ public class MatchAdminController {
      */
     @PostMapping
     public ApiResponse<MatchListResponse> createMatch(@Valid @RequestBody MatchCreateRequest request) {
-        MatchListResponse result = matchAdminService.createMatch(request);
+        MatchListResponse result = adminMatchService.createMatch(request);
         return ApiResponse.success(result);
     }
 
@@ -62,7 +62,7 @@ public class MatchAdminController {
     public ApiResponse<Void> updateMatch(
             @PathVariable Long matchId,
             @Valid @RequestBody MatchUpdateRequest request) {
-        matchAdminService.updateMatch(matchId, request);
+        adminMatchService.updateMatch(matchId, request);
         return ApiResponse.success(null);
     }
 
