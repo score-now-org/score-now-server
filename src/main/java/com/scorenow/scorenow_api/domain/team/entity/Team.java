@@ -3,16 +3,7 @@ package com.scorenow.scorenow_api.domain.team.entity;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
-import jakarta.persistence.ConstraintMode;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,7 +22,9 @@ public class Team extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private String type;    // 구분 (국가대표, 클럽)
+	@Enumerated(EnumType.STRING)
+	private TeamType type;    // 구분 (국가대표, 클럽)
+
 	private String kName;
 	private String eName;
 	private String sName; // 숏네임
@@ -45,5 +38,36 @@ public class Team extends BaseEntity {
 
 	private String cc; // 국가코드
 	private String imageUrl;
+
+	@Builder.Default
+	private boolean isActive = true;
+
+	public void updateType(TeamType teamType) {
+		this.type = teamType;
+	}
+
+	public void updateKName(String kName) {
+		this.kName = kName;
+	}
+
+	public void updateEName(String eName) {
+		this.eName = eName;
+	}
+
+	public void updateSName(String sName) {
+		this.sName = sName;
+	}
+
+	public void updateCountryCode(String cc) {
+		this.cc = cc;
+	}
+
+	public void updateImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public void deactivate() {
+		this.isActive = false;
+	}
 
 }
