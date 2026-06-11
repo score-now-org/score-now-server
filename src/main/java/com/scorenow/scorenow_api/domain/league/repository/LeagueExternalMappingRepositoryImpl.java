@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.league.repository;
 
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +14,7 @@ public class LeagueExternalMappingRepositoryImpl implements LeagueExternalMappin
     private final LeagueExternalMappingJpaRepository jpaRepository;
 
     @Override
-    public Optional<LeagueExternalMapping> findByExternalInfo(ApiProvider provider, String apiLeagueId) {
+    public Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin provider, String apiLeagueId) {
         return jpaRepository.findByExternalInfo(provider, apiLeagueId);
     }
 
@@ -24,7 +24,7 @@ public class LeagueExternalMappingRepositoryImpl implements LeagueExternalMappin
     }
 
     @Override
-    public Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(ApiProvider provider, Long internalLeagueId) {
+    public Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(DataOrigin provider, Long internalLeagueId) {
         return jpaRepository.findByProviderAndInternalLeagueId(provider, internalLeagueId);
     }
 }

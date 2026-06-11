@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 import com.scorenow.scorenow_api.domain.match.dto.InplayScanDto;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 public interface MatchRepository extends JpaRepository<Match, Long>, MatchRepositoryCustom {
 
@@ -55,7 +55,7 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
                   and m.isManual = false
             """)
     Optional<Match> findByExternalInfo(
-            @Param("provider") ApiProvider provider,
+            @Param("provider") DataOrigin provider,
             @Param("apiMatchId") String apiMatchId
     );
 

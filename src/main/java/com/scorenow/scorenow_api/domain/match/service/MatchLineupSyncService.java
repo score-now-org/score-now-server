@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,6 @@ import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepos
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -141,7 +141,7 @@ public class MatchLineupSyncService {
 		}
 
 		return playerExternalMappingRepository
-			.findByProviderAndApiPlayerIdIn(ApiProvider.BETS, apiPlayerIds)
+			.findByProviderAndApiPlayerIdIn(DataOrigin.BETS, apiPlayerIds)
 			.stream()
 			.filter(mapping -> mapping.getPlayer() != null)
 			.collect(Collectors.toMap(
@@ -199,7 +199,7 @@ public class MatchLineupSyncService {
 
 	private String findApiTeamId(Long teamId) {
 		return teamExternalMappingRepository
-			.findByProviderAndInternalTeamId(ApiProvider.BETS, teamId) // 메서드명 수정
+			.findByProviderAndInternalTeamId(DataOrigin.BETS, teamId) // 메서드명 수정
 			.map(TeamExternalMapping::getApiTeamId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,

@@ -5,7 +5,7 @@ import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class TeamService {
      * 팀 생성
      */
     @Transactional
-    public Team getOrCreateTeam(final ApiProvider provider, final Long internalSportId, final String apiTeamId, final String name, final String cc, final String imageUrl) {
+    public Team getOrCreateTeam(final DataOrigin provider, final Long internalSportId, final String apiTeamId, final String name, final String cc, final String imageUrl) {
         // 1. 전달받은 외부 정보를 기반으로 Team External Mapping 테이블에 데이터가 있는지 확인
         Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(provider, apiTeamId);
 
@@ -39,7 +39,7 @@ public class TeamService {
         return createAndMapTeam(provider, internalSportId, apiTeamId, name, cc, imageUrl);
     }
 
-    private Team createAndMapTeam(ApiProvider provider, Long internalSportId, String apiTeamId, String name, String cc, String imageUrl) {
+    private Team createAndMapTeam(DataOrigin provider, Long internalSportId, String apiTeamId, String name, String cc, String imageUrl) {
         Team savedTeam = teamRepository.save(Team.builder()
                 .sport(sportRepository.getReferenceById(internalSportId))
                 .kName(name)

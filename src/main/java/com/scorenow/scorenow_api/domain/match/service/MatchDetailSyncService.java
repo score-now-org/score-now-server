@@ -8,7 +8,7 @@ import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupReposi
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -95,7 +95,7 @@ public class MatchDetailSyncService {
             }
 
             try {
-                matchDetailService.updateInplayMatchDetail(ApiProvider.BETS, matchDetail);  // 경기 세부 정보 업데이트
+                matchDetailService.updateInplayMatchDetail(DataOrigin.BETS, matchDetail);  // 경기 세부 정보 업데이트
 
                 if (matchDetail.hasLineup()) {
                     // Lineup 이 없는 경우, MatchLineupSyncScheduler 가 처리할 수 있게 레디스 큐에 삽입해준다.

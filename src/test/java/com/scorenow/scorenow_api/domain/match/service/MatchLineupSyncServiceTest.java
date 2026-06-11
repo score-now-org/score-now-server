@@ -26,7 +26,7 @@ import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepos
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 @ExtendWith(MockitoExtension.class)
 class MatchLineupSyncServiceTest {
@@ -79,13 +79,13 @@ class MatchLineupSyncServiceTest {
 			.build();
 
 		TeamExternalMapping homeMapping = TeamExternalMapping.builder()
-			.provider(ApiProvider.BETS)
+			.provider(DataOrigin.BETS)
 			.apiTeamId("17170")
 			.internalTeamId(homeId)
 			.build();
 
 		TeamExternalMapping awayMapping = TeamExternalMapping.builder()
-			.provider(ApiProvider.BETS)
+			.provider(DataOrigin.BETS)
 			.apiTeamId("23451")
 			.internalTeamId(awayId)
 			.build();
@@ -113,9 +113,9 @@ class MatchLineupSyncServiceTest {
 		when(matchRepo.findById(matchId)).thenReturn(Optional.of(match));
 		when(teamRepo.findAllById(List.of(homeId, awayId))).thenReturn(List.of(homeTeam, awayTeam));
 
-		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, homeId)) // 메서드명 수정
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(DataOrigin.BETS, homeId)) // 메서드명 수정
 			.thenReturn(Optional.of(homeMapping));
-		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(ApiProvider.BETS, awayId))
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(DataOrigin.BETS, awayId))
 			.thenReturn(Optional.of(awayMapping));
 
 		when(betsApiClient.getLineup("17170")).thenReturn(homeResponse);

@@ -8,13 +8,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 import lombok.Data;
 
 @Data
 public class BetsViewResponse {
-    private final ApiProvider provider = ApiProvider.BETS;
+    private final DataOrigin provider = DataOrigin.BETS;
 
     private List<ViewResult> results;
 

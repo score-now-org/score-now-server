@@ -10,7 +10,7 @@ import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.StadiumData;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -31,7 +31,7 @@ public class MatchDetailService {
     private final MatchDetailRepository matchDetailRepository;
 
     @Transactional
-    public void updateInplayMatchDetail(ApiProvider provider, ViewResult viewResult) {
+    public void updateInplayMatchDetail(DataOrigin provider, ViewResult viewResult) {
         String apiMatchId = viewResult.getId();
 
         Match match = matchRepository.findByExternalInfo(provider, apiMatchId)

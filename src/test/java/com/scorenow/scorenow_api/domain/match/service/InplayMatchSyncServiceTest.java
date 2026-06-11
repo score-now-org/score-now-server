@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.scorenow.scorenow_api.external.common.ApiProvider.BETS;
+import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.BETS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;

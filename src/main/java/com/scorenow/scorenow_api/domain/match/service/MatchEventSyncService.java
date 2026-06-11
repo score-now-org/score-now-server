@@ -8,7 +8,7 @@ import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.constant.MatchConstants;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -46,7 +46,7 @@ public class MatchEventSyncService {
      * REQUIRES_NEW: 경기 1건 실패가 다른 경기에 영향 없음
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void syncEvent(ApiProvider provider, BetsEventResponse.Event event, String externalSportId) {
+    public void syncEvent(DataOrigin provider, BetsEventResponse.Event event, String externalSportId) {
         Long internalSportId = sportExternalMappingRepository.findByProviderAndApiSportId(provider, externalSportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND))
                 .getInternalSportId();
@@ -57,7 +57,7 @@ public class MatchEventSyncService {
         saveMatch(provider, event, internalSportId, savedLeague, savedHome, savedAway);
     }
 
-    private League saveLeague(ApiProvider provider, BetsEventResponse.League betsLeague, Long internalSportId) {
+    private League saveLeague(DataOrigin provider, BetsEventResponse.League betsLeague, Long internalSportId) {
         if (betsLeague == null) {
             throw new BusinessException(
                     ErrorCode.LEAGUE_NOT_FOUND,
@@ -67,7 +67,7 @@ public class MatchEventSyncService {
         return leagueService.getOrCreateLeague(provider, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
     }
 
-    private Team saveTeam(ApiProvider provider, BetsEventResponse.Team betsTeam, Long internalSportId) {
+    private Team saveTeam(DataOrigin provider, BetsEventResponse.Team betsTeam, Long internalSportId) {
         if (betsTeam == null) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("%s 에서 팀 정보를 제공하지 않았습니다.", provider));
         }
@@ -81,7 +81,7 @@ public class MatchEventSyncService {
     }
 
     private void saveMatch(
-            ApiProvider provider,
+            DataOrigin provider,
             BetsEventResponse.Event event,
             Long internalSportId,
             League league,
