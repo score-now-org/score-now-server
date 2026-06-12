@@ -4,7 +4,7 @@ import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamCreateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
-import com.scorenow.scorenow_api.domain.team.dto.request.TeamUpdateRequest;
+import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
@@ -67,10 +67,10 @@ public class AdminTeamService {
     }
 
     /**
-     * 팀 정보 수정 기능
+     * 팀 정보 수정
      */
     @Transactional
-    public void updateTeam(Long teamId, TeamUpdateRequest request) {
+    public void updateTeam(Long teamId, AdminTeamUpdateRequest request) {
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
 
@@ -92,7 +92,7 @@ public class AdminTeamService {
         log.info("팀 삭제 완료 - teamId: {}", teamId);
     }
 
-    private void applyUpdates(Team team, TeamUpdateRequest request) {
+    private void applyUpdates(Team team, AdminTeamUpdateRequest request) {
         if (request == null) {
             log.info("❌ 팀 업데이트 정보가 없습니다. teamId={}, teamName={}", team.getId(), team.getKName());
             return;

@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
-import com.scorenow.scorenow_api.domain.team.dto.request.TeamUpdateRequest;
+import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
@@ -51,7 +51,7 @@ class AdminTeamServiceTest {
                 .build();
 
         // 업데이트 요청 정보 (이미지는 변경 안함)
-        TeamUpdateRequest request = new TeamUpdateRequest();
+        AdminTeamUpdateRequest request = new AdminTeamUpdateRequest();
         request.setTeamType(CLUB);
         request.setKName("변경팀");
         request.setEName("New Team");

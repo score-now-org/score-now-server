@@ -1,6 +1,5 @@
 package com.scorenow.scorenow_api.domain.team.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.team.entity.TeamType;
 
@@ -11,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class TeamUpdateRequest {
+public class AdminTeamUpdateRequest {
 
     @JsonProperty("teamType")
     private TeamType teamType;

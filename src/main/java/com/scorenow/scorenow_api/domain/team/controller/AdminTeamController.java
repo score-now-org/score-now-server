@@ -2,7 +2,7 @@ package com.scorenow.scorenow_api.domain.team.controller;
 
 import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamCreateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
-import com.scorenow.scorenow_api.domain.team.dto.request.TeamUpdateRequest;
+import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
 import com.scorenow.scorenow_api.domain.team.service.AdminTeamService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -35,7 +35,7 @@ public class AdminTeamController {
     }
 
     @PatchMapping("/{teamId}")
-    public ApiResponse<Void> updateTeam(@PathVariable Long teamId, @Valid @RequestBody TeamUpdateRequest request) {
+    public ApiResponse<Void> updateTeam(@PathVariable Long teamId, @Valid @RequestBody AdminTeamUpdateRequest request) {
         adminTeamService.updateTeam(teamId, request);
         return ApiResponse.success();
     }
