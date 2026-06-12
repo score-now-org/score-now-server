@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/admin/stadiums")
 @RequiredArgsConstructor
-public class AdminStadiumController implements StadiumApiDocs {
+public class AdminStadiumController implements AdminStadiumApiDocs {
 
     private final AdminStadiumService adminStadiumService;
 

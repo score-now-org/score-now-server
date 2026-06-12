@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/admin/teams")
 @RequiredArgsConstructor
-public class AdminTeamController {
+public class AdminTeamController implements AdminTeamApiDocs {
 
     private final AdminTeamService adminTeamService;
 
