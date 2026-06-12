@@ -95,7 +95,7 @@ public class MatchEventSyncService {
 
         Match match = matchRepository.findByExternalInfo(dataOrigin, event.getId())
                 .orElseGet(() -> Match.builder()
-                        .provider(dataOrigin)
+                        .dataOrigin(dataOrigin)
                         .apiMatchId(event.getId())
                         .bet365Id(event.getBet365Id())
                         .teamDisplayOrder(matchTeamDisplayOrderPolicy.decide(league))

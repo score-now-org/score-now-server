@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import org.springframework.data.domain.Page;
@@ -61,6 +62,7 @@ public class AdminMatchService {
         validateMatchCreateRequest(request);
 
         Match match = matchMapper.toEntity(request);
+        match.updateDataOrigin(DataOrigin.MANUAL);
 
         League league = leagueRepository.findById(request.getLeagueId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));

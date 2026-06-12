@@ -30,7 +30,7 @@ public class Match extends BaseEntity {
 
     @Column(name = "provider")
     @Enumerated(EnumType.STRING)
-    private DataOrigin provider;
+    private DataOrigin dataOrigin;
 
     @Column(name = "api_match_id")
     private String apiMatchId;
@@ -133,6 +133,10 @@ public class Match extends BaseEntity {
 
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder;
+    }
+
+    public void updateDataOrigin(DataOrigin dataOrigin) {
+        this.dataOrigin = dataOrigin;
     }
 
     public boolean isStadiumEmpty() {
