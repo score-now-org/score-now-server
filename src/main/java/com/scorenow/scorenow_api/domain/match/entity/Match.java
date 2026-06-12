@@ -28,7 +28,7 @@ public class Match extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "provider")
+    @Column(name = "data_origin")
     @Enumerated(EnumType.STRING)
     private DataOrigin dataOrigin;
 
