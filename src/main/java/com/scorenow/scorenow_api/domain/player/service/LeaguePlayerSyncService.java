@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
@@ -31,7 +30,6 @@ public class LeaguePlayerSyncService {
 	private final LeagueExternalMappingRepository leagueExternalMappingRepository;
 	private final TeamPlayerSyncService teamPlayerSyncService;
 
-	@Transactional(readOnly = true)
 	public LeaguePlayerSyncResult syncPlayersByLeague(Long leagueId) {
 
 		if (leagueId == null) {
