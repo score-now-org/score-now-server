@@ -38,4 +38,8 @@ public class Stadium extends BaseEntity {
                 .dataOrigin(dataOrigin)
                 .build();
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
 }

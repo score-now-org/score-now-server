@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.stadium.service;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.stadium.dto.request.AdminStadiumCreateRequest;
+import com.scorenow.scorenow_api.domain.stadium.dto.request.AdminStadiumUpdateRequest;
 import com.scorenow.scorenow_api.domain.stadium.dto.request.StadiumSearchCondition;
 import com.scorenow.scorenow_api.domain.stadium.dto.response.AdminStadiumResponse;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
@@ -51,6 +52,28 @@ public class AdminStadiumService {
                 .stream()
                 .map(AdminStadiumResponse::from)
                 .toList();
+    }
+
+    /**
+     * 경기장 정보 수정
+     */
+    @Transactional
+    public void updateStadium(Long stadiumId, AdminStadiumUpdateRequest request) {
+        Stadium stadium = stadiumRepository.findById(stadiumId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STADIUM_NOT_FOUND));
+
+        applyUpdates(stadium, request);
+    }
+
+    private void applyUpdates(Stadium stadium, AdminStadiumUpdateRequest request) {
+        if (request == null) {
+            log.info("❌경기장 업데이트 정보가 없습니다. stadiumId={}, stadiumName={}", stadium.getId(), stadium.getName());
+            return;
+        }
+
+        if (request.getName() != null) {
+            stadium.updateName(request.getName());
+        }
     }
 
     private String normalize(String value) {

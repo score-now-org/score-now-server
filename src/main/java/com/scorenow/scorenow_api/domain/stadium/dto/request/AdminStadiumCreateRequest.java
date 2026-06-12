@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class AdminStadiumCreateRequest {
+public class  AdminStadiumCreateRequest {
     @NotNull(message = "종목 ID 는 필수입니다.")
     private Long sportId;
 
