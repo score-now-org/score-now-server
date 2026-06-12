@@ -8,7 +8,7 @@ import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.constant.MatchConstants;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -46,30 +46,30 @@ public class MatchEventSyncService {
      * REQUIRES_NEW: 경기 1건 실패가 다른 경기에 영향 없음
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void syncEvent(ApiProvider provider, BetsEventResponse.Event event, String externalSportId) {
-        Long internalSportId = sportExternalMappingRepository.findByProviderAndApiSportId(provider, externalSportId)
+    public void syncEvent(DataOrigin dataOrigin, BetsEventResponse.Event event, String externalSportId) {
+        Long internalSportId = sportExternalMappingRepository.findByProviderAndApiSportId(dataOrigin, externalSportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND))
                 .getInternalSportId();
 
-        League savedLeague = saveLeague(provider, event.getLeague(), internalSportId);
-        Team savedHome = saveTeam(provider, event.getHome(), internalSportId);
-        Team savedAway = saveTeam(provider, event.getAway(), internalSportId);
-        saveMatch(provider, event, internalSportId, savedLeague, savedHome, savedAway);
+        League savedLeague = saveLeague(dataOrigin, event.getLeague(), internalSportId);
+        Team savedHome = saveTeam(dataOrigin, event.getHome(), internalSportId);
+        Team savedAway = saveTeam(dataOrigin, event.getAway(), internalSportId);
+        saveMatch(dataOrigin, event, internalSportId, savedLeague, savedHome, savedAway);
     }
 
-    private League saveLeague(ApiProvider provider, BetsEventResponse.League betsLeague, Long internalSportId) {
+    private League saveLeague(DataOrigin dataOrigin, BetsEventResponse.League betsLeague, Long internalSportId) {
         if (betsLeague == null) {
             throw new BusinessException(
                     ErrorCode.LEAGUE_NOT_FOUND,
-                    String.format("%s 에서 리그 정보를 제공하지 않았습니다.", provider));
+                    String.format("%s 에서 리그 정보를 제공하지 않았습니다.", dataOrigin));
         }
 
-        return leagueService.getOrCreateLeague(provider, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
+        return leagueService.getOrCreateLeague(dataOrigin, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
     }
 
-    private Team saveTeam(ApiProvider provider, BetsEventResponse.Team betsTeam, Long internalSportId) {
+    private Team saveTeam(DataOrigin dataOrigin, BetsEventResponse.Team betsTeam, Long internalSportId) {
         if (betsTeam == null) {
-            throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("%s 에서 팀 정보를 제공하지 않았습니다.", provider));
+            throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("%s 에서 팀 정보를 제공하지 않았습니다.", dataOrigin));
         }
 
         String imageUrl = null;
@@ -77,11 +77,11 @@ public class MatchEventSyncService {
             imageUrl = TEAM_IMAGE_BASE_URL + betsTeam.getImageId() + ".png";
         }
 
-        return teamService.getOrCreateTeam(provider, internalSportId, betsTeam.getId(), betsTeam.getName(), betsTeam.getCc(), imageUrl);
+        return teamService.getOrCreateTeam(dataOrigin, internalSportId, betsTeam.getId(), betsTeam.getName(), betsTeam.getCc(), imageUrl);
     }
 
     private void saveMatch(
-            ApiProvider provider,
+            DataOrigin dataOrigin,
             BetsEventResponse.Event event,
             Long internalSportId,
             League league,
@@ -93,9 +93,9 @@ public class MatchEventSyncService {
             return;
         }
 
-        Match match = matchRepository.findByExternalInfo(provider, event.getId())
+        Match match = matchRepository.findByExternalInfo(dataOrigin, event.getId())
                 .orElseGet(() -> Match.builder()
-                        .provider(provider)
+                        .dataOrigin(dataOrigin)
                         .apiMatchId(event.getId())
                         .bet365Id(event.getBet365Id())
                         .teamDisplayOrder(matchTeamDisplayOrderPolicy.decide(league))

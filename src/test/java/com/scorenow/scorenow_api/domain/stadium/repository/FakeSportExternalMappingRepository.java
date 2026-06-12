@@ -2,7 +2,7 @@ package com.scorenow.scorenow_api.domain.stadium.repository;
 
 import com.scorenow.scorenow_api.domain.sport.entity.SportExternalMapping;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class FakeSportExternalMappingRepository implements SportExternalMappingR
     }
 
     @Override
-    public Optional<SportExternalMapping> findByProviderAndApiSportId(ApiProvider provider, String apiSportId) {
+    public Optional<SportExternalMapping> findByProviderAndApiSportId(DataOrigin provider, String apiSportId) {
         return database.values().stream()
                 .filter(o -> provider.equals(o.getProvider()))
                 .filter(o -> apiSportId.equals(o.getApiSportId()))

@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import org.springframework.data.domain.Page;
@@ -28,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MatchAdminService {
+public class AdminMatchService {
 
     private final MatchRepository matchRepository;
     private final LeagueRepository leagueRepository;
@@ -61,6 +62,7 @@ public class MatchAdminService {
         validateMatchCreateRequest(request);
 
         Match match = matchMapper.toEntity(request);
+        match.updateDataOrigin(DataOrigin.MANUAL);
 
         League league = leagueRepository.findById(request.getLeagueId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
@@ -95,10 +97,10 @@ public class MatchAdminService {
         if (!leagueRepository.existsById(request.getLeagueId())) {
             throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
         }
-        if (!teamRepository.existsById(request.getHomeId())) {
+        if (!teamRepository.existsByIdAndIsActiveTrue(request.getHomeId())) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "홈팀을 찾을 수 없습니다.");
         }
-        if (!teamRepository.existsById(request.getAwayId())) {
+        if (!teamRepository.existsByIdAndIsActiveTrue(request.getAwayId())) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "원정팀을 찾을 수 없습니다.");
         }
         if (request.getSportId() != null && !sportRepository.existsById(request.getSportId())) {

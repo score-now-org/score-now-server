@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +34,7 @@ public class LeagueCacheService {
      * 1. Redis에서 먼저 조회
      * 2. 없으면 DB 조회 후 Redis에 저장
      */
-    public Optional<League> get(ApiProvider provider, String apiLeagueId) {
+    public Optional<League> get(DataOrigin provider, String apiLeagueId) {
         String cacheKey = generateCacheKey(provider, apiLeagueId);
 
         // 1. 캐시 조회
@@ -69,7 +69,7 @@ public class LeagueCacheService {
     /**
      * 리그 캐시 삭제
      */
-    public void delete(ApiProvider provider, String apiLeagueId) {
+    public void delete(DataOrigin provider, String apiLeagueId) {
         String cacheKey = generateCacheKey(provider, apiLeagueId);
         redisTemplate.delete(cacheKey);
         log.info("Cache DELETE - League: {}", apiLeagueId);
@@ -91,7 +91,7 @@ public class LeagueCacheService {
      * 리그 캐시 강제 갱신
      * DB 조회 후 캐시 업데이트
      */
-    public Optional<League> refresh(ApiProvider provider, String apiLeagueId) {
+    public Optional<League> refresh(DataOrigin provider, String apiLeagueId) {
         delete(provider, apiLeagueId);
         return get(provider, apiLeagueId);
     }
@@ -99,7 +99,7 @@ public class LeagueCacheService {
     /**
      * 리그 Cache Key 생성
      */
-    private String generateCacheKey(ApiProvider provider, String apiLeagueId) {
+    private String generateCacheKey(DataOrigin provider, String apiLeagueId) {
         return CACHE_PREFIX + provider + DELIMITER + apiLeagueId;
     }
 }

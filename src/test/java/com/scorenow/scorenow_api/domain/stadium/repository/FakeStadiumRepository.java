@@ -15,15 +15,10 @@ public class FakeStadiumRepository implements StadiumRepository {
     private final AtomicLong idGenerator = new AtomicLong(0);
 
     @Override
-    public List<Stadium> findAll() {
-        return database.values().stream().toList();
-    }
-
-    @Override
-    public List<Stadium> findByNameContainingIgnoreCase(String stadiumName) {
-        List<Stadium> stadiums = database.values().stream().toList();
-        return stadiums.stream()
-                .filter(stadium -> stadiumName.equals(stadium.getName()))
+    public List<Stadium> searchStadiums(Long stadiumId, String name) {
+        return database.values().stream()
+                .filter(stadium -> stadiumId == null || stadiumId.equals(stadium.getId()))
+                .filter(stadium -> name == null || stadium.getName() != null && stadium.getName().toLowerCase().contains(name.toLowerCase()))
                 .toList();
     }
 

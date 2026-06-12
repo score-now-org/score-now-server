@@ -4,20 +4,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.scorenow.scorenow_api.domain.player.entity.PlayerExternalMapping;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
 
 public interface PlayerExternalMappingRepository extends JpaRepository<PlayerExternalMapping, Long> {
 
 	Optional<PlayerExternalMapping> findByProviderAndApiPlayerId(
-		ApiProvider provider,
+		DataOrigin provider,
 		String apiPlayerId
 	);
 
 	List<PlayerExternalMapping> findByProviderAndApiPlayerIdIn(
-		ApiProvider provider,
+		DataOrigin provider,
 		Set<String> apiPlayerIds
 	);
 }

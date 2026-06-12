@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface StadiumRepository {
-    List<Stadium> findAll();
-
-    List<Stadium> findByNameContainingIgnoreCase(String stadiumName);
+    List<Stadium> searchStadiums(Long stadiumId, String name);
 
     Stadium save(Stadium stadium);
 

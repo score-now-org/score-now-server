@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.sport.repository;
 
 import com.scorenow.scorenow_api.domain.sport.entity.SportExternalMapping;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +14,7 @@ public class SportExternalMappingRepositoryImpl implements SportExternalMappingR
     private final SportExternalMappingJpaRepository jpaRepository;
 
     @Override
-    public Optional<SportExternalMapping> findByProviderAndApiSportId(ApiProvider provider, String apiSportId) {
+    public Optional<SportExternalMapping> findByProviderAndApiSportId(DataOrigin provider, String apiSportId) {
         return jpaRepository.findByProviderAndApiSportId(provider, apiSportId);
     }
 

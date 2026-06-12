@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.dto;
 
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.*;
 import lombok.EqualsAndHashCode.Include;
 
@@ -15,7 +15,7 @@ public class MatchCandidate {
     private Long matchId;
     private Long sportId;
 
-    private ApiProvider provider;
+    private DataOrigin provider;
     private String apiMatchId;
     private String apiSportId;
 

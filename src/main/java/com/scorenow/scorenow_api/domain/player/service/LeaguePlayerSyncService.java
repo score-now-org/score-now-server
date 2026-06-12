@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.stereotype.Service;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
@@ -13,7 +14,6 @@ import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.player.dto.response.LeaguePlayerSyncResult;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -43,7 +43,7 @@ public class LeaguePlayerSyncService {
 			));
 
 		String leagueApiId = leagueExternalMappingRepository
-			.findByProviderAndInternalLeagueId(ApiProvider.BETS, league.getId())
+			.findByProviderAndInternalLeagueId(DataOrigin.BETS, league.getId())
 			.map(LeagueExternalMapping::getApiLeagueId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,

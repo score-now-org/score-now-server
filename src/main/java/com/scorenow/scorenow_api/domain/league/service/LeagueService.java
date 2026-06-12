@@ -4,7 +4,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class LeagueService {
      */
     @Transactional
     public League getOrCreateLeague(
-            final ApiProvider provider,
+            final DataOrigin provider,
             final Long internalSportId,
             final String apiLeagueId,
             final String name,
@@ -45,7 +45,7 @@ public class LeagueService {
     }
 
     private League createAndMapLeague(
-            ApiProvider provider,
+            DataOrigin provider,
             Long internalSportId,
             String apiLeagueId,
             String name,
