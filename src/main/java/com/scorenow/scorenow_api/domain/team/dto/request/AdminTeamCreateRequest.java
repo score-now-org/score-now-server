@@ -1,6 +1,5 @@
 package com.scorenow.scorenow_api.domain.team.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.team.entity.TeamType;
 
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class TeamCreateRequest {
+public class AdminTeamCreateRequest {
 
     @NotNull(message = "종목 ID는 필수입니다.")
     private Long sportId;

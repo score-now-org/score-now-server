@@ -19,12 +19,12 @@ public class StadiumCacheService {
     /**
      * 경기장 생성 (캐시 + DB 활용)
      */
-    public Stadium getOrCreateStadium(final DataOrigin provider, final String apiSportId, final String apiStadiumId, final String name, final String city) {
-        StadiumCacheKey cacheKey = new StadiumCacheKey(provider, apiSportId, apiStadiumId);
+    public Stadium getOrCreateStadium(final DataOrigin dataOrigin, final String apiSportId, final String apiStadiumId, final String name, final String city) {
+        StadiumCacheKey cacheKey = new StadiumCacheKey(dataOrigin, apiSportId, apiStadiumId);
 
         return stadiumCache.get(cacheKey, key -> {
-                    log.info("[Cache Miss ❌] provider={}, apiSportId={}, apiStadiumId={}", provider, apiSportId, apiStadiumId);
-                    return stadiumService.getOrCreateStadium(provider, apiSportId, apiStadiumId, name, city);
+                    log.info("[Cache Miss ❌] dataOrigin={}, apiSportId={}, apiStadiumId={}", dataOrigin, apiSportId, apiStadiumId);
+                    return stadiumService.getOrCreateStadium(dataOrigin, apiSportId, apiStadiumId, name, city);
                 }
         );
     }

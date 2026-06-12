@@ -2,7 +2,7 @@ package com.scorenow.scorenow_api.domain.team.service;
 
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
-import com.scorenow.scorenow_api.domain.team.dto.request.TeamCreateRequest;
+import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamCreateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
@@ -33,7 +33,7 @@ public class AdminTeamService {
      * 팀 수동 등록
      */
     @Transactional
-    public AdminTeamResponse createTeam(TeamCreateRequest request) {
+    public AdminTeamResponse createTeam(AdminTeamCreateRequest request) {
         Sport sport = sportRepository.findById(request.getSportId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND));
 

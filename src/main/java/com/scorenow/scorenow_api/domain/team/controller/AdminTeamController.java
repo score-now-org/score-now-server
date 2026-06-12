@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.team.controller;
 
-import com.scorenow.scorenow_api.domain.team.dto.request.TeamCreateRequest;
+import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamCreateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
@@ -23,7 +23,7 @@ public class AdminTeamController {
     private final AdminTeamService adminTeamService;
 
     @PostMapping
-    public ApiResponse<AdminTeamResponse> createTeam(@Valid @RequestBody TeamCreateRequest request) {
+    public ApiResponse<AdminTeamResponse> createTeam(@Valid @RequestBody AdminTeamCreateRequest request) {
         return ApiResponse.success(adminTeamService.createTeam(request));
     }
 
