@@ -10,13 +10,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.BETS;
+import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.SEOUL_TIME_ZONE_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -39,7 +39,7 @@ class InplayMatchSyncServiceTest {
 
     @Test
     void API_응답을_대조하여_진행_중인_경기와_유예기간_초과_경기를_정상적으로_분류하고_반영한다() {
-        ZonedDateTime now = ZonedDateTime.of(2026, 1, 1, 13, 30, 0, 0, ZoneId.of("Asia/Seoul"));
+        ZonedDateTime now = ZonedDateTime.of(2026, 1, 1, 13, 30, 0, 0, SEOUL_TIME_ZONE_ID);
 
         // 동기화 대상 조회 결과 세팅 현재 시작 예정 경기 세팅 (축구 2건 + 야구 1건 + 농구 1건) / 농구의 경우 유예기간 초과 경기
         MatchCandidate soccerCandidate1 = new MatchCandidate(1L, 1L, BETS, "100", "SOCCER", now.toLocalDateTime());
@@ -58,7 +58,7 @@ class InplayMatchSyncServiceTest {
         given(betsApiClient.getInplayEvents("BASEBALL", null)).willReturn(inplayBaseball);
         given(betsApiClient.getInplayEvents("BASKETBALL", null)).willReturn(inplayBasketball);
 
-        service.syncInplayMatches(now.toLocalDateTime());
+        service.syncInplayMatches(now);
 
         // API 총 3회 호출 (축구 1회, 야구 1회, 농구 1회)
         then(betsApiClient).should(times(1)).getInplayEvents("SOCCER", null);
