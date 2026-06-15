@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.scheduler;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import com.scorenow.scorenow_api.domain.match.service.InplayMatchCandidateLoadService;
 import com.scorenow.scorenow_api.domain.match.service.InplayMatchSyncService;
@@ -16,6 +17,8 @@ import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.SEOUL_TIME_ZONE_ID;
 
 @Profile("!test")
 @Slf4j
@@ -77,7 +80,7 @@ public class MatchSyncScheduler {
         log.info("📅 INPLAY 예정 경기 캐싱 시작");
 
         try {
-            inplayMatchCandidateLoadService.loadInplayCandidatesToCache(LocalDateTime.now());
+            inplayMatchCandidateLoadService.loadInplayCandidatesToCache(ZonedDateTime.now(SEOUL_TIME_ZONE_ID));
         } catch (Exception e) {
             log.error("시작 예정 경기 캐싱 작업 중 예외 발생 ❌", e);
         }
@@ -92,7 +95,7 @@ public class MatchSyncScheduler {
         log.info("📅 INPLAY 경기 동기화 시작");
 
         try {
-            inplayMatchSyncService.syncInplayMatches(LocalDateTime.now());
+            inplayMatchSyncService.syncInplayMatches(ZonedDateTime.now(SEOUL_TIME_ZONE_ID));
         } catch (Exception e) {
             log.error("INPLAY 경기 동기화 처리 중 예외 발생 ❌", e);
         }
