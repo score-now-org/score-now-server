@@ -81,7 +81,6 @@ public class BetsApiTestController {
 	 *
 	 * curl -X POST "http://localhost:8080/api/test/betsapi/sync/players?leagueId=1"
 	 */
-	// TODO : 팀 기준으로 선수 저장
 	@PostMapping("/sync/players")
 	public ApiResponse<String> syncPlayer(@RequestParam Long leagueId) {
 		LeaguePlayerSyncResult result = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
