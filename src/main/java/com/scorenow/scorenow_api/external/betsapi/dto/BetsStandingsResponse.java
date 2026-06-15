@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -47,6 +48,7 @@ public class BetsStandingsResponse {
 
 	@Getter
 	@Setter
+	@EqualsAndHashCode(of = "id")
 	public static class Team {
 		private String id;
 		private String name;
