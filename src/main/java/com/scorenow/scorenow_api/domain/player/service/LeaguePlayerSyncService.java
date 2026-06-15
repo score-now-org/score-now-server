@@ -66,7 +66,7 @@ public class LeaguePlayerSyncService {
 			league.getId(),
 			leagueApiId,
 			seasonName,
-			teams.size()q
+			teams.size()
 		);
 
 		if (teams.isEmpty()) {
