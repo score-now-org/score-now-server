@@ -12,6 +12,7 @@ import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.player.dto.response.LeaguePlayerSyncResult;
+import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -29,6 +30,7 @@ public class LeaguePlayerSyncService {
 	private final LeagueRepository leagueRepository;
 	private final LeagueExternalMappingRepository leagueExternalMappingRepository;
 	private final TeamPlayerSyncService teamPlayerSyncService;
+	private final TeamService teamService;
 
 	public LeaguePlayerSyncResult syncPlayersByLeague(Long leagueId) {
 
@@ -58,20 +60,35 @@ public class LeaguePlayerSyncService {
 
 		String seasonName = extractSeasonName(standings);
 
-		Set<String> teamApiIds = extractTeamApiIds(standings);
+		Set<BetsStandingsResponse.Team> teams = extractTeams(standings);
 
 		LeaguePlayerSyncResult result = new LeaguePlayerSyncResult(
 			league.getId(),
 			leagueApiId,
 			seasonName,
-			teamApiIds.size()
+			teams.size()
 		);
 
-		if (teamApiIds.isEmpty()) {
+		if (teams.isEmpty()) {
 			return result;
 		}
 
-		for (String teamApiId : teamApiIds) {
+		for (BetsStandingsResponse.Team team : teams) {
+			String imageUrl = teamService.buildImageUrl(team.getImageId());
+
+			teamService.getOrCreateTeam(
+				ApiProvider.BETS,
+				league.getSportId(),
+				team.getId(),
+				team.getName(),
+				team.getCc(),
+				imageUrl
+			);
+		}
+
+		for (BetsStandingsResponse.Team team : teams) {
+			String teamApiId = team.getId();
+
 			try {
 				int processedCount = teamPlayerSyncService.syncTeamPlayers(
 					league.getId(),
@@ -106,11 +123,12 @@ public class LeaguePlayerSyncService {
 		return r.getSeason().getName();
 	}
 
-	private Set<String> extractTeamApiIds(BetsStandingsResponse standings) {
-		Set<String> ids = new LinkedHashSet<>();
+	private Set<BetsStandingsResponse.Team> extractTeams(BetsStandingsResponse standings) {
+		Set<BetsStandingsResponse.Team> teams = new LinkedHashSet<>();
+
 		List<BetsStandingsResponse.Result> results = standings.getResults();
 		if (results == null) {
-			return ids;
+			return teams;
 		}
 
 		for (BetsStandingsResponse.Result r : results) {
@@ -128,14 +146,16 @@ public class LeaguePlayerSyncService {
 						continue;
 					}
 
-					String teamApiId = row.getTeam().getId();
-					if (teamApiId != null && !teamApiId.isBlank()) {
-						ids.add(teamApiId.trim());
+					BetsStandingsResponse.Team team = row.getTeam();
+
+					if (team.getId() != null && !team.getId().isBlank()) {
+						team.setId(team.getId().trim());
+						teams.add(team);
 					}
 				}
 			}
 		}
 
-		return ids;
+		return teams;
 	}
 }
