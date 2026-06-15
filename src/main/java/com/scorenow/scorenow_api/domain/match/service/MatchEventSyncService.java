@@ -29,8 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class MatchEventSyncService {
-
-	// private static final String TEAM_IMAGE_BASE_URL = "https://assets.b365api.com/images/team/m/";
+	
 	private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of(MatchConstants.SEOUL_TIME_ZONE);
 
 	private final LeagueService leagueService;
@@ -72,11 +71,6 @@ public class MatchEventSyncService {
 		if (betsTeam == null) {
 			throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("%s 에서 팀 정보를 제공하지 않았습니다.", provider));
 		}
-
-		// String imageUrl = null;
-		// if (betsTeam.getImageId() != null) {
-		//     imageUrl = TEAM_IMAGE_BASE_URL + betsTeam.getImageId() + ".png";
-		// }
 
 		String imageUrl = teamService.buildImageUrl(betsTeam.getImageId());
 
