@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
@@ -20,6 +21,7 @@ import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.NOT_STAR
 @RequiredArgsConstructor
 public class InplayMatchCandidateLoadService {
 
+    private static final DateTimeFormatter LOG_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final ZoneId SEOUL_TIME_ZONE_ID = ZoneId.of(SEOUL_TIME_ZONE);
 
     private final MatchRepository matchRepository;
@@ -33,7 +35,13 @@ public class InplayMatchCandidateLoadService {
 
         List<MatchCandidate> candidates = matchRepository.findMatchesStartingWithin(NOT_STARTED, start.toLocalDateTime(), end.toLocalDateTime());
 
-        log.info("{}시간 이내 시작 예정 경기 건수 : {}", INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS, candidates.size());
+        log.info(
+                "시작 예정 경기 조회 범위: {} ~ {}, {}시간 이내 시작 예정 경기 건수: {}",
+                start.format(LOG_TIME_FORMATTER),
+                end.format(LOG_TIME_FORMATTER),
+                INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS,
+                candidates.size()
+        );
 
         for (MatchCandidate candidate : candidates) {
             ZonedDateTime startAt = candidate.getStartAt().atZone(SEOUL_TIME_ZONE_ID);
