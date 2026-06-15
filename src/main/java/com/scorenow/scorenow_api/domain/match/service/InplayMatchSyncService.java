@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +27,8 @@ public class InplayMatchSyncService {
     private final InplayMatchStatusUpdater inplayMatchStatusUpdater;
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
-    public void syncInplayMatches(LocalDateTime standardTime) {
-        ZonedDateTime now = standardTime.atZone(ZoneId.of(SEOUL_TIME_ZONE));
+    public void syncInplayMatches(ZonedDateTime standardTime) {
+        ZonedDateTime now = standardTime.withZoneSameInstant(SEOUL_TIME_ZONE_ID);
 
         // 1. 동기화 대상 조회 (현재 시간 기준 INPLAY 일 것으로 예상되는 경기들)
         List<MatchCandidate> candidates = inplayMatchRedisRepository.findCandidatesToSync(now);
