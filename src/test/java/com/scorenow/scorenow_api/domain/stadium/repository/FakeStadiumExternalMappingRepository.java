@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.stadium.repository;
 
 import com.scorenow.scorenow_api.domain.stadium.entity.StadiumExternalMapping;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
@@ -23,7 +23,7 @@ public class FakeStadiumExternalMappingRepository implements StadiumExternalMapp
     }
 
     @Override
-    public Optional<StadiumExternalMapping> findByExternalInfo(ApiProvider provider, String apiSportId, String apiStadiumId) {
+    public Optional<StadiumExternalMapping> findByExternalInfo(DataOrigin provider, String apiSportId, String apiStadiumId) {
         return database.values().stream()
                 .filter(o -> provider.equals(o.getProvider()))
                 .filter(o -> apiSportId.equals(o.getApiSportId()))

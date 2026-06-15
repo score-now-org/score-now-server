@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.player.service;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +19,6 @@ import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepos
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -42,7 +42,7 @@ public class TeamPlayerSyncService {
 	public int syncTeamPlayers(Long leagueId, String seasonName, String teamApiId) {
 
 		TeamExternalMapping teamMapping = teamExternalMappingRepository
-			.findByProviderAndApiTeamId(ApiProvider.BETS, teamApiId)
+			.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,
 				"팀 매핑 정보를 찾을 수 없습니다. teamApiId=" + teamApiId
@@ -123,7 +123,7 @@ public class TeamPlayerSyncService {
 
 	private Player findOrCreatePlayer(BetsSquadResponse.SquadPlayer sp, String apiPlayerId) {
 		return playerExternalMappingRepository
-			.findByProviderAndApiPlayerId(ApiProvider.BETS, apiPlayerId)
+			.findByProviderAndApiPlayerId(DataOrigin.BETS, apiPlayerId)
 			.map(PlayerExternalMapping::getPlayer)
 			.orElseGet(() -> {
 				Player player = Player.builder()
@@ -138,7 +138,7 @@ public class TeamPlayerSyncService {
 				Player savedPlayer = playerRepository.save(player);
 
 				PlayerExternalMapping mapping = new PlayerExternalMapping(
-					ApiProvider.BETS,
+					DataOrigin.BETS,
 					apiPlayerId,
 					savedPlayer
 				);

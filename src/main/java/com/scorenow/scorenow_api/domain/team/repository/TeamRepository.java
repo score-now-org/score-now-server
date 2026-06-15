@@ -1,11 +1,15 @@
 package com.scorenow.scorenow_api.domain.team.repository;
 
+import java.util.Optional;
+
+import com.scorenow.scorenow_api.domain.team.entity.Team;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import com.scorenow.scorenow_api.domain.team.entity.Team;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
 
@@ -24,4 +28,32 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             @Param("cc") String cc,
             @Param("imageUrl") String imageUrl
     );
+
+    @Query(value = """
+            select t
+            from Team t
+            left join fetch t.sport
+            where (:teamId is null or t.id = :teamId)
+              and t.isActive = true
+              and (:kName is null or t.kName like concat('%', :kName, '%'))
+              and (:eName is null or lower(t.eName) like lower(concat('%', :eName, '%')))
+            """,
+            countQuery = """
+            select count(t)
+            from Team t
+            where (:teamId is null or t.id = :teamId)
+              and t.isActive = true
+              and (:kName is null or t.kName like concat('%', :kName, '%'))
+              and (:eName is null or lower(t.eName) like lower(concat('%', :eName, '%')))
+            """)
+    Page<Team> searchTeams(
+            @Param("teamId") Long teamId,
+            @Param("kName") String kName,
+            @Param("eName") String eName,
+            Pageable pageable
+    );
+
+    Optional<Team> findByIdAndIsActiveTrue(Long id);
+
+    boolean existsByIdAndIsActiveTrue(Long id);
 }

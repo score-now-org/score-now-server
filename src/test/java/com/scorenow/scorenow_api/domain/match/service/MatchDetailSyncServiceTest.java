@@ -9,7 +9,7 @@ import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupReposi
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -142,7 +142,7 @@ class MatchDetailSyncServiceTest {
         matchDetailSyncService.syncInplayMatchDetails();
 
         // then
-        verify(matchDetailService, times(1)).updateInplayMatchDetail(ApiProvider.BETS, viewResult);
+        verify(matchDetailService, times(1)).updateInplayMatchDetail(DataOrigin.BETS, viewResult);
         verify(inplayRedisService, never()).markSeenAndEnqueue(anyString(), anyString());
         verify(matchLineupGoalsService, never()).updateLineupGoals((MatchLineupDocument) any(), any());
     }
@@ -166,7 +166,7 @@ class MatchDetailSyncServiceTest {
         matchDetailSyncService.syncInplayMatchDetails();
 
         // then
-        verify(matchDetailService, times(1)).updateInplayMatchDetail(ApiProvider.BETS, viewResult);
+        verify(matchDetailService, times(1)).updateInplayMatchDetail(DataOrigin.BETS, viewResult);
         verify(inplayRedisService, times(1)).markSeenAndEnqueue("1", "10");
         verify(matchLineupGoalsService, never()).updateLineupGoals((MatchLineupDocument) any(), any()); // 골 업데이트는 스킵됨
     }
@@ -190,7 +190,7 @@ class MatchDetailSyncServiceTest {
         matchDetailSyncService.syncInplayMatchDetails();
 
         // then
-        verify(matchDetailService, times(1)).updateInplayMatchDetail(ApiProvider.BETS, viewResult);
+        verify(matchDetailService, times(1)).updateInplayMatchDetail(DataOrigin.BETS, viewResult);
         verify(inplayRedisService, never()).markSeenAndEnqueue(anyString(), anyString()); // 큐 삽입 안함
         verify(matchLineupGoalsService, times(1)).updateLineupGoals(document, viewResult);
     }
@@ -215,15 +215,15 @@ class MatchDetailSyncServiceTest {
 
         // 첫 번째 경기 업데이트 시 예외 발생 유도
         willThrow(new RuntimeException("DB Deadlock"))
-                .given(matchDetailService).updateInplayMatchDetail(ApiProvider.BETS, result1);
+                .given(matchDetailService).updateInplayMatchDetail(DataOrigin.BETS, result1);
 
         // when
         matchDetailSyncService.syncInplayMatchDetails();
 
         // then
         // match1 업데이트에서 예외가 났지만, match2 업데이트까지 도달해서 총 2번의 호출 시도가 있었는지 검증
-        verify(matchDetailService, times(1)).updateInplayMatchDetail(ApiProvider.BETS, result1);
-        verify(matchDetailService, times(1)).updateInplayMatchDetail(ApiProvider.BETS, result2);
+        verify(matchDetailService, times(1)).updateInplayMatchDetail(DataOrigin.BETS, result1);
+        verify(matchDetailService, times(1)).updateInplayMatchDetail(DataOrigin.BETS, result2);
     }
 
 

@@ -7,7 +7,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -28,9 +28,9 @@ public class Match extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "provider")
+    @Column(name = "data_origin")
     @Enumerated(EnumType.STRING)
-    private ApiProvider provider;
+    private DataOrigin dataOrigin;
 
     @Column(name = "api_match_id")
     private String apiMatchId;
@@ -133,6 +133,10 @@ public class Match extends BaseEntity {
 
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder;
+    }
+
+    public void updateDataOrigin(DataOrigin dataOrigin) {
+        this.dataOrigin = dataOrigin;
     }
 
     public boolean isStadiumEmpty() {

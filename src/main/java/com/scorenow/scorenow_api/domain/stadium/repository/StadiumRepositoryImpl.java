@@ -14,13 +14,8 @@ public class StadiumRepositoryImpl implements StadiumRepository {
     private final StadiumJpaRepository stadiumJpaRepository;
 
     @Override
-    public List<Stadium> findAll() {
-        return stadiumJpaRepository.findAll();
-    }
-
-    @Override
-    public List<Stadium> findByNameContainingIgnoreCase(String stadiumName) {
-        return stadiumJpaRepository.findByNameContainingIgnoreCase(stadiumName);
+    public List<Stadium> searchStadiums(Long stadiumId, String name) {
+        return stadiumJpaRepository.searchStadiums(stadiumId, name);
     }
 
     @Override

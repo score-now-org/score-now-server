@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.player.entity;
 
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;
@@ -30,7 +30,7 @@ public class PlayerExternalMapping {
 	private Long id;
 
 	@Enumerated(EnumType.STRING)
-	private ApiProvider provider;
+	private DataOrigin provider;
 
 	@Column(name = "api_player_id", nullable = false)
 	private String apiPlayerId;
@@ -42,7 +42,7 @@ public class PlayerExternalMapping {
 		foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Player player;
 
-	public PlayerExternalMapping(ApiProvider provider, String apiPlayerId, Player player) {
+	public PlayerExternalMapping(DataOrigin provider, String apiPlayerId, Player player) {
 		this.provider = provider;
 		this.apiPlayerId = apiPlayerId;
 		this.player = player;

@@ -26,8 +26,10 @@ public class InplayMatchCandidateLoadService {
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
     public void loadInplayCandidatesToCache(LocalDateTime standardTime) {
-        ZonedDateTime start = standardTime.atZone(SEOUL_TIME_ZONE_ID);
-        ZonedDateTime end = start.plusHours(INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS);
+        ZonedDateTime standardTimeWithZone = standardTime.atZone(SEOUL_TIME_ZONE_ID);
+
+        ZonedDateTime start = standardTimeWithZone.minusMinutes(INPLAY_CANDIDATE_SCAN_LOOKBACK_MINUTES);
+        ZonedDateTime end = standardTimeWithZone.plusHours(INPLAY_CANDIDATES_SCAN_INTERVAL_HOURS);
 
         List<MatchCandidate> candidates = matchRepository.findMatchesStartingWithin(NOT_STARTED, start.toLocalDateTime(), end.toLocalDateTime());
 

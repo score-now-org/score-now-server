@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.team.entity;
 
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,7 +34,7 @@ public class TeamExternalMapping {
 
 	@Column(name = "provider", nullable = false)
 	@Enumerated(EnumType.STRING)
-	private ApiProvider provider;
+	private DataOrigin provider;
 
 	@Column(name = "api_team_id", nullable = false)
 	private String apiTeamId;   // 외부API 를 통해 전달받은 팀 ID
@@ -42,7 +42,7 @@ public class TeamExternalMapping {
 	@Column(name = "internal_team_id", nullable = false)
 	private Long internalTeamId;     // 시스템 내부에서 채번한 팀 ID
 
-	public static TeamExternalMapping of(ApiProvider provider, String apiTeamId, Long internalTeamId) {
+	public static TeamExternalMapping of(DataOrigin provider, String apiTeamId, Long internalTeamId) {
 		return new TeamExternalMapping(null, provider, apiTeamId, internalTeamId);
 	}
 }

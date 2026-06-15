@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 import com.scorenow.scorenow_api.domain.match.dto.InplayScanDto;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
 public interface MatchRepository extends JpaRepository<Match, Long>, MatchRepositoryCustom {
 
@@ -36,10 +36,10 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             	join Team a on a.id = m.awayId
             	join TeamExternalMapping hem
             		on hem.internalTeamId = h.id
-            		and hem.provider = m.provider
+            		and hem.provider = m.dataOrigin
             	join TeamExternalMapping aem
             		on aem.internalTeamId = a.id
-            		and aem.provider = m.provider
+            		and aem.provider = m.dataOrigin
             	where m.statusCode = :status
             	  and m.isActive = true
             """)
@@ -50,12 +50,12 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     @Query("""
             	select m
             	from Match m
-            	where m.provider = :provider
+            	where m.dataOrigin = :dataOrigin
             	  and m.apiMatchId = :apiMatchId
                   and m.isManual = false
             """)
     Optional<Match> findByExternalInfo(
-            @Param("provider") ApiProvider provider,
+            @Param("dataOrigin") DataOrigin dataOrigin,
             @Param("apiMatchId") String apiMatchId
     );
 
@@ -63,7 +63,7 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             	 select new com.scorenow.scorenow_api.domain.match.dto.MatchCandidate(
             		m.id,
             		m.sportId,
-            		m.provider,
+            		m.dataOrigin,
             		m.apiMatchId,
             		sem.apiSportId,
                     m.startAt

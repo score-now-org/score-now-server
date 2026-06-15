@@ -8,18 +8,18 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class StadiumResponse {
+public class AdminStadiumResponse {
     @Schema(description = "경기장 ID", example = "1")
     private Long id;
     @Schema(description = "경기장명", example = "Neo Quimica Arena")
     private String name;
-    @Schema(description = "종목ID", example = "1")
+    @Schema(description = "종목 ID", example = "1")
     private Long sportId;
     @Schema(description = "도시명", example = "Sao Paulo")
     private String city;
 
-    public static StadiumResponse from(Stadium stadium) {
-        return StadiumResponse.builder()
+    public static AdminStadiumResponse from(Stadium stadium) {
+        return AdminStadiumResponse.builder()
                 .id(stadium.getId())
                 .name(stadium.getName())
                 .sportId(stadium.getSportId())

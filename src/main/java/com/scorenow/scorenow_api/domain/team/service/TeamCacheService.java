@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
-import com.scorenow.scorenow_api.external.common.ApiProvider;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +32,7 @@ public class TeamCacheService {
     /**
      * 팀 조회 (캐시 우선)
      */
-    public Optional<Team> get(ApiProvider provider, String apiTeamId) {
+    public Optional<Team> get(DataOrigin provider, String apiTeamId) {
         String cacheKey = generateCacheKey(provider, apiTeamId);
 
         // 1. 캐시 조회
@@ -88,7 +88,7 @@ public class TeamCacheService {
     /**
      * 팀 캐시 강제 갱신
      */
-    public Optional<Team> refresh(ApiProvider provider, String apiTeamId) {
+    public Optional<Team> refresh(DataOrigin provider, String apiTeamId) {
         delete(apiTeamId);
         return get(provider, apiTeamId);
     }
@@ -96,7 +96,7 @@ public class TeamCacheService {
     /**
      * 팀 Cache Key 생성
      */
-    private String generateCacheKey(ApiProvider provider, String apiTeamId) {
+    private String generateCacheKey(DataOrigin provider, String apiTeamId) {
         return CACHE_PREFIX + provider + DELIMITER + apiTeamId;
     }
 }

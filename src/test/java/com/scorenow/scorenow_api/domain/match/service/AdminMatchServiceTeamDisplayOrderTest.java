@@ -29,7 +29,7 @@ import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 
 @ExtendWith(MockitoExtension.class)
-class MatchAdminServiceTeamDisplayOrderTest {
+class AdminMatchServiceTeamDisplayOrderTest {
 
     @Mock
     private MatchRepository matchRepository;
@@ -50,7 +50,7 @@ class MatchAdminServiceTeamDisplayOrderTest {
     private MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy = new MatchTeamDisplayOrderPolicy();
 
     @InjectMocks
-    private MatchAdminService matchAdminService;
+    private AdminMatchService adminMatchService;
 
     @Test
     void 수동_경기_생성시_리그의_표시_정책을_Match에_저장한다() {
@@ -67,7 +67,7 @@ class MatchAdminServiceTeamDisplayOrderTest {
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> invocation.getArgument(0));
         given(matchRepository.findByIdWithRelations(any())).willReturn(Optional.empty());
 
-        MatchListResponse response = matchAdminService.createMatch(request);
+        MatchListResponse response = adminMatchService.createMatch(request);
 
         ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
         then(matchRepository).should().save(matchCaptor.capture());
@@ -90,7 +90,7 @@ class MatchAdminServiceTeamDisplayOrderTest {
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> invocation.getArgument(0));
         given(matchRepository.findByIdWithRelations(any())).willReturn(Optional.empty());
 
-        MatchListResponse response = matchAdminService.createMatch(request);
+        MatchListResponse response = adminMatchService.createMatch(request);
 
         ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
         then(matchRepository).should().save(matchCaptor.capture());
@@ -116,7 +116,7 @@ class MatchAdminServiceTeamDisplayOrderTest {
 
         given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
 
-        matchAdminService.updateMatch(matchId, request);
+        adminMatchService.updateMatch(matchId, request);
 
         assertThat(match.getTeamDisplayOrder()).isEqualTo(AWAY_HOME);
     }
@@ -133,8 +133,8 @@ class MatchAdminServiceTeamDisplayOrderTest {
 
     private void givenValidCreateRequest(MatchCreateRequest request) {
         given(leagueRepository.existsById(request.getLeagueId())).willReturn(true);
-        given(teamRepository.existsById(request.getHomeId())).willReturn(true);
-        given(teamRepository.existsById(request.getAwayId())).willReturn(true);
+        given(teamRepository.existsByIdAndIsActiveTrue(request.getHomeId())).willReturn(true);
+        given(teamRepository.existsByIdAndIsActiveTrue(request.getAwayId())).willReturn(true);
         given(sportRepository.existsById(request.getSportId())).willReturn(true);
     }
 }
