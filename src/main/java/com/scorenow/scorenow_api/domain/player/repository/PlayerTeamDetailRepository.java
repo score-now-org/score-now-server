@@ -33,7 +33,6 @@ public interface PlayerTeamDetailRepository extends JpaRepository<PlayerTeamDeta
 			from PlayerTeamDetail ptd
 			join fetch ptd.player p
 			join fetch ptd.team t
-			join fetch ptd.league l
 			where ptd.squadOn = true
 			  and (:playerId is null or p.id = :playerId)
 			  and (:playerName is null
@@ -50,7 +49,6 @@ public interface PlayerTeamDetailRepository extends JpaRepository<PlayerTeamDeta
 			from PlayerTeamDetail ptd
 			join ptd.player p
 			join ptd.team t
-			join ptd.league l
 			where ptd.squadOn = true
 			  and (:playerId is null or p.id = :playerId)
 			  and (:playerName is null
