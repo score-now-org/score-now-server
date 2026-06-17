@@ -77,7 +77,7 @@ public class LeaguePlayerSyncService {
 			String imageUrl = teamService.buildImageUrl(team.getImageId());
 
 			teamService.getOrCreateTeam(
-				ApiProvider.BETS,
+				DataOrigin.BETS,
 				league.getSportId(),
 				team.getId(),
 				team.getName(),
