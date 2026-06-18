@@ -22,6 +22,7 @@ public class LeagueCreateRequest {
     @JsonProperty("kName")
     private String kName;
 
+    @NotBlank
     @JsonProperty("sName")
     private String sName;
 

@@ -8,7 +8,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class LeagueAdminResponse {
+public class AdminLeagueResponse {
 
     private Long id;
     private Long sportId;
@@ -17,8 +17,8 @@ public class LeagueAdminResponse {
     private String sName;
     private TeamDisplayOrder teamDisplayOrder;
 
-    public static LeagueAdminResponse from(League league) {
-        return LeagueAdminResponse.builder()
+    public static AdminLeagueResponse from(League league) {
+        return AdminLeagueResponse.builder()
                 .id(league.getId())
                 .sportId(league.getSportId())
                 .kName(league.getKName())
