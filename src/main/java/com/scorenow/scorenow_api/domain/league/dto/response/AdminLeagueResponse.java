@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.league.dto.response;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 
@@ -16,6 +17,7 @@ public class AdminLeagueResponse {
     private String eName;
     private String sName;
     private TeamDisplayOrder teamDisplayOrder;
+    private DataOrigin dataOrigin;
 
     public static AdminLeagueResponse from(League league) {
         return AdminLeagueResponse.builder()
@@ -25,6 +27,7 @@ public class AdminLeagueResponse {
                 .eName(league.getEName())
                 .sName(league.getSName())
                 .teamDisplayOrder(league.getTeamDisplayOrder())
+                .dataOrigin(league.getDataOrigin())
                 .build();
     }
 }

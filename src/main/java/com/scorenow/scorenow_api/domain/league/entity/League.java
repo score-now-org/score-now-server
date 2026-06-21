@@ -11,6 +11,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+
+/**
+ * TODO : unique 제약 조건 변경 해야 할 듯?
+ *             이제는 season 정보를 같이 담기 때문에 EPL 24-25 / EPL 25-26 은 다른 리그로 봐야 함.
+ */
+
 @Entity
 @Table(name = "leagues",
         uniqueConstraints = {
@@ -64,6 +70,10 @@ public class League extends BaseEntity {
 
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder;
+    }
+
+    public void updateDataOrigin(DataOrigin dataOrigin) {
+        this.dataOrigin = dataOrigin;
     }
 
     public boolean hasTeamDisplayOrder() {

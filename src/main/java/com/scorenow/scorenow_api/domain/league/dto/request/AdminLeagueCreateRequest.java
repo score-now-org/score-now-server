@@ -1,31 +1,36 @@
 package com.scorenow.scorenow_api.domain.league.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class LeagueCreateRequest {
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class AdminLeagueCreateRequest {
 
     @NotNull(message = "종목ID 는 필수입니다.")
     private Long sportId;
 
     @NotBlank
-    @JsonProperty("eName")
     private String eName;
 
-    @JsonProperty("kName")
     private String kName;
 
     @NotBlank
-    @JsonProperty("sName")
     private String sName;
 
-    @JsonProperty("teamDisplayOrder")
     private TeamDisplayOrder teamDisplayOrder;
+
+    @NotNull(message = "외부 연동 여부는 필수입니다.")
+    private Boolean externalLinked;
+
+    private DataOrigin dataOrigin;
+
+    private String apiLeagueId;
+
+    private Boolean syncEnabled;
 }
