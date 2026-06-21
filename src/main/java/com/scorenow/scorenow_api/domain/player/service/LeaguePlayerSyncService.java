@@ -45,7 +45,7 @@ public class LeaguePlayerSyncService {
 			));
 
 		String leagueApiId = leagueExternalMappingRepository
-			.findByProviderAndInternalLeagueId(DataOrigin.BETS, league.getId())
+			.findByDataOriginAndInternalLeagueId(DataOrigin.BETS, league.getId())
 			.map(LeagueExternalMapping::getApiLeagueId)
 			.orElseThrow(() -> new BusinessException(
 				ErrorCode.INTERNAL_SERVER_ERROR,

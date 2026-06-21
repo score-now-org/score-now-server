@@ -25,27 +25,27 @@ public class LeagueService {
      */
     @Transactional
     public League getOrCreateLeague(
-            final DataOrigin provider,
+            final DataOrigin dataOrigin,
             final Long internalSportId,
             final String apiLeagueId,
             final String name,
             final String cc) {
 
         // 1. 전달받은 외부 정보를 기반으로 League External Mapping 테이블에 데이터가 있는지 확인
-        Optional<LeagueExternalMapping> leagueMappingInfo = leagueExternalMappingRepository.findByExternalInfo(provider, apiLeagueId);
+        Optional<LeagueExternalMapping> leagueMappingInfo = leagueExternalMappingRepository.findByExternalInfo(dataOrigin, apiLeagueId);
 
         // 2. 매핑 정보에서 internal league id 를 추출하고, 이를 기반으로 League 엔티티 반환
         if (leagueMappingInfo.isPresent()) {
             Long internalLeagueId = leagueMappingInfo.get().getInternalLeagueId();
             return leagueRepository.findById(internalLeagueId)
-                    .orElseGet(() -> createAndMapLeague(provider, internalSportId, apiLeagueId, name, cc));
+                    .orElseGet(() -> createAndMapLeague(dataOrigin, internalSportId, apiLeagueId, name, cc));
         }
 
-        return createAndMapLeague(provider, internalSportId, apiLeagueId, name, cc);
+        return createAndMapLeague(dataOrigin, internalSportId, apiLeagueId, name, cc);
     }
 
     private League createAndMapLeague(
-            DataOrigin provider,
+            DataOrigin dataOrigin,
             Long internalSportId,
             String apiLeagueId,
             String name,
@@ -56,9 +56,10 @@ public class LeagueService {
                 .kName(name)
                 .eName(name)
                 .cc(cc)
+                .dataOrigin(dataOrigin)
                 .build());
 
-        leagueExternalMappingRepository.save(LeagueExternalMapping.of(provider, apiLeagueId, savedLeague.getId()));
+        leagueExternalMappingRepository.save(LeagueExternalMapping.of(dataOrigin, apiLeagueId, savedLeague.getId(), true));
 
         return savedLeague;
     }

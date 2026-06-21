@@ -9,9 +9,11 @@ import java.util.Optional;
 
 public interface LeagueExternalMappingJpaRepository extends JpaRepository<LeagueExternalMapping, Long> {
     @Query("select l from LeagueExternalMapping l " +
-            "where l.provider = :provider " +
+            "where l.dataOrigin = :dataOrigin " +
             "and l.apiLeagueId = :apiLeagueId")
-    Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin provider, String apiLeagueId);
+    Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
 
-    Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(DataOrigin provider, Long internalLeagueId);
+    Optional<LeagueExternalMapping> findByDataOriginAndInternalLeagueId(DataOrigin dataOrigin, Long internalLeagueId);
+
+    boolean existsByDataOriginAndApiLeagueId(DataOrigin dataOrigin, String apiLeagueId);
 }
