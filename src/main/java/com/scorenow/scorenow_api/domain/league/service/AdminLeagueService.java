@@ -154,6 +154,9 @@ public class AdminLeagueService {
         }
 
         if (request.getSportId() != null) {
+            if (!sportRepository.existsById(request.getSportId())) {
+                throw new BusinessException(ErrorCode.SPORT_NOT_FOUND);
+            }
             league.updateSportId(request.getSportId());
         }
         if (request.getEName() != null) {
