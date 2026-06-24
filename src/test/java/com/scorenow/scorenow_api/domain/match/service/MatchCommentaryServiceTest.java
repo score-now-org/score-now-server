@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.FakeFileStorage;
 import com.scorenow.scorenow_api.domain.match.repository.FakeMatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.FakeMatchDetailRepository;
@@ -27,12 +28,15 @@ class MatchCommentaryServiceTest {
     @Mock
     private MatchRepository matchRepository;
 
+    @Mock
+    private MatchRealtimeEventPublisher eventPublisher;
+
     @BeforeEach
     void setUp() {
         matchCommentaryRepository = new FakeMatchCommentaryRepository();
         matchDetailRepository = new FakeMatchDetailRepository();
         fileStorage = new FakeFileStorage();
-        matchCommentaryService = new MatchCommentaryService(matchCommentaryRepository, matchDetailRepository, matchRepository, fileStorage);
+        matchCommentaryService = new MatchCommentaryService(matchCommentaryRepository, matchDetailRepository, matchRepository, fileStorage, eventPublisher);
     }
 
     @Test
