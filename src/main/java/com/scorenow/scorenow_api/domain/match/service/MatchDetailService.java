@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
@@ -19,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.NOT_STARTED;
 
 @Service
@@ -29,6 +32,8 @@ public class MatchDetailService {
     private final StadiumCacheService stadiumCacheService;
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
+
+    private final MatchRealtimeEventPublisher eventPublisher;
 
     @Transactional
     public void updateInplayMatchDetail(DataOrigin provider, ViewResult viewResult) {
@@ -41,8 +46,9 @@ public class MatchDetailService {
         if (matchStatus != NOT_STARTED) {
             match.updateStatus(matchStatus);
         }
-        match.updateHomeScore(viewResult.getHomeScore());
-        match.updateAwayScore(viewResult.getAwayScore());
+
+        // 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
+        updateMatchScoreAndPublishEvent(match, viewResult.getHomeScore(), viewResult.getAwayScore());
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
         StadiumData stadiumData = viewResult.getExtra().getStadiumData();
@@ -67,32 +73,46 @@ public class MatchDetailService {
      */
     @Transactional
     public Long updateMatchDetailManual(Long matchId, MatchDetailUpdateRequest request) {
-        // 스코어 및 경기 상태 수정
-        matchRepository.findById(matchId).ifPresent(match -> {
-            if (request.getStatus() != null) {
-                try {
-                    match.updateStatus(MatchStatus.valueOf(request.getStatus()));
-                } catch (IllegalArgumentException e) {
-                    log.error("잘못된 상태값입니다: {}", request.getStatus().replace('\n', '_').replace('\r', '_'));
-                    throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
-                }
-            }
-
-            // 홈-어웨이 스코어 변경
-            if (request.getHomeScore() != null)
-                match.updateHomeScore(request.getHomeScore());
-            if (request.getAwayScore() != null)
-                match.updateAwayScore(request.getAwayScore());
-        });
-
-        // 경기 기록 수정
-        MatchDetailDocument detail = matchDetailRepository.findById(matchId)
+        Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
-        detail.updateFrom(request);
+        // 경기 상태 수정
+        if (request.getStatus() != null) {
+            match.updateStatus(MatchStatus.valueOf(request.getStatus()));
+        }
+
+        // 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
+        updateMatchScoreAndPublishEvent(match, request.getHomeScore(), request.getAwayScore());
+
+        // 경기 기록 수정
+        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        matchDetailDocument.updateFrom(request);
 
         log.info("📊 MatchDetailDocument 수동 수정 완료: {}", matchId);
-        return matchDetailRepository.save(detail).getId();
+        return matchDetailRepository.save(matchDetailDocument).getId();
+    }
+
+    /**
+     * 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
+     */
+    private void updateMatchScoreAndPublishEvent(Match match, Integer homeScore, Integer awayScore) {
+        if (homeScore == null || awayScore == null) {
+            return;
+        }
+
+        Integer beforeHomeScore = match.getHomeScore();
+        Integer beforeAwayScore = match.getAwayScore();
+
+        boolean scoreChanged = !homeScore.equals(beforeHomeScore) || !awayScore.equals(beforeAwayScore);
+
+        if (scoreChanged) {
+            match.updateHomeScore(homeScore);
+            match.updateAwayScore(awayScore);
+
+            eventPublisher.publishScoreChanged(match.getId(), homeScore, awayScore);
+        }
     }
 
 }
