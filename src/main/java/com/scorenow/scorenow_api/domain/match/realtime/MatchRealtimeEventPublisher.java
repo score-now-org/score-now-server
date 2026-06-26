@@ -3,11 +3,12 @@ package com.scorenow.scorenow_api.domain.match.realtime;
 import com.scorenow.scorenow_api.domain.match.dto.sse.MatchCommentaryChangedPayload;
 import com.scorenow.scorenow_api.domain.match.dto.sse.MatchRealtimeEvent;
 import com.scorenow.scorenow_api.domain.match.dto.sse.MatchScoreChangedPayload;
+import com.scorenow.scorenow_api.domain.match.dto.sse.MatchStatusChangedPayload;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import static com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventType.COMMENTARY_CHANGED;
-import static com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventType.SCORE_CHANGED;
+import static com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventType.*;
 
 @Component
 @RequiredArgsConstructor
@@ -44,6 +45,21 @@ public class MatchRealtimeEventPublisher {
                 MatchRealtimeEvent.of(SCORE_CHANGED, matchId, payload);
 
         registry.sendToMatch(matchId, SCORE_CHANGED.name(), data);
+    }
+
+    /**
+     * 경기 상태 변경 이벤트 발행
+     */
+    public void publishMatchStatusChanged(Long matchId, MatchStatus matchStatus) {
+        MatchStatusChangedPayload payload = MatchStatusChangedPayload.builder()
+                .statusCode(matchStatus.name())
+                .statusName(matchStatus.getDescription())
+                .build();
+
+        MatchRealtimeEvent<MatchStatusChangedPayload> data =
+                MatchRealtimeEvent.of(MATCH_STATUS_CHANGED, matchId, payload);
+
+        registry.sendToMatch(matchId, MATCH_STATUS_CHANGED.name(), data);
     }
 
 }

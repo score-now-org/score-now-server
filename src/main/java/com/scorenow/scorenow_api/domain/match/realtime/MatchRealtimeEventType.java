@@ -4,5 +4,6 @@ public enum MatchRealtimeEventType {
     CONNECTED,
     PING,
     COMMENTARY_CHANGED,
-    SCORE_CHANGED
+    SCORE_CHANGED,
+    MATCH_STATUS_CHANGED
 }

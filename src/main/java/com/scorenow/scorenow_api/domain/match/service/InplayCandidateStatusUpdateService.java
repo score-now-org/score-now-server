@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.dto.MatchCandidate;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.*;
 public class InplayCandidateStatusUpdateService {
 
     private final MatchRepository matchRepository;
+    private final MatchRealtimeEventPublisher eventPublisher;
 
     @Transactional
     public int updateInplayStatuses(List<MatchCandidate> candidates) {
@@ -38,7 +40,13 @@ public class InplayCandidateStatusUpdateService {
                 .map(MatchCandidate::getMatchId)
                 .toList();
 
-        return matchRepository.updateStatusBulk(matchIds, matchStatus);
+        int updatedCount = matchRepository.updateStatusBulk(matchIds, matchStatus);
+
+        if (updatedCount > 0) {
+            matchIds.forEach(matchId -> eventPublisher.publishMatchStatusChanged(matchId, matchStatus));
+        }
+
+        return updatedCount;
     }
 
 }

@@ -20,8 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
-
 import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.NOT_STARTED;
 
 @Service
@@ -36,24 +34,22 @@ public class MatchDetailService {
     private final MatchRealtimeEventPublisher eventPublisher;
 
     @Transactional
-    public void updateInplayMatchDetail(DataOrigin provider, ViewResult viewResult) {
+    public void updateInplayMatchDetail(DataOrigin dataOrigin, ViewResult viewResult) {
         String apiMatchId = viewResult.getId();
 
-        Match match = matchRepository.findByExternalInfo(provider, apiMatchId)
+        Match match = matchRepository.findByExternalInfo(dataOrigin, apiMatchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
-        MatchStatus matchStatus = MatchStatus.fromCode(viewResult.getTimeStatus());
-        if (matchStatus != NOT_STARTED) {
-            match.updateStatus(matchStatus);
-        }
+        // 경기 상태 업데이트 및 이벤트 발행
+        updateMatchStatusAndPublishEvent(match, MatchStatus.fromCode(viewResult.getTimeStatus()));
 
-        // 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
+        // 점수에 변동 사항이 있는 경우 점수 업데이트 및 이벤트 발행
         updateMatchScoreAndPublishEvent(match, viewResult.getHomeScore(), viewResult.getAwayScore());
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
         StadiumData stadiumData = viewResult.getExtra().getStadiumData();
         if (stadiumData != null) {
-            Stadium stadium = stadiumCacheService.getOrCreateStadium(provider, viewResult.getSportId(), stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
+            Stadium stadium = stadiumCacheService.getOrCreateStadium(dataOrigin, viewResult.getSportId(), stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
 
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
             if (match.isStadiumEmpty()) {
@@ -76,9 +72,9 @@ public class MatchDetailService {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
-        // 경기 상태 수정
+        // 경기 상태 업데이트 및 이벤트 발행
         if (request.getStatus() != null) {
-            match.updateStatus(MatchStatus.valueOf(request.getStatus()));
+            updateMatchStatusAndPublishEvent(match, request.getStatus());
         }
 
         // 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
@@ -113,6 +109,24 @@ public class MatchDetailService {
 
             eventPublisher.publishScoreChanged(match.getId(), homeScore, awayScore);
         }
+    }
+
+    /**
+     * 경기 상태 업데이트 및 이벤트 발행
+     */
+    private void updateMatchStatusAndPublishEvent(Match match, MatchStatus newStatus) {
+        MatchStatus currentStatus = match.getStatusCode();
+
+        if (newStatus == NOT_STARTED) {
+            return;
+        }
+
+        if (currentStatus == newStatus) {
+            return;
+        }
+
+        match.updateStatus(newStatus);
+        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
     }
 
 }
