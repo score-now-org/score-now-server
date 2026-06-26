@@ -41,24 +41,4 @@ public class InplayCandidateStatusUpdateService {
         return matchRepository.updateStatusBulk(matchIds, matchStatus);
     }
 
-
-    @Transactional
-    public void updateMatchStatuses(List<MatchCandidate> inplayMatches, List<MatchCandidate> toBeFixedMatches) {
-        if (!inplayMatches.isEmpty()) {
-            List<Long> matchIds = inplayMatches.stream()
-                    .map(MatchCandidate::getMatchId)
-                    .toList();
-
-            int updatedCount = matchRepository.updateStatusBulk(matchIds, IN_PLAY);
-        }
-
-        if (!toBeFixedMatches.isEmpty()) {
-            List<Long> matchIds = toBeFixedMatches.stream()
-                    .map(MatchCandidate::getMatchId)
-                    .toList();
-
-            matchRepository.updateStatusBulk(matchIds, TO_BE_FIXED);
-        }
-    }
-
 }
