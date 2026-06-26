@@ -32,7 +32,7 @@ class InplayMatchSyncServiceTest {
     private BetsApiClient betsApiClient;
 
     @Mock
-    private InplayMatchStatusUpdater inplayMatchStatusUpdater;
+    private InplayCandidateStatusUpdateService inplayCandidateStatusUpdateService;
 
     @Mock
     private InplayMatchRedisRepository inplayMatchRedisRepository;
@@ -66,7 +66,8 @@ class InplayMatchSyncServiceTest {
         then(betsApiClient).should(times(1)).getInplayEvents("BASKETBALL", null);
 
         // InplayMatchStatusUpdater.updateMatchStatuses 1회 호출 검증
-        then(inplayMatchStatusUpdater).should(times(1)).updateMatchStatuses(any(), any());
+        then(inplayCandidateStatusUpdateService).should(times(1)).updateInplayStatuses(any());
+        then(inplayCandidateStatusUpdateService).should(times(1)).updateToBeFixedStatuses(any());
 
         // InplayMatchRedisRepository.removeCandiates 2회 호출 검증
         then(inplayMatchRedisRepository).should(times(2)).removeCandidates(any());

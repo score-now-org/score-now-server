@@ -24,7 +24,7 @@ import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
 public class InplayMatchSyncService {
 
     private final BetsApiClient betsApiClient;
-    private final InplayMatchStatusUpdater inplayMatchStatusUpdater;
+    private final InplayCandidateStatusUpdateService inplayCandidateStatusUpdateService;
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
     public void syncInplayMatches(ZonedDateTime standardTime) {
@@ -45,7 +45,7 @@ public class InplayMatchSyncService {
                     try {
                         return betsApiClient.getInplayEvents(sportId, null);
                     } catch (Exception e) {
-                        log.error("[종목ID:{}] INPLAY API 호출 실패. 해당 종목은 이번 동기화에서 제외", sportId, e);
+                        log.error("[종목ID:{}] 종목별 INPLAY API 호출 실패.", sportId, e);
                         return null;
                     }
                 })
@@ -68,18 +68,26 @@ public class InplayMatchSyncService {
 
             LocalDateTime startAt = candidate.getStartAt();
             if (startAt.plusMinutes(MAX_GRACE_PERIOD_MINUTES).isBefore(now.toLocalDateTime())) {
-                log.warn("유예 기간 초과. matchId:{}", candidate.getMatchId());
+                log.warn("🟠유예 기간 초과. matchId:{}", candidate.getMatchId());
                 toBeFixedMatches.add(candidate);
             }
         }
 
         // 5. 분류 결과를 기반으로 DB 반영 및 Redis 캐시 정리
-        if (!inplayMatches.isEmpty() || !toBeFixedMatches.isEmpty()) {
-            inplayMatchStatusUpdater.updateMatchStatuses(inplayMatches, toBeFixedMatches);
+        if (!inplayMatches.isEmpty()) {
+            int updatedCount = inplayCandidateStatusUpdateService.updateInplayStatuses(inplayMatches);
+            log.info("🟢IN_PLAY 상태 업데이트 완료. requested={}, updated={}", inplayMatches.size(), updatedCount);
 
             inplayMatchRedisRepository.removeCandidates(inplayMatches);
+        }
+
+        if (!toBeFixedMatches.isEmpty()) {
+            int updatedCount = inplayCandidateStatusUpdateService.updateToBeFixedStatuses(toBeFixedMatches);
+            log.info("🟢TO_BE_FIXED 상태 업데이트 완료. requested={}, updated={}", toBeFixedMatches.size(), updatedCount);
+
             inplayMatchRedisRepository.removeCandidates(toBeFixedMatches);
         }
+
     }
 
 }

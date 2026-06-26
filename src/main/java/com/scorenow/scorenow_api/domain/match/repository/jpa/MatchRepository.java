@@ -79,7 +79,7 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
 
     @Modifying(clearAutomatically = true)
     @Query("update Match m set m.statusCode = :status, m.updatedAt = CURRENT_TIMESTAMP where m.id IN :matchIds")
-    void updateStatusBulk(List<Long> matchIds, MatchStatus status);
+    int updateStatusBulk(List<Long> matchIds, MatchStatus status);
 
     List<Match> findByStatusCodeAndIsManualFalse(MatchStatus matchStatus);
 
