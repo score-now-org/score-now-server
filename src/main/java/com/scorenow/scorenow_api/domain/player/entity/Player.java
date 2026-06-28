@@ -40,4 +40,11 @@ public class Player extends BaseEntity {
 	@Builder.Default
 	private boolean teaguk = false; // 태극전사
 
+	public void updateFromApi(String eName, String cc, LocalDate birthdate, Integer height) {
+		this.eName = eName;
+		this.cc = cc;
+		this.birthdate = birthdate;
+		this.height = height;
+	}
+
 }

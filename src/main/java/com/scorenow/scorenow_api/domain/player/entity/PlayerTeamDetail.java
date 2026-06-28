@@ -13,7 +13,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "player_team_details")
+@Table(
+	name = "player_team_details",
+	uniqueConstraints = {
+		@UniqueConstraint(
+			name = "uk_player_team_league",
+			columnNames = {"player_id", "team_id", "league_id"}
+		)
+	})
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -46,7 +53,6 @@ public class PlayerTeamDetail extends BaseEntity {
 		foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private League league;
 
-	private String season;
 	private String position;
 
 	@Column(name = "shirt_number")

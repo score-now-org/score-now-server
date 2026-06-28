@@ -35,7 +35,6 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
-				detail.season,
 				player.kName,
 				player.eName,
 				detail.position,
@@ -64,7 +63,6 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
-				detail.season,
 				player.kName,
 				player.eName,
 				detail.position,
