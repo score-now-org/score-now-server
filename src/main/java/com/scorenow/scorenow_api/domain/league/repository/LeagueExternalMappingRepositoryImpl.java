@@ -14,8 +14,8 @@ public class LeagueExternalMappingRepositoryImpl implements LeagueExternalMappin
     private final LeagueExternalMappingJpaRepository jpaRepository;
 
     @Override
-    public Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin provider, String apiLeagueId) {
-        return jpaRepository.findByExternalInfo(provider, apiLeagueId);
+    public Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin dataOrigin, String apiLeagueId) {
+        return jpaRepository.findByExternalInfo(dataOrigin, apiLeagueId);
     }
 
     @Override
@@ -24,7 +24,12 @@ public class LeagueExternalMappingRepositoryImpl implements LeagueExternalMappin
     }
 
     @Override
-    public Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(DataOrigin provider, Long internalLeagueId) {
-        return jpaRepository.findByProviderAndInternalLeagueId(provider, internalLeagueId);
+    public Optional<LeagueExternalMapping> findByDataOriginAndInternalLeagueId(DataOrigin dataOrigin, Long internalLeagueId) {
+        return jpaRepository.findByDataOriginAndInternalLeagueId(dataOrigin, internalLeagueId);
+    }
+
+    @Override
+    public boolean existsByExternalInfo(DataOrigin dataOrigin, String apiLeagueId) {
+        return jpaRepository.existsByDataOriginAndApiLeagueId(dataOrigin, apiLeagueId);
     }
 }

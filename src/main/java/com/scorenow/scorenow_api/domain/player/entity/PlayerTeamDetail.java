@@ -4,18 +4,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.ConstraintMode;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -71,4 +60,15 @@ public class PlayerTeamDetail extends BaseEntity {
 
 	@Builder.Default
 	private boolean squadOn = false; // 스쿼드 on/off
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "availability_status", nullable = false)
+	@Builder.Default
+	private PlayerAvailabilityStatus availabilityStatus = PlayerAvailabilityStatus.AVAILABLE;
+
+	public void updateAvailabilityStatus(PlayerAvailabilityStatus availabilityStatus) {
+		this.availabilityStatus = availabilityStatus == null
+				? PlayerAvailabilityStatus.AVAILABLE
+				: availabilityStatus;
+	}
 }

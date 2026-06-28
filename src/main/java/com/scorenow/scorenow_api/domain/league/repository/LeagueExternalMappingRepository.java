@@ -6,12 +6,14 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import java.util.Optional;
 
 public interface LeagueExternalMappingRepository {
-    Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin provider, String apiLeagueId);
+    Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
 
     LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping);
 
-    Optional<LeagueExternalMapping> findByProviderAndInternalLeagueId(
-            DataOrigin provider,
+    Optional<LeagueExternalMapping> findByDataOriginAndInternalLeagueId(
+            DataOrigin dataOrigin,
             Long internalLeagueId
     );
+
+    boolean existsByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
 }

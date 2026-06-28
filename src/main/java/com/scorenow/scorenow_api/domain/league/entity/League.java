@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.league.entity;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
@@ -42,6 +43,9 @@ public class League extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private TeamDisplayOrder teamDisplayOrder;
 
+    @Enumerated(EnumType.STRING)
+    private DataOrigin dataOrigin;  // 데이터 원천 (외부 API, 수동등록)
+
     public void updateSportId(Long sportId) {
         this.sportId = sportId;
     }
@@ -60,6 +64,10 @@ public class League extends BaseEntity {
 
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder;
+    }
+
+    public void updateDataOrigin(DataOrigin dataOrigin) {
+        this.dataOrigin = dataOrigin;
     }
 
     public boolean hasTeamDisplayOrder() {

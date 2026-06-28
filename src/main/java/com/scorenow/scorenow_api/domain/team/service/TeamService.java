@@ -19,28 +19,28 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class TeamService {
 
-	private static final String TEAM_IMAGE_BASE_URL = "https://assets.b365api.com/images/team/m/";
+    private static final String TEAM_IMAGE_BASE_URL = "https://assets.b365api.com/images/team/m/";
 
-	private final TeamRepository teamRepository;
-	private final TeamExternalMappingRepository teamExternalMappingRepository;
-	private final SportRepository sportRepository;
+    private final TeamRepository teamRepository;
+    private final TeamExternalMappingRepository teamExternalMappingRepository;
+    private final SportRepository sportRepository;
 
-	public String buildImageUrl(String imageId) {
-		if (imageId == null || imageId.isBlank()) {
-			return null;
-		}
-		return TEAM_IMAGE_BASE_URL + imageId + ".png";
-	}
+    public String buildImageUrl(String imageId) {
+        if (imageId == null || imageId.isBlank()) {
+            return null;
+        }
+        return TEAM_IMAGE_BASE_URL + imageId + ".png";
+    }
 
-	/**
-	 * 팀 생성
-	 */
-	@Transactional
-	public Team getOrCreateTeam(final DataOrigin dataOrigin, final Long internalSportId, final String apiTeamId,
-		final String name, final String cc, final String imageUrl) {
-		// 1. 전달받은 외부 정보를 기반으로 Team External Mapping 테이블에 데이터가 있는지 확인
-		Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(
-			dataOrigin, apiTeamId);
+    /**
+     * 팀 생성
+     */
+    @Transactional
+    public Team getOrCreateTeam(final DataOrigin dataOrigin, final Long internalSportId, final String apiTeamId,
+                                final String name, final String cc, final String imageUrl) {
+        // 1. 전달받은 외부 정보를 기반으로 Team External Mapping 테이블에 데이터가 있는지 확인
+        Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(
+                dataOrigin, apiTeamId);
 
         // 2. 매핑 정보에서 internal team id 를 추출하고, 이를 기반으로 Team 엔티티 반환
         if (teamMappingInfo.isPresent()) {
@@ -58,10 +58,11 @@ public class TeamService {
                 .eName(name)
                 .cc(cc)
                 .imageUrl(imageUrl)
+                .dataOrigin(dataOrigin)
                 .build());
 
         teamExternalMappingRepository.save(TeamExternalMapping.of(dataOrigin, apiTeamId, savedTeam.getId()));
 
-		return savedTeam;
-	}
+        return savedTeam;
+    }
 }
