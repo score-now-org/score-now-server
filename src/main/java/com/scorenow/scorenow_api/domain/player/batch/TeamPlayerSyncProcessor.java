@@ -38,10 +38,6 @@ public class TeamPlayerSyncProcessor implements ItemProcessor<TeamPlayerSyncItem
 		}
 
 		if (squad.getResults().isEmpty()) {
-			// throw new BusinessException(
-			// 	ErrorCode.INTERNAL_SERVER_ERROR,
-			// 	"스쿼드 결과가 비어있습니다. teamApiId=" + item.teamApiId()
-			// );
 
 			log.warn(
 				"스쿼드 결과가 비어있습니다. 선수 저장을 건너뜁니다. leagueId={}, leagueApiId={}, teamApiId={}",

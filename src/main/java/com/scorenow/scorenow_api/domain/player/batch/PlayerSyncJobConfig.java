@@ -32,16 +32,7 @@ public class PlayerSyncJobConfig {
 			.start(playerSyncStep)
 			.build();
 	}
-
-	// Tasklet 방식
-	// @Bean
-	// public Step playerSyncStep() {
-	// 	return new StepBuilder("playerSyncStep", jobRepository)
-	// 		.tasklet(playerSyncTasklet, transactionManager)
-	// 		.build();
-	// }
-
-	// Chunk 방식
+	
 	@Bean
 	public Step playerSyncStep() {
 		return new StepBuilder("playerSyncStep", jobRepository)

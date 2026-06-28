@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,7 @@ import lombok.RequiredArgsConstructor;
  */
 
 @Component
+@StepScope
 @RequiredArgsConstructor
 public class TeamPlayerSyncItemReader implements ItemReader<TeamPlayerSyncItem> {
 
@@ -60,7 +62,7 @@ public class TeamPlayerSyncItemReader implements ItemReader<TeamPlayerSyncItem> 
 		// 내부 리그 id로 외부 API 리그 id 조회
 		for (League league : leagues) {
 			String leagueApiId = leagueExternalMappingJpaRepository
-				.findByProviderAndInternalLeagueId(DataOrigin.BETS, league.getId())
+				.findByDataOriginAndInternalLeagueId(DataOrigin.BETS, league.getId())
 				.map(LeagueExternalMapping::getApiLeagueId)
 				.orElseThrow(() -> new BusinessException(
 					ErrorCode.INTERNAL_SERVER_ERROR,
