@@ -68,7 +68,6 @@ public class MatchLineupQueryService {
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
 				player.getPlayerId(),
-				player.getSeason(),
 				player.getKName(),
 				player.getEName(),
 				player.getPosition(),
@@ -106,7 +105,6 @@ public class MatchLineupQueryService {
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
 				player.getPlayerId(),
-				player.getSeason(),
 				player.getKName(),
 				player.getEName(),
 				player.getPosition(),

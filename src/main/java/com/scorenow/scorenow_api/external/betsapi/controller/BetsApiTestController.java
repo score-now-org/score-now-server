@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
-import com.scorenow.scorenow_api.domain.player.dto.response.LeaguePlayerSyncResult;
-import com.scorenow.scorenow_api.domain.player.service.LeaguePlayerSyncService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -28,7 +26,6 @@ public class BetsApiTestController {
 
 	private final BetsApiClient betsApiClient;
 	private final MatchSyncService matchSyncService;
-	private final LeaguePlayerSyncService leaguePlayerSyncService;
 	private final JobLauncher jobLauncher;
 	private final Job playerSyncJob;
 
@@ -81,12 +78,11 @@ public class BetsApiTestController {
 	 *
 	 * curl -X POST "http://localhost:8080/api/test/betsapi/sync/players?leagueId=1"
 	 */
-	@PostMapping("/sync/players")
-	public ApiResponse<String> syncPlayer(@RequestParam Long leagueId) {
-		LeaguePlayerSyncResult result = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
-		return ApiResponse.success(result.getProcessedPlayerCount() + "건 동기화 완료");
-	}
-
+	// @PostMapping("/sync/players")
+	// public ApiResponse<String> syncPlayer(@RequestParam Long leagueId) {
+	// 	LeaguePlayerSyncResult result = leaguePlayerSyncService.syncPlayersByLeague(leagueId);
+	// 	return ApiResponse.success(result.getProcessedPlayerCount() + "건 동기화 완료");
+	// }
 	@PostMapping("/sync/players/all")
 	public ApiResponse<String> syncAllPlayers() throws Exception {
 		JobParameters jobParameters = new JobParametersBuilder()

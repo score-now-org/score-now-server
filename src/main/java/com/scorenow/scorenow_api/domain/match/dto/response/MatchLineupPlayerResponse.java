@@ -8,7 +8,6 @@ import lombok.Getter;
 public class MatchLineupPlayerResponse {
 
 	private String playerId;
-	private String season;
 	private String kName;
 	private String eName;
 	private String position;

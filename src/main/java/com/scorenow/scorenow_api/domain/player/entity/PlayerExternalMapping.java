@@ -47,4 +47,8 @@ public class PlayerExternalMapping {
 		this.apiPlayerId = apiPlayerId;
 		this.player = player;
 	}
+
+	public void changePlayer(Player player) {
+		this.player = player;
+	}
 }
