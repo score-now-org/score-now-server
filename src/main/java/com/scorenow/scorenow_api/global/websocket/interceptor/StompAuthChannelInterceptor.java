@@ -17,9 +17,9 @@ import com.scorenow.scorenow_api.global.exception.ErrorCode;
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 	private static final Pattern CHAT_SEND_DESTINATION = Pattern.compile("^/pub/matches/\\d+/chat/messages$");
-	private final StompJwtAuthenticator stompJwtAuthenticator;
-
 	private static final Pattern CHAT_SUBSCRIBE_DESTINATION = Pattern.compile("^/sub/matches/\\d+/chat/messages$");
+
+	private final StompJwtAuthenticator stompJwtAuthenticator;
 
 	public StompAuthChannelInterceptor(StompJwtAuthenticator stompJwtAuthenticator) {
 		this.stompJwtAuthenticator = stompJwtAuthenticator;
@@ -33,10 +33,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 		if (StompCommand.CONNECT.equals(command)) {
 			stompJwtAuthenticator.authenticateIfTokenExists(accessor);
 		} else if (StompCommand.SEND.equals(command)) {
-			validateDestination(accessor.getDestination(),CHAT_SEND_DESTINATION);
+			validateDestination(accessor.getDestination(), CHAT_SEND_DESTINATION);
 			validateAuthenticatedUser(accessor.getUser());
 		} else if (StompCommand.SUBSCRIBE.equals(command)) {
-			validateDestination(accessor.getDestination(),CHAT_SUBSCRIBE_DESTINATION);
+			validateDestination(accessor.getDestination(), CHAT_SUBSCRIBE_DESTINATION);
 		}
 
 		return message;

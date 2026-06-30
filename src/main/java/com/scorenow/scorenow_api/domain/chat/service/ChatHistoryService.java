@@ -37,7 +37,7 @@ public class ChatHistoryService {
 		List<ChatMessage> slicedMessages = sliceMessages(messages, size);
 		Long nextCursor = getNextCursor(slicedMessages);
 
-		return ChatMessageSliceResponse.of(toResponses(slicedMessages), nextCursor, hasNext);
+		return ChatMessageSliceResponse.of(toResponses(slicedMessages, matchId), nextCursor, hasNext);
 	}
 
 	private void validateSize(int size) {
@@ -76,7 +76,9 @@ public class ChatHistoryService {
 		return messages.get(messages.size() - 1).getId();
 	}
 
-	private List<ChatMessageResponse> toResponses(List<ChatMessage> messages) {
-		return messages.stream().map(ChatMessageResponse::from).toList();
+	private List<ChatMessageResponse> toResponses(List<ChatMessage> messages, Long matchId) {
+		return messages.stream()
+			.map(message -> ChatMessageResponse.of(message, matchId))
+			.toList();
 	}
 }

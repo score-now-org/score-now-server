@@ -16,9 +16,9 @@ public class ChatMessageResponse {
 	private String message;
 	private LocalDateTime createdAt;
 
-	public static ChatMessageResponse from(ChatMessage chatMessage) {
+	public static ChatMessageResponse of(ChatMessage chatMessage, Long matchId) {
 		return ChatMessageResponse.builder()
-			.matchId(chatMessage.getMatchId())
+			.matchId(matchId)
 			.senderNickname(chatMessage.getSenderNickname())
 			.message(chatMessage.getMessage())
 			.createdAt(chatMessage.getCreatedAt())

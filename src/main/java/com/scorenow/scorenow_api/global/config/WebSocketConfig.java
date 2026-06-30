@@ -19,7 +19,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 		this.stompAuthChannelInterceptor = stompAuthChannelInterceptor;
 	}
 
-
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry registry) {
 		registry.addEndpoint("/ws")
@@ -28,7 +27,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 	@Override
 	public void configureMessageBroker(MessageBrokerRegistry registry) {
-		registry.enableSimpleBroker("/sub");
+		registry.enableSimpleBroker("/sub", "/queue");
 		registry.setApplicationDestinationPrefixes("/pub");
 	}
 

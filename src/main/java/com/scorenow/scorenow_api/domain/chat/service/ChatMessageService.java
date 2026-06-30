@@ -33,6 +33,6 @@ public class ChatMessageService {
 
 		ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 
-		return ChatMessageResponse.from(savedMessage);
+		return ChatMessageResponse.of(savedMessage, matchId);
 	}
 }
