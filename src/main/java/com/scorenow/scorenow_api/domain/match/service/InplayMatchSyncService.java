@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
@@ -24,7 +21,10 @@ import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
 public class InplayMatchSyncService {
 
     private final BetsApiClient betsApiClient;
+
     private final InplayCandidateStatusUpdateService inplayCandidateStatusUpdateService;
+    private final MatchClockSyncService matchClockSyncService;
+
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
     public void syncInplayMatches(ZonedDateTime standardTime) {
@@ -40,7 +40,7 @@ public class InplayMatchSyncService {
                 .toList();
 
         // 3. 종목별 INPLAY API 호출 및 실제 진행 중인 경기 ID 취합
-        Set<String> inplayMatchIds = apiSportIds.stream()
+        Map<String, BetsEventResponse.Event> inplayEvents = apiSportIds.stream()
                 .map(sportId -> {
                     try {
                         return betsApiClient.getInplayEvents(sportId, null);
@@ -50,9 +50,14 @@ public class InplayMatchSyncService {
                     }
                 })
                 .filter(Objects::nonNull)
+                .filter(response -> response.getResults() != null)
                 .flatMap(response -> response.getResults().stream())
-                .map(BetsEventResponse.Event::getId)
-                .collect(Collectors.toSet());
+                .filter(event -> event.getId() != null)
+                .collect(Collectors.toMap(
+                        BetsEventResponse.Event::getId,
+                        event -> event,
+                        (first, second) -> first
+                ));
 
 
         // 4. INPLAY API 응답과 대조하여 대상 분류 (진행 중, 유예기간 초과)
@@ -61,7 +66,7 @@ public class InplayMatchSyncService {
         List<MatchCandidate> toBeFixedMatches = new ArrayList<>();
 
         for (MatchCandidate candidate : candidates) {
-            if (inplayMatchIds.contains(candidate.getApiMatchId())) {
+            if (inplayEvents.containsKey(candidate.getApiMatchId())) {
                 inplayMatches.add(candidate);
                 continue;
             }
@@ -77,6 +82,13 @@ public class InplayMatchSyncService {
         if (!inplayMatches.isEmpty()) {
             int updatedCount = inplayCandidateStatusUpdateService.updateInplayStatuses(inplayMatches);
             log.info("🟢IN_PLAY 상태 업데이트 완료. requested={}, updated={}", inplayMatches.size(), updatedCount);
+
+            for (MatchCandidate inplayMatch : inplayMatches) {
+                BetsEventResponse.Event event = inplayEvents.get(inplayMatch.getApiMatchId());
+                matchClockSyncService.syncMatchClock(
+                        inplayMatch.getMatchId(),
+                        event.toMatchClock(inplayMatch.getStartAt()));
+            }
 
             inplayMatchRedisRepository.removeCandidates(inplayMatches);
         }

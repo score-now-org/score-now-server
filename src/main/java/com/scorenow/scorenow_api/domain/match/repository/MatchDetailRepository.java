@@ -15,4 +15,6 @@ public interface MatchDetailRepository {
     void upsertCurrentCommentary(Long matchId, String content, String commentaryId);
 
     void upsertMatchDetail(MatchDetailDocument matchDetailDocument);
+
+    void upsertMatchClock(Long matchId, MatchDetailDocument.MatchClock matchClock);
 }

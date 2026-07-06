@@ -38,6 +38,7 @@ public class MatchDetailDocument {
         private Integer elapsedSeconds;     // 경과 시간 (초)
         private MatchPeriod period;         // 전반, 후반
         private Boolean running;            // 시간 흐르는 여부
+        private Integer additionalMinutes;     // 추가 시간
 
         private Instant providerUpdatedAt;  // 외부 API 에서 데이터를 업데이트 한 시점
     }
@@ -56,7 +57,6 @@ public class MatchDetailDocument {
         if (request.getAwayScore() != null) this.awayScore = request.getAwayScore();
         if (request.getHomeStats() != null) this.homeStats = request.getHomeStats();
         if (request.getAwayStats() != null) this.awayStats = request.getAwayStats();
-        if (request.getMatchClock() != null) this.matchClock = request.getMatchClock();
         if (request.getAdditionalTime() != null) this.additionalTime = request.getAdditionalTime();
     }
 

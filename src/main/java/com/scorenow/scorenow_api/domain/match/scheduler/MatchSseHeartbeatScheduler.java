@@ -19,7 +19,7 @@ public class MatchSseHeartbeatScheduler {
      */
     @Scheduled(fixedDelay = 30_000, zone = "Asia/Seoul")
     public void sendHeartbeat() {
-        log.info("📅SSE heartbeat 전송");
+        log.debug("📅SSE heartbeat 전송");
         registry.sendPingToAll();
     }
 }

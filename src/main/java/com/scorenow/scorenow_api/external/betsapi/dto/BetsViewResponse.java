@@ -89,6 +89,7 @@ public class BetsViewResponse {
                     .period(MatchPeriod.fromCode(timer.md))
                     .running(Timer.RUNNING.equals(timer.tt))
                     .providerUpdatedAt(toProviderUpdatedAt())
+                    .additionalMinutes(timer.ta)
                     .build();
         }
 
@@ -100,7 +101,7 @@ public class BetsViewResponse {
             try {
                 return Instant.ofEpochSecond(Long.parseLong(inplayUpdatedAt));
             } catch (Exception e) {
-                return Instant.now();
+                return null;
             }
         }
 
@@ -125,6 +126,7 @@ public class BetsViewResponse {
 
         private Integer getSecondHalfAdditionalTime() {
             if (timer.isSecondHalf()) {
+                System.out.println("후반전 추가시간:" + timer.ta);
                 return timer.ta != null ? timer.ta : null;
             }
             return null;

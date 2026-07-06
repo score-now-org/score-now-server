@@ -94,4 +94,21 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
         }
     }
 
+    @Override
+    public void upsertMatchClock(Long matchId, MatchDetailDocument.MatchClock matchClock) {
+        MatchDetailDocument saved = database.get(matchId);
+
+        if (saved == null) {
+            MatchDetailDocument matchDetailDocument = MatchDetailDocument.builder()
+                    .id(matchId)
+                    .matchClock(matchClock)
+                    .build();
+
+            database.put(matchId, matchDetailDocument);
+            return;
+        }
+
+        ReflectionTestUtils.setField(saved, "matchClock", matchClock);
+    }
+
 }
