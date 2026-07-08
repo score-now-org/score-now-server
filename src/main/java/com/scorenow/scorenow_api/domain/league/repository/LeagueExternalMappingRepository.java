@@ -1,19 +1,22 @@
 package com.scorenow.scorenow_api.domain.league.repository;
 
-import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
-import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
-
+import java.util.List;
 import java.util.Optional;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
+import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
+
 public interface LeagueExternalMappingRepository {
-    Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
+	Optional<LeagueExternalMapping> findByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
 
-    LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping);
+	LeagueExternalMapping save(LeagueExternalMapping leagueExternalMapping);
 
-    Optional<LeagueExternalMapping> findByDataOriginAndInternalLeagueId(
-            DataOrigin dataOrigin,
-            Long internalLeagueId
-    );
+	Optional<LeagueExternalMapping> findByDataOriginAndInternalLeagueId(
+		DataOrigin dataOrigin,
+		Long internalLeagueId
+	);
 
-    boolean existsByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
+	boolean existsByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
+
+	List<LeagueExternalMapping> findByDataOrigin(DataOrigin dataOrigin);
 }

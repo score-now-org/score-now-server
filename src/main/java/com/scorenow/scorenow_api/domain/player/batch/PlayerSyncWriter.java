@@ -9,13 +9,15 @@ import org.springframework.stereotype.Component;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncData;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncData;
 import com.scorenow.scorenow_api.domain.player.entity.Player;
 import com.scorenow.scorenow_api.domain.player.entity.PlayerExternalMapping;
 import com.scorenow.scorenow_api.domain.player.entity.PlayerTeamDetail;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerRepository;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerTeamDetailRepository;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
@@ -34,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
+public class PlayerSyncWriter implements ItemWriter<PlayerSyncData> {
 
 	private final PlayerRepository playerRepository;
 	private final PlayerExternalMappingRepository playerExternalMappingRepository;
@@ -43,17 +45,19 @@ public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
 	private final TeamExternalMappingRepository teamExternalMappingRepository;
 	private final TeamRepository teamRepository;
 	private final LeagueRepository leagueRepository;
+	private final SportRepository sportRepository;
 
 	// Writer는 Spring Batch 5 기준으로 List<> 대신 Chunk<>를 받아야 한다.
 	// Spring Batch 4: write(List<? extends T> items)
 	// Spring Batch 5: write(Chunk<? extends T> chunk)
 	@Override
-	public void write(Chunk<? extends TeamPlayerSyncData> chunk) {
-		for (TeamPlayerSyncData data : chunk) {
+	public void write(Chunk<? extends PlayerSyncData> chunk) {
+		for (PlayerSyncData data : chunk) {
 
 			int savedCount = saveTeamPlayers(data);
 			log.info(
-				"팀 선수 동기화 저장 완료. leagueId={}, leagueApiId={}, teamApiId={}, savedCount={}",
+				"팀 선수 동기화 저장 완료. sportId={}, leagueId={}, leagueApiId={}, teamApiId={}, savedCount={}",
+				data.sportId(),
 				data.leagueId(),
 				data.leagueApiId(),
 				data.teamApiId(),
@@ -62,26 +66,36 @@ public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
 		}
 	}
 
-	private int saveTeamPlayers(TeamPlayerSyncData data) {
+	private int saveTeamPlayers(PlayerSyncData data) {
+		Sport sport = getSport(data.sportId());
 		Team team = getTeam(data.teamApiId());
 		League league = getLeague(data.leagueId());
 
 		int savedCount = 0;
 
 		for (BetsSquadResponse.SquadPlayer sp : data.players()) {
+
 			String apiPlayerId = normalizeApiId(sp == null ? null : sp.getId());
 
 			if (apiPlayerId == null) {
 				continue;
 			}
 
-			Player player = upsertPlayer(sp, apiPlayerId);
+			Player player = upsertPlayer(sp, apiPlayerId, sport);
 			upsertPlayerTeamDetail(sp, player, team, league);
 
 			savedCount++;
 		}
 
 		return savedCount;
+	}
+
+	private Sport getSport(Long sportId) {
+		return sportRepository.findById(sportId)
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				"sportId에 해당하는 종목을 찾을 수 없습니다. sportId=" + sportId
+			));
 	}
 
 	private Team getTeam(String teamApiId) {
@@ -107,7 +121,7 @@ public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
 			));
 	}
 
-	private Player upsertPlayer(BetsSquadResponse.SquadPlayer sp, String apiPlayerId) {
+	private Player upsertPlayer(BetsSquadResponse.SquadPlayer sp, String apiPlayerId, Sport sport) {
 		Optional<PlayerExternalMapping> optionalMapping = playerExternalMappingRepository
 			.findByProviderAndApiPlayerId(DataOrigin.BETS, apiPlayerId);
 
@@ -116,7 +130,7 @@ public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
 			Player player = mapping.getPlayer();
 
 			if (player == null) {
-				Player savedPlayer = playerRepository.save(newPlayer(sp));
+				Player savedPlayer = playerRepository.save(newPlayer(sp, sport));
 
 				mapping.changePlayer(savedPlayer);
 				playerExternalMappingRepository.save(mapping);
@@ -134,7 +148,7 @@ public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
 			return player;
 		}
 
-		Player savedPlayer = playerRepository.save(newPlayer(sp));
+		Player savedPlayer = playerRepository.save(newPlayer(sp, sport));
 
 		PlayerExternalMapping mapping = new PlayerExternalMapping(
 			DataOrigin.BETS,
@@ -171,8 +185,9 @@ public class TeamPlayerSyncWriter implements ItemWriter<TeamPlayerSyncData> {
 		playerTeamDetailRepository.save(detail);
 	}
 
-	private Player newPlayer(BetsSquadResponse.SquadPlayer sp) {
+	private Player newPlayer(BetsSquadResponse.SquadPlayer sp, Sport sport) {
 		return Player.builder()
+			.sport(sport)
 			.eName(sp.getName())
 			.kName(null)
 			.cc(sp.getCc())

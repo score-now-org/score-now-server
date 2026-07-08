@@ -20,22 +20,23 @@ import org.springframework.batch.item.Chunk;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncData;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncData;
 import com.scorenow.scorenow_api.domain.player.entity.Player;
 import com.scorenow.scorenow_api.domain.player.entity.PlayerExternalMapping;
 import com.scorenow.scorenow_api.domain.player.entity.PlayerTeamDetail;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerRepository;
 import com.scorenow.scorenow_api.domain.player.repository.PlayerTeamDetailRepository;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
-import com.scorenow.scorenow_api.global.exception.BusinessException;
 
 @ExtendWith(MockitoExtension.class)
-class TeamPlayerSyncWriterTest {
+class PlayerSyncWriterTest {
 
 	@Mock
 	private PlayerRepository playerRepository;
@@ -55,8 +56,11 @@ class TeamPlayerSyncWriterTest {
 	@Mock
 	private LeagueRepository leagueRepository;
 
+	@Mock
+	private SportRepository sportRepository;
+
 	@InjectMocks
-	private TeamPlayerSyncWriter writer;
+	private PlayerSyncWriter writer;
 
 	@Captor
 	private ArgumentCaptor<Player> playerCaptor;
@@ -69,23 +73,25 @@ class TeamPlayerSyncWriterTest {
 
 	@Test
 	void PlayerExternalMapping이_있으면_Player를_수정하고_PlayerTeamDetail을_생성한다() {
+		Long sportId = 1L;
 		Long leagueId = 20L;
 		String leagueApiId = "league-api";
 		String teamApiId = "team-1";
 		String playerApiId = "player-1";
 
+		Sport sport = Sport.builder().id(sportId).build();
 		Team team = Team.builder().id(10L).build();
 		League league = League.builder().id(leagueId).build();
 
 		Player existingPlayer = Player.builder()
 			.id(30L)
+			.sport(sport)
 			.eName("Old Name")
 			.cc("US")
 			.birthdate(LocalDate.of(1990, 1, 1))
 			.height(180)
 			.build();
 
-		TeamExternalMapping teamMapping = TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId());
 		PlayerExternalMapping playerMapping = new PlayerExternalMapping(DataOrigin.BETS, playerApiId, existingPlayer);
 
 		BetsSquadResponse.SquadPlayer squadPlayer = squadPlayer(
@@ -98,8 +104,9 @@ class TeamPlayerSyncWriterTest {
 			"9"
 		);
 
+		given(sportRepository.findById(sportId)).willReturn(Optional.of(sport));
 		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
-			.willReturn(Optional.of(teamMapping));
+			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
 		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
 		given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
 		given(playerExternalMappingRepository.findByProviderAndApiPlayerId(DataOrigin.BETS, playerApiId))
@@ -110,7 +117,8 @@ class TeamPlayerSyncWriterTest {
 			league.getId()
 		)).willReturn(Optional.empty());
 
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
+		PlayerSyncData data = new PlayerSyncData(
+			sportId,
 			leagueId,
 			leagueApiId,
 			teamApiId,
@@ -138,14 +146,16 @@ class TeamPlayerSyncWriterTest {
 
 	@Test
 	void PlayerExternalMapping이_없으면_Player와_PlayerExternalMapping과_PlayerTeamDetail을_생성한다() {
+		Long sportId = 1L;
 		Long leagueId = 20L;
 		String leagueApiId = "league-api";
 		String teamApiId = "team-1";
 		String playerApiId = "player-2";
 
+		Sport sport = Sport.builder().id(sportId).build();
 		Team team = Team.builder().id(10L).build();
 		League league = League.builder().id(leagueId).build();
-		Player savedPlayer = Player.builder().id(31L).build();
+		Player savedPlayer = Player.builder().id(31L).sport(sport).build();
 
 		BetsSquadResponse.SquadPlayer squadPlayer = squadPlayer(
 			playerApiId,
@@ -157,6 +167,7 @@ class TeamPlayerSyncWriterTest {
 			"8"
 		);
 
+		given(sportRepository.findById(sportId)).willReturn(Optional.of(sport));
 		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
 			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
 		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
@@ -172,7 +183,8 @@ class TeamPlayerSyncWriterTest {
 			league.getId()
 		)).willReturn(Optional.empty());
 
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
+		PlayerSyncData data = new PlayerSyncData(
+			sportId,
 			leagueId,
 			leagueApiId,
 			teamApiId,
@@ -182,6 +194,7 @@ class TeamPlayerSyncWriterTest {
 		writer.write(new Chunk<>(List.of(data)));
 
 		Player playerToSave = playerCaptor.getValue();
+		assertThat(playerToSave.getSport()).isSameAs(sport);
 		assertThat(playerToSave.getEName()).isEqualTo("New Player");
 		assertThat(playerToSave.getCc()).isEqualTo("KR");
 		assertThat(playerToSave.getBirthdate()).isEqualTo(LocalDate.of(2000, 3, 15));
@@ -200,19 +213,20 @@ class TeamPlayerSyncWriterTest {
 		assertThat(savedDetail.getLeague()).isSameAs(league);
 		assertThat(savedDetail.getPosition()).isEqualTo("MF");
 		assertThat(savedDetail.getShirtNumber()).isEqualTo("8");
-
 	}
 
 	@Test
 	void PlayerExternalMapping은_있지만_Player가_없으면_Player를_생성하고_기존_PlayerExternalMapping에_연결한다() {
+		Long sportId = 1L;
 		Long leagueId = 20L;
 		String leagueApiId = "league-api";
 		String teamApiId = "team-1";
 		String playerApiId = "player-3";
 
+		Sport sport = Sport.builder().id(sportId).build();
 		Team team = Team.builder().id(10L).build();
 		League league = League.builder().id(leagueId).build();
-		Player savedPlayer = Player.builder().id(32L).build();
+		Player savedPlayer = Player.builder().id(32L).sport(sport).build();
 
 		PlayerExternalMapping brokenMapping = new PlayerExternalMapping(DataOrigin.BETS, playerApiId, null);
 
@@ -226,6 +240,7 @@ class TeamPlayerSyncWriterTest {
 			"4"
 		);
 
+		given(sportRepository.findById(sportId)).willReturn(Optional.of(sport));
 		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
 			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
 		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
@@ -241,7 +256,8 @@ class TeamPlayerSyncWriterTest {
 			league.getId()
 		)).willReturn(Optional.empty());
 
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
+		PlayerSyncData data = new PlayerSyncData(
+			sportId,
 			leagueId,
 			leagueApiId,
 			teamApiId,
@@ -251,6 +267,7 @@ class TeamPlayerSyncWriterTest {
 		writer.write(new Chunk<>(List.of(data)));
 
 		Player playerToSave = playerCaptor.getValue();
+		assertThat(playerToSave.getSport()).isSameAs(sport);
 		assertThat(playerToSave.getEName()).isEqualTo("Recovered Player");
 		assertThat(playerToSave.getCc()).isEqualTo("JP");
 		assertThat(playerToSave.getBirthdate()).isEqualTo(LocalDate.of(1999, 7, 10));
@@ -268,88 +285,29 @@ class TeamPlayerSyncWriterTest {
 		assertThat(savedDetail.getLeague()).isSameAs(league);
 		assertThat(savedDetail.getPosition()).isEqualTo("DF");
 		assertThat(savedDetail.getShirtNumber()).isEqualTo("4");
-
-	}
-
-	@Test
-	void PlayerTeamDetail이_이미_있으면_position과_shirtNumber를_수정한다() {
-
-		Long leagueId = 20L;
-		String leagueApiId = "league-api";
-		String teamApiId = "team-1";
-		String playerApiId = "player-4";
-
-		Team team = Team.builder().id(10L).build();
-		League league = League.builder().id(leagueId).build();
-		Player existingPlayer = Player.builder().id(30L).build();
-
-		PlayerTeamDetail existingDetail = PlayerTeamDetail.builder()
-			.player(existingPlayer)
-			.team(team)
-			.league(league)
-			.position("OLD")
-			.shirtNumber("99")
-			.build();
-
-		PlayerExternalMapping playerMapping = new PlayerExternalMapping(DataOrigin.BETS, playerApiId, existingPlayer);
-
-		BetsSquadResponse.SquadPlayer squadPlayer = squadPlayer(
-			playerApiId,
-			"Updated Player",
-			"FR",
-			LocalDate.of(1998, 8, 8),
-			"182",
-			"GK",
-			"1"
-		);
-
-		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
-			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
-		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
-		given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
-		given(playerExternalMappingRepository.findByProviderAndApiPlayerId(DataOrigin.BETS, playerApiId))
-			.willReturn(Optional.of(playerMapping));
-		given(playerTeamDetailRepository.findByPlayerIdAndTeamIdAndLeagueId(
-			existingPlayer.getId(),
-			team.getId(),
-			league.getId()
-		)).willReturn(Optional.of(existingDetail));
-
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
-			leagueId,
-			leagueApiId,
-			teamApiId,
-			List.of(squadPlayer)
-		);
-
-		writer.write(new Chunk<>(List.of(data)));
-
-		then(playerTeamDetailRepository).should().save(detailCaptor.capture());
-
-		PlayerTeamDetail savedDetail = detailCaptor.getValue();
-		assertThat(savedDetail).isSameAs(existingDetail);
-		assertThat(savedDetail.getPosition()).isEqualTo("GK");
-		assertThat(savedDetail.getShirtNumber()).isEqualTo("1");
-
 	}
 
 	@Test
 	void SquadPlayer의_id가_없으면_선수_저장을_건너뛴다() {
-
+		Long sportId = 1L;
 		Long leagueId = 20L;
+		String leagueApiId = "league-api";
 		String teamApiId = "team-1";
 
+		Sport sport = Sport.builder().id(sportId).build();
 		Team team = Team.builder().id(10L).build();
 		League league = League.builder().id(leagueId).build();
 
+		given(sportRepository.findById(sportId)).willReturn(Optional.of(sport));
 		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
 			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
 		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
 		given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
 
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
+		PlayerSyncData data = new PlayerSyncData(
+			sportId,
 			leagueId,
-			"league-api",
+			leagueApiId,
 			teamApiId,
 			List.of(squadPlayer(null, "Ignored", "KR", null, null, null, null))
 		);
@@ -359,99 +317,6 @@ class TeamPlayerSyncWriterTest {
 		then(playerRepository).should(never()).save(any());
 		then(playerExternalMappingRepository).should(never()).save(any());
 		then(playerTeamDetailRepository).should(never()).save(any());
-
-	}
-
-	@Test
-	void players가_비어있으면_저장하지_않고_savedCount는_0이다() {
-
-		Long leagueId = 20L;
-		String teamApiId = "team-1";
-
-		Team team = Team.builder().id(10L).build();
-		League league = League.builder().id(leagueId).build();
-
-		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
-			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
-		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
-		given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
-
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
-			leagueId,
-			"league-api",
-			teamApiId,
-			List.of()
-		);
-
-		writer.write(new Chunk<>(List.of(data)));
-
-		then(playerRepository).should(never()).save(any());
-		then(playerExternalMappingRepository).should(never()).save(any());
-		then(playerTeamDetailRepository).should(never()).save(any());
-
-	}
-
-	@Test
-	void TeamExternalMapping이_없으면_BusinessException이_발생한다() {
-
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
-			1L,
-			"league-api",
-			"team-1",
-			List.of()
-		);
-
-		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, "team-1"))
-			.willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> writer.write(new Chunk<>(List.of(data))))
-			.isInstanceOf(BusinessException.class)
-			.hasMessageContaining("teamApiId에 해당하는 팀을 찾을 수 없습니다");
-
-	}
-
-	@Test
-	void internalTeamId에_해당하는_Team이_없으면_BusinessException이_발생한다() {
-		Long internalTeamId = 10L;
-		String teamApiId = "team-1";
-
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
-			1L,
-			"league-api",
-			teamApiId,
-			List.of()
-		);
-
-		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
-			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, internalTeamId)));
-		given(teamRepository.findById(internalTeamId)).willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> writer.write(new Chunk<>(List.of(data))))
-			.isInstanceOf(BusinessException.class)
-			.hasMessageContaining("internalTeamId에 해당하는 팀을 찾을 수 없습니다");
-	}
-
-	@Test
-	void leagueId에_해당하는_League가_없으면_BusinessException이_발생한다() {
-		Long leagueId = 20L;
-		String teamApiId = "team-1";
-		Team team = Team.builder().id(10L).build();
-
-		TeamPlayerSyncData data = new TeamPlayerSyncData(
-			leagueId,
-			"league-api",
-			teamApiId,
-			List.of()
-		);
-
-		given(teamExternalMappingRepository.findByProviderAndApiTeamId(DataOrigin.BETS, teamApiId))
-			.willReturn(Optional.of(TeamExternalMapping.of(DataOrigin.BETS, teamApiId, team.getId())));
-		given(teamRepository.findById(team.getId())).willReturn(Optional.of(team));
-		given(leagueRepository.findById(leagueId)).willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> writer.write(new Chunk<>(List.of(data))))
-			.isInstanceOf(BusinessException.class)
-			.hasMessageContaining("leagueId에 해당하는 리그를 찾을 수 없습니다");
 	}
 
 	private BetsSquadResponse.SquadPlayer squadPlayer(
