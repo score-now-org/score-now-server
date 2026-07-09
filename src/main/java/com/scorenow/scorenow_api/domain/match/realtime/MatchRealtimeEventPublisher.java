@@ -76,7 +76,9 @@ public class MatchRealtimeEventPublisher {
      * 경기 상태 변경 이벤트 발행 (경기중 -> 경기종료)
      */
     public void publishMatchStatusChanged(Long matchId, MatchStatus matchStatus, MatchResult matchResult) {
-        boolean ended = MatchAppStatusGroup.findBy(matchStatus).isPresent();
+        boolean ended = MatchAppStatusGroup.findBy(matchStatus)
+                .map(statusGroup -> statusGroup == MatchAppStatusGroup.ENDED)
+                .orElse(false);
 
         MatchStatusChangedPayload payload = MatchStatusChangedPayload.builder()
                 .statusCode(matchStatus.name())
