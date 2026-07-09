@@ -45,7 +45,11 @@ public class Match extends BaseEntity {
     private MatchStatus statusCode;
 
     private Integer homeScore;
+    private Integer homeShootOutScore;
+
     private Integer awayScore;
+    private Integer awayShootOutScore;
+
     private LocalDateTime startAt;
 
     private Long stadiumId;
@@ -57,7 +61,7 @@ public class Match extends BaseEntity {
     private String matchType = "A"; // 기본 A로 세팅
 
     @Builder.Default
-    private boolean isManual = false;
+    private boolean isManual = false;   // 외부 API 로 부터 데이터 연동을 ON/OFF 하는 필드
 
     @Builder.Default
     private boolean isActive = true;
@@ -113,8 +117,16 @@ public class Match extends BaseEntity {
         this.homeScore = homeScore;
     }
 
+    public void updateHomeShootOutScore(Integer homeShootOutScore) {
+        this.homeShootOutScore = homeShootOutScore;
+    }
+
     public void updateAwayScore(Integer awayScore) {
         this.awayScore = awayScore;
+    }
+
+    public void updateAwayShootOutScore(Integer awayShootOutScore) {
+        this.awayShootOutScore = awayShootOutScore;
     }
 
     public void updateIsActive(boolean isActive) {
@@ -142,5 +154,19 @@ public class Match extends BaseEntity {
     public boolean isStadiumEmpty() {
         return stadiumId == null && temporaryStadium == null;
     }
-}
 
+    public MatchResult getResultByScore() {
+        if (hasShootOutScore()) {
+            return MatchResult.fromScore(homeShootOutScore, awayShootOutScore);
+        }
+
+        return MatchResult.fromScore(homeScore, awayScore);
+    }
+
+    private boolean hasShootOutScore() {
+        return homeShootOutScore != null
+                && awayShootOutScore != null
+                && !homeShootOutScore.equals(awayShootOutScore);
+    }
+
+}

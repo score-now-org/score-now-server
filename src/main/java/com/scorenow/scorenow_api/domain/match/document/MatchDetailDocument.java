@@ -20,6 +20,9 @@ public class MatchDetailDocument {
     private Integer homeScore;  // 홈팀 점수
     private Integer awayScore;  // 어웨이팀 점수
 
+    private Integer homeShootOutScore;  // 승부차기 홈팀 점수
+    private Integer awayShootOutScore;  // 승부차기 어웨이팀 점수
+
     private MatchStats homeStats; // 홈팀 지표 (경고, 퇴장, 슈팅 등)
     private MatchStats awayStats; // 어웨이팀 지표
 
@@ -54,7 +57,9 @@ public class MatchDetailDocument {
 
     public void updateFrom(MatchDetailUpdateRequest request) {
         if (request.getHomeScore() != null) this.homeScore = request.getHomeScore();
+        if (request.getHomeShootOutScore() != null) this.homeShootOutScore = request.getHomeShootOutScore();
         if (request.getAwayScore() != null) this.awayScore = request.getAwayScore();
+        if (request.getAwayShootOutScore() != null) this.awayShootOutScore = request.getAwayShootOutScore();
         if (request.getHomeStats() != null) this.homeStats = request.getHomeStats();
         if (request.getAwayStats() != null) this.awayStats = request.getAwayStats();
         if (request.getAdditionalTime() != null) this.additionalTime = request.getAdditionalTime();

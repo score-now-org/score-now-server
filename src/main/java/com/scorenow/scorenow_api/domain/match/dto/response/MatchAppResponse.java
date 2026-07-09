@@ -63,8 +63,14 @@ public class MatchAppResponse {
         @Schema(description = "홈팀 점수", example = "1")
         private Integer homeScore;
 
+        @Schema(description = "홈팀 승부차기 점수", example = "1")
+        private Integer homeShootOutScore;
+
         @Schema(description = "어웨이팀 점수", example = "0")
         private Integer awayScore;
+
+        @Schema(description = "어웨이팀 승부차기 점수", example = "0")
+        private Integer awayShootOutScore;
 
         @Schema(description = "경기 상태 코드", example = "NOT_STARTED, IN_PLAY, ENDED, INTERRUPTED, POSTPONED, CANCELLED, ABANDONED")
         private String statusCode;
@@ -86,20 +92,19 @@ public class MatchAppResponse {
                 MatchDetailDocument detail,
                 MatchDisplayTextResolver matchDisplayTextResolver) {
 
-            Integer homeScore = resolveHomeScore(match, detail);
-            Integer awayScore = resolveAwayScore(match, detail);
-
             return MatchItemResponse.builder()
                     .id(match.getId())
                     .date(match.getStartAt().toLocalDate())
                     .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam()))
                     .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam()))
-                    .homeScore(homeScore)
-                    .awayScore(awayScore)
+                    .homeScore(match.getHomeScore())
+                    .homeShootOutScore(match.getHomeShootOutScore())
+                    .awayScore(match.getAwayScore())
+                    .awayShootOutScore(match.getAwayShootOutScore())
                     .statusCode(match.getStatusCode().name())
                     .statusName(match.getStatusCode().getDescription())
                     .currentCommentary(detail != null ? detail.getCurrentCommentary() : null)
-                    .timeInfo(MatchTimeInfoResponse.from(match, detail, homeScore, awayScore, matchDisplayTextResolver))
+                    .timeInfo(MatchTimeInfoResponse.from(match, detail, matchDisplayTextResolver))
                     .teamDisplayOrder(resolveTeamDisplayOrder(match))
                     .build();
         }
@@ -169,8 +174,6 @@ public class MatchAppResponse {
         public static MatchTimeInfoResponse from(
                 Match match,
                 MatchDetailDocument detail,
-                Integer homeScore,
-                Integer awayScore,
                 MatchDisplayTextResolver matchDisplayTextResolver) {
 
             MatchAppStatusGroup statusGroup = MatchAppStatusGroup.findBy(match.getStatusCode()).orElse(null);
@@ -184,7 +187,7 @@ public class MatchAppResponse {
             }
 
             if (statusGroup == MatchAppStatusGroup.ENDED) {
-                return toEndedMatchTimeInfo(match, homeScore, awayScore, matchDisplayTextResolver);
+                return toEndedMatchTimeInfo(match, matchDisplayTextResolver);
             }
 
             return MatchTimeInfoResponse.builder().build();
@@ -227,10 +230,9 @@ public class MatchAppResponse {
 
         private static MatchTimeInfoResponse toEndedMatchTimeInfo(
                 Match match,
-                Integer homeScore, Integer awayScore,
                 MatchDisplayTextResolver matchDisplayTextResolver) {
 
-            MatchResult matchResult = fromScore(homeScore, awayScore);
+            MatchResult matchResult = match.getResultByScore();
 
             return MatchTimeInfoResponse.builder()
                     .displayText(matchDisplayTextResolver.resolveEndedDisplayText(matchResult))
@@ -263,22 +265,6 @@ public class MatchAppResponse {
 
             return null;
         }
-    }
-
-    private static Integer resolveHomeScore(Match match, MatchDetailDocument detail) {
-        if (detail != null && detail.getHomeScore() != null) {
-            return detail.getHomeScore();
-        }
-
-        return match.getHomeScore();
-    }
-
-    private static Integer resolveAwayScore(Match match, MatchDetailDocument detail) {
-        if (detail != null && detail.getAwayScore() != null) {
-            return detail.getAwayScore();
-        }
-
-        return match.getAwayScore();
     }
 
     private static String resolveLeagueName(League league) {

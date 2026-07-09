@@ -8,4 +8,6 @@ import lombok.Getter;
 public class MatchScoreChangedPayload {
     private Integer homeScore;
     private Integer awayScore;
+    private Integer homeShootOutScore;
+    private Integer awayShootOutScore;
 }

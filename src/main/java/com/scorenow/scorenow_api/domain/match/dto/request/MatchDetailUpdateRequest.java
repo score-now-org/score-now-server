@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 public class MatchDetailUpdateRequest {
     private MatchStatus status;
     private Integer homeScore;
+    private Integer homeShootOutScore;
     private Integer awayScore;
+    private Integer awayShootOutScore;
     private MatchStats homeStats;
     private MatchStats awayStats;
     private MatchDetailDocument.MatchClock matchClock;

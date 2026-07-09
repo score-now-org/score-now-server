@@ -30,7 +30,7 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
 
     @Override
     public MatchDetailDocument save(MatchDetailDocument matchDetail) {
-        Long id = idGenerator.getAndIncrement();
+        Long id = matchDetail.getId() != null ? matchDetail.getId() : idGenerator.getAndIncrement();
         database.put(id, matchDetail);
         ReflectionTestUtils.setField(matchDetail, "id", id);
         return database.get(id);
@@ -60,13 +60,19 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
         MatchDetailDocument saved = database.get(id);
 
         if (saved == null) {
-            save(matchDetailDocument);
+            database.put(id, matchDetailDocument);
             return;
         }
 
         ReflectionTestUtils.setField(saved, "homeScore", matchDetailDocument.getHomeScore());
+        if (matchDetailDocument.getHomeShootOutScore() != null) {
+            ReflectionTestUtils.setField(saved, "homeShootOutScore", matchDetailDocument.getHomeShootOutScore());
+        }
         ReflectionTestUtils.setField(saved, "homeStats", matchDetailDocument.getHomeStats());
         ReflectionTestUtils.setField(saved, "awayScore", matchDetailDocument.getAwayScore());
+        if (matchDetailDocument.getAwayShootOutScore() != null) {
+            ReflectionTestUtils.setField(saved, "awayShootOutScore", matchDetailDocument.getAwayShootOutScore());
+        }
         ReflectionTestUtils.setField(saved, "awayStats", matchDetailDocument.getAwayStats());
 
         AdditionalTime newAdditionalTime = matchDetailDocument.getAdditionalTime();

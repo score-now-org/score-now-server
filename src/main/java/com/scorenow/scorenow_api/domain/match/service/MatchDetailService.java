@@ -5,7 +5,6 @@ import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateReque
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
-import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
@@ -37,6 +36,8 @@ public class MatchDetailService {
     private final MatchClockSyncService matchClockSyncService;
     private final MatchRealtimeEventPublisher eventPublisher;
 
+    private final MatchEventResolver matchEventResolver;
+
     @Transactional
     public void updateInplayMatchDetail(DataOrigin dataOrigin, ViewResult viewResult) {
         String apiMatchId = viewResult.getId();
@@ -44,8 +45,18 @@ public class MatchDetailService {
         Match match = matchRepository.findByExternalInfo(dataOrigin, apiMatchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
+        MatchDetailDocument newMatchDetail = viewResult.toDocument(
+                match.getId(),
+                match.getStartAt(),
+                matchEventResolver);
+
         // 점수에 변동 사항이 있는 경우 점수 업데이트 및 이벤트 발행
-        updateMatchScoreAndPublishEvent(match, viewResult.getHomeScore(), viewResult.getAwayScore());
+        updateMatchScoreAndPublishEvent(
+                match,
+                newMatchDetail.getHomeScore(),
+                newMatchDetail.getAwayScore(),
+                newMatchDetail.getHomeShootOutScore(),
+                newMatchDetail.getAwayShootOutScore());
 
         // 경기 상태 업데이트 및 이벤트 발행
         updateMatchStatusAndPublishEvent(match, MatchStatus.fromCode(viewResult.getTimeStatus()));
@@ -53,7 +64,12 @@ public class MatchDetailService {
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
         StadiumData stadiumData = viewResult.getExtra().getStadiumData();
         if (stadiumData != null) {
-            Stadium stadium = stadiumCacheService.getOrCreateStadium(dataOrigin, viewResult.getSportId(), stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
+            Stadium stadium = stadiumCacheService.getOrCreateStadium(
+                    dataOrigin,
+                    viewResult.getSportId(),
+                    stadiumData.getId(),
+                    stadiumData.getName(),
+                    stadiumData.getCity());
 
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
             if (match.isStadiumEmpty()) {
@@ -62,7 +78,6 @@ public class MatchDetailService {
         }
 
         // 경기 상세 정보 반영
-        MatchDetailDocument newMatchDetail = viewResult.toDocument(match.getId(), match.getStartAt());
         matchDetailRepository.upsertMatchDetail(newMatchDetail);
 
         // 경기 시간 정보 반영 (경기 시간 정보가 제공되는 경우에만 / 경기전,경기종료의 경우 시간 정보가 제공되지 않는다.)
@@ -83,7 +98,12 @@ public class MatchDetailService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
         // 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
-        updateMatchScoreAndPublishEvent(match, request.getHomeScore(), request.getAwayScore());
+        updateMatchScoreAndPublishEvent(
+                match,
+                request.getHomeScore(),
+                request.getAwayScore(),
+                request.getHomeShootOutScore(),
+                request.getAwayShootOutScore());
 
         // 경기 상태 업데이트 및 이벤트 발행
         if (request.getStatus() != null) {
@@ -109,21 +129,53 @@ public class MatchDetailService {
     /**
      * 점수에 변동 사항이 있는 경우 점수 업데이트 진행 및 이벤트 발행
      */
-    private void updateMatchScoreAndPublishEvent(Match match, Integer homeScore, Integer awayScore) {
-        if (homeScore == null || awayScore == null) {
-            return;
+    private void updateMatchScoreAndPublishEvent(
+            Match match,
+            Integer newHomeScore,
+            Integer newAwayScore,
+            Integer newHomeShootOutScore,
+            Integer newAwayShootOutScore) {
+
+        // 정규시간 점수
+        boolean scoreChanged = false;
+        if (newHomeScore != null && newAwayScore != null) {
+            Integer beforeHomeScore = match.getHomeScore();
+            Integer beforeAwayScore = match.getAwayScore();
+
+            scoreChanged = !newHomeScore.equals(beforeHomeScore) || !newAwayScore.equals(beforeAwayScore);
+
+            // 점수가 변경되었다면 업데이트
+            if (scoreChanged) {
+                match.updateHomeScore(newHomeScore);
+                match.updateAwayScore(newAwayScore);
+            }
         }
 
-        Integer beforeHomeScore = match.getHomeScore();
-        Integer beforeAwayScore = match.getAwayScore();
 
-        boolean scoreChanged = !homeScore.equals(beforeHomeScore) || !awayScore.equals(beforeAwayScore);
+        // 승부차기 점수
+        boolean shootOutScoreChanged = false;
+        if (newHomeShootOutScore != null && newAwayShootOutScore != null) {
+            Integer beforeHomeShootOutScore = match.getHomeShootOutScore();
+            Integer beforeAwayShootOutScore = match.getAwayShootOutScore();
 
-        if (scoreChanged) {
-            match.updateHomeScore(homeScore);
-            match.updateAwayScore(awayScore);
+            shootOutScoreChanged = !newHomeShootOutScore.equals(beforeHomeShootOutScore) ||
+                    !newAwayShootOutScore.equals(beforeAwayShootOutScore);
 
-            eventPublisher.publishScoreChanged(match.getId(), homeScore, awayScore);
+            // 승부차기 점수가 변경되었다면 업데이트
+            if (shootOutScoreChanged) {
+                match.updateHomeShootOutScore(newHomeShootOutScore);
+                match.updateAwayShootOutScore(newAwayShootOutScore);
+            }
+        }
+
+        // 점수 변경 감지 시 점수 변경 이벤트 발행
+        if (scoreChanged || shootOutScoreChanged) {
+            eventPublisher.publishScoreChanged(
+                    match.getId(),
+                    match.getHomeScore(),
+                    match.getAwayScore(),
+                    match.getHomeShootOutScore(),
+                    match.getAwayShootOutScore());
         }
     }
 
@@ -147,12 +199,12 @@ public class MatchDetailService {
             eventPublisher.publishMatchStatusChanged(
                     match.getId(),
                     newStatus,
-                    MatchResult.fromScore(match.getHomeScore(), match.getAwayScore()));
-
+                    match.getResultByScore());
             return;
         }
 
         eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
     }
+
 
 }

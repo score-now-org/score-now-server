@@ -37,10 +37,18 @@ public class MatchRealtimeEventPublisher {
     /**
      * 경기 점수 변경 이벤트 발행
      */
-    public void publishScoreChanged(Long matchId, Integer homeScore, Integer awayScore) {
+    public void publishScoreChanged(
+            Long matchId,
+            Integer homeScore,
+            Integer awayScore,
+            Integer homeShootOutScore,
+            Integer awayShootOutScore) {
+
         MatchScoreChangedPayload payload = MatchScoreChangedPayload.builder()
                 .homeScore(homeScore)
                 .awayScore(awayScore)
+                .homeShootOutScore(homeShootOutScore)
+                .awayShootOutScore(awayShootOutScore)
                 .build();
 
         MatchRealtimeEvent<MatchScoreChangedPayload> data =
