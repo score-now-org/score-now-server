@@ -3,8 +3,8 @@ package com.scorenow.scorenow_api.domain.player.batch;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncData;
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncItem;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncData;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncItem;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -15,17 +15,17 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Squad API 호출 및 저장 데이터 변환
- * Reader가 만든 TeamPlayerSyncItem을 받아서 squad API를 호출하는 역할
+ * Reader가 만든 PlayerSyncItem을 받아서 squad API를 호출하는 역할
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TeamPlayerSyncProcessor implements ItemProcessor<TeamPlayerSyncItem, TeamPlayerSyncData> {
+public class PlayerSyncProcessor implements ItemProcessor<PlayerSyncItem, PlayerSyncData> {
 
 	private final BetsApiClient betsApiClient;
 
 	@Override
-	public TeamPlayerSyncData process(TeamPlayerSyncItem item) { // Reader가 넘긴 item 하나를 처리
+	public PlayerSyncData process(PlayerSyncItem item) { // Reader가 넘긴 item 하나를 처리
 
 		// teamApiId로 squad API를 호출
 		BetsSquadResponse squad = betsApiClient.getSquad(item.teamApiId());
@@ -47,8 +47,9 @@ public class TeamPlayerSyncProcessor implements ItemProcessor<TeamPlayerSyncItem
 			);
 		}
 
-		// Writer에게 넘길 TeamPlayerSyncData 생성
-		return new TeamPlayerSyncData(
+		// Writer에게 넘길 PlayerSyncData 생성
+		return new PlayerSyncData(
+			item.sportId(),
 			item.leagueId(),
 			item.leagueApiId(),
 			item.teamApiId(),

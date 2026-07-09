@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncData;
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncItem;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncData;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncItem;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,10 +21,9 @@ public class PlayerSyncJobConfig {
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 
-	// private final PlayerSyncTasklet playerSyncTasklet;
-	private final TeamPlayerSyncItemReader reader;
-	private final TeamPlayerSyncProcessor processor;
-	private final TeamPlayerSyncWriter writer;
+	private final PlayerSyncItemReader reader;
+	private final PlayerSyncProcessor processor;
+	private final PlayerSyncWriter writer;
 
 	@Bean
 	public Job playerSyncJob(Step playerSyncStep) {
@@ -32,11 +31,11 @@ public class PlayerSyncJobConfig {
 			.start(playerSyncStep)
 			.build();
 	}
-	
+
 	@Bean
 	public Step playerSyncStep() {
 		return new StepBuilder("playerSyncStep", jobRepository)
-			.<TeamPlayerSyncItem, TeamPlayerSyncData>chunk(10, transactionManager)
+			.<PlayerSyncItem, PlayerSyncData>chunk(10, transactionManager)
 			.reader(reader)
 			.processor(processor)
 			.writer(writer)

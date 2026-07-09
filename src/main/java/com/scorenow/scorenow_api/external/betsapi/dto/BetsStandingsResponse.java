@@ -18,14 +18,7 @@ public class BetsStandingsResponse {
 	@Getter
 	@Setter
 	public static class Result {
-		private Season season;
 		private Overall overall;
-	}
-
-	@Getter
-	@Setter
-	public static class Season {
-		private String name;
 	}
 
 	@Getter

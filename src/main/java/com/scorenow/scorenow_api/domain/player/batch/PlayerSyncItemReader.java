@@ -14,7 +14,7 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingJpaRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
-import com.scorenow.scorenow_api.domain.player.batch.dto.TeamPlayerSyncItem;
+import com.scorenow.scorenow_api.domain.player.batch.dto.PlayerSyncItem;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
@@ -30,18 +30,18 @@ import lombok.RequiredArgsConstructor;
 @Component
 @StepScope
 @RequiredArgsConstructor
-public class TeamPlayerSyncItemReader implements ItemReader<TeamPlayerSyncItem> {
+public class PlayerSyncItemReader implements ItemReader<PlayerSyncItem> {
 
 	private final LeagueRepository leagueRepository;
 	private final LeagueExternalMappingJpaRepository leagueExternalMappingJpaRepository;
 	private final BetsApiClient betsApiClient;
 	private final TeamService teamService;
 
-	private List<TeamPlayerSyncItem> items;
+	private List<PlayerSyncItem> items;
 	private int currentIndex = 0;
 
 	@Override
-	public TeamPlayerSyncItem read() {
+	public PlayerSyncItem read() {
 
 		if (items == null) {
 			items = createItems();
@@ -54,19 +54,36 @@ public class TeamPlayerSyncItemReader implements ItemReader<TeamPlayerSyncItem> 
 		return items.get(currentIndex++);
 	}
 
-	private List<TeamPlayerSyncItem> createItems() {
+	private List<PlayerSyncItem> createItems() {
 
-		List<TeamPlayerSyncItem> items = new ArrayList<>();
-		List<League> leagues = leagueRepository.findAll(); // DB에서 저장된 리그 조회
+		List<PlayerSyncItem> items = new ArrayList<>();
+		// List<League> leagues = leagueRepository.findAll(); // DB에서 저장된 리그 조회
+		List<LeagueExternalMapping> mappings = leagueExternalMappingJpaRepository.findByDataOrigin(DataOrigin.BETS);
 
 		// 내부 리그 id로 외부 API 리그 id 조회
-		for (League league : leagues) {
-			String leagueApiId = leagueExternalMappingJpaRepository
-				.findByDataOriginAndInternalLeagueId(DataOrigin.BETS, league.getId())
-				.map(LeagueExternalMapping::getApiLeagueId)
+		// for (League league : leagues) {
+		// 	String leagueApiId = leagueExternalMappingJpaRepository
+		// 		.findByDataOriginAndInternalLeagueId(DataOrigin.BETS, league.getId())
+		// 		.map(LeagueExternalMapping::getApiLeagueId)
+		// 		.orElseThrow(() -> new BusinessException(
+		// 			ErrorCode.INTERNAL_SERVER_ERROR,
+		// 			"리그 매핑 정보를 찾을 수 없습니다. leagueId=" + league.getId()
+		// 		));
+
+		for (LeagueExternalMapping mapping : mappings) {
+
+			String leagueApiId = mapping.getApiLeagueId();
+
+			if (leagueApiId == null || leagueApiId.isBlank()) {
+				continue;
+			}
+
+			leagueApiId = leagueApiId.trim();
+
+			League league = leagueRepository.findById(mapping.getInternalLeagueId())
 				.orElseThrow(() -> new BusinessException(
 					ErrorCode.INTERNAL_SERVER_ERROR,
-					"리그 매핑 정보를 찾을 수 없습니다. leagueId=" + league.getId()
+					"리그 정보를 찾을 수 없습니다. leagueId=" + mapping.getInternalLeagueId()
 				));
 
 			// BETS의 'league/table' API를 호출
@@ -94,7 +111,8 @@ public class TeamPlayerSyncItemReader implements ItemReader<TeamPlayerSyncItem> 
 					imageUrl
 				);
 
-				items.add(new TeamPlayerSyncItem(
+				items.add(new PlayerSyncItem(
+					league.getSportId(),
 					league.getId(),
 					leagueApiId,
 					team.getId()
