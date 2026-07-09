@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.external.betsapi.dto;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
@@ -10,6 +11,7 @@ import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
+import com.scorenow.scorenow_api.domain.match.service.MatchEventResolver;
 import lombok.Data;
 
 @Data
@@ -33,6 +35,14 @@ public class BetsViewResponse {
         @JsonProperty("time_status")
         private String timeStatus;
 
+        private BetsViewResponse.League league;
+
+        @JsonProperty("home")
+        private BetsViewResponse.Team homeTeam;
+
+        @JsonProperty("away")
+        private BetsViewResponse.Team awayTeam;
+
         private String ss;      // 현재 스코어 정보 home:away
         private Stats stats;
         private Timer timer;
@@ -47,16 +57,23 @@ public class BetsViewResponse {
         @JsonProperty("inplay_updated_at")
         private String inplayUpdatedAt;
 
-        public MatchDetailDocument toDocument(Long matchId, LocalDateTime startAt) {
-            return MatchDetailDocument.builder()
+        public MatchDetailDocument toDocument(Long matchId, LocalDateTime startAt, MatchEventResolver matchEventResolver) {
+            MatchDetailDocument.MatchDetailDocumentBuilder builder = MatchDetailDocument.builder()
                     .id(matchId)
                     .homeScore(getHomeScore())
                     .homeStats(toMatchStats(0))
                     .awayScore(getAwayScore())
                     .awayStats(toMatchStats(1))
                     .matchClock(toMatchClock(startAt))
-                    .additionalTime(toAdditionalTime())
-                    .build();
+                    .additionalTime(toAdditionalTime());
+
+            // 승부차기의 경우 이벤트 기반으로 점수 계산을 진행해야 함.
+            if (timer != null && MatchPeriod.fromCode(timer.md) == MatchPeriod.PENALTY_SHOOTOUT) {
+                builder.homeShootOutScore(matchEventResolver.resolveShootOutScore(getEventTexts(), homeTeam.getName()))
+                        .awayShootOutScore(matchEventResolver.resolveShootOutScore(getEventTexts(), awayTeam.getName()));
+            }
+
+            return builder.build();
         }
 
         public MatchStats toMatchStats(int idx) {
@@ -89,6 +106,7 @@ public class BetsViewResponse {
                     .period(MatchPeriod.fromCode(timer.md))
                     .running(Timer.RUNNING.equals(timer.tt))
                     .providerUpdatedAt(toProviderUpdatedAt())
+                    .additionalMinutes(timer.ta)
                     .build();
         }
 
@@ -100,34 +118,45 @@ public class BetsViewResponse {
             try {
                 return Instant.ofEpochSecond(Long.parseLong(inplayUpdatedAt));
             } catch (Exception e) {
-                return Instant.now();
+                return null;
             }
         }
 
         public MatchDetailDocument.AdditionalTime toAdditionalTime() {
-            // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료)
-            if (this.timer == null) {
+            // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료) || 추가시간 정보가 없는 경우
+            if (timer == null || timer.ta == null || timer.ta <= 0) {
                 return null;
             }
 
-            return MatchDetailDocument.AdditionalTime.builder()
-                    .firstHalf(getFirstHalfAdditionalTime())
-                    .secondHalf(getSecondHalfAdditionalTime())
-                    .build();
-        }
-
-        private Integer getFirstHalfAdditionalTime() {
-            if (timer.isFirstHalf()) {
-                return timer.ta != null ? timer.ta : null;
+            // running 여부가 false 인 경우 (예: 전반 종료 + 후반 시작 전)
+            if (!Timer.RUNNING.equals(timer.tt)) {
+                return null;
             }
-            return null;
-        }
 
-        private Integer getSecondHalfAdditionalTime() {
-            if (timer.isSecondHalf()) {
-                return timer.ta != null ? timer.ta : null;
+            MatchPeriod period = MatchPeriod.fromCode(timer.md);
+            if (period == null) {
+                return null;
             }
-            return null;
+
+            return switch (period) {
+                case FIRST_HALF -> MatchDetailDocument.AdditionalTime.builder()
+                        .firstHalf(timer.ta)
+                        .build();
+
+                case SECOND_HALF -> MatchDetailDocument.AdditionalTime.builder()
+                        .secondHalf(timer.ta)
+                        .build();
+
+                case EXTRA_FIRST_HALF -> MatchDetailDocument.AdditionalTime.builder()
+                        .extraFirstHalf(timer.ta)
+                        .build();
+
+                case EXTRA_SECOND_HALF -> MatchDetailDocument.AdditionalTime.builder()
+                        .extraSecondHalf(timer.ta)
+                        .build();
+
+                case PENALTY_SHOOTOUT -> null;
+            };
         }
 
         private Integer parse(List<String> list, int i) {
@@ -165,6 +194,17 @@ public class BetsViewResponse {
         public boolean hasLineup() {
             return hasLineup != null && hasLineup == 1;
         }
+
+        public List<String> getEventTexts() {
+            if (events == null) {
+                return List.of();
+            }
+
+            return events.stream()
+                    .map(EventText::getText)
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
     }
 
     @Data
@@ -197,16 +237,6 @@ public class BetsViewResponse {
         private String tt;      // 타이머 상태 (0:정지,1:진행)
         private Integer ta;     // 추가시간
         private Integer md;     // 전후반 구분 (0:전반,1:후반)
-
-        public boolean isFirstHalf() {
-            if (this.md == null) return false;
-            return this.md == 0;
-        }
-
-        public boolean isSecondHalf() {
-            if (this.md == null) return false;
-            return this.md == 1;
-        }
     }
 
     @Data
@@ -226,5 +256,17 @@ public class BetsViewResponse {
         private String id;              // 경기장 ID
         private String name;            // 경기장명
         private String city;            // 경기장이 위치한 도시
+    }
+
+    @Data
+    public static class League {
+        private String id;
+        private String name;
+    }
+
+    @Data
+    public static class Team {
+        private String id;
+        private String name;
     }
 }

@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,8 @@ public class AdminMatchService {
     private final MatchMapper matchMapper;
 
     private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
+
+    private final MatchRealtimeEventPublisher eventPublisher;
 
     /**
      * 경기 리스트 조회
@@ -121,11 +124,7 @@ public class AdminMatchService {
         }
 
         if (request.getStatusCode() != null) {
-            try {
-                match.updateStatus(MatchStatus.valueOf(request.getStatusCode()));
-            } catch (IllegalArgumentException e) {
-                throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
-            }
+            updateMatchStatusAndPublishEvent(match, MatchStatus.valueOf(request.getStatusCode()));
         }
 
         if (request.getHomeScore() != null) {
@@ -143,6 +142,27 @@ public class AdminMatchService {
         if (request.getTeamDisplayOrder() != null) {
             match.updateTeamDisplayOrder(request.getTeamDisplayOrder());
         }
+    }
+
+    private void updateMatchStatusAndPublishEvent(Match match, MatchStatus newStatus) {
+        try {
+            if (match.getStatusCode() == newStatus) {
+                return;
+            }
+
+            match.updateStatus(newStatus);
+
+            if (newStatus == MatchStatus.ENDED) {
+                eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, match.getResultByScore());
+                return;
+            }
+
+            eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
+
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
+        }
+
     }
 
 

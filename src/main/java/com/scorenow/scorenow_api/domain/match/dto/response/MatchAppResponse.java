@@ -8,18 +8,20 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
 import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
+import com.scorenow.scorenow_api.domain.match.service.MatchDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.scorenow.scorenow_api.domain.match.entity.MatchResult.*;
+import static com.scorenow.scorenow_api.domain.match.entity.MatchResult.AWAY_WIN;
+import static com.scorenow.scorenow_api.domain.match.entity.MatchResult.HOME_WIN;
 
 @Getter
 @Builder
@@ -62,8 +64,14 @@ public class MatchAppResponse {
         @Schema(description = "홈팀 점수", example = "1")
         private Integer homeScore;
 
+        @Schema(description = "홈팀 승부차기 점수", example = "1")
+        private Integer homeShootOutScore;
+
         @Schema(description = "어웨이팀 점수", example = "0")
         private Integer awayScore;
+
+        @Schema(description = "어웨이팀 승부차기 점수", example = "0")
+        private Integer awayShootOutScore;
 
         @Schema(description = "경기 상태 코드", example = "NOT_STARTED, IN_PLAY, ENDED, INTERRUPTED, POSTPONED, CANCELLED, ABANDONED")
         private String statusCode;
@@ -80,21 +88,24 @@ public class MatchAppResponse {
         @Schema(description = "팀 표시 순서", example = "[\"HOME\", \"AWAY\"]")
         private List<String> teamDisplayOrder;
 
-        public static MatchItemResponse from(Match match, MatchDetailDocument detail) {
-            Integer homeScore = resolveHomeScore(match, detail);
-            Integer awayScore = resolveAwayScore(match, detail);
+        public static MatchItemResponse from(
+                Match match,
+                MatchDetailDocument detail,
+                MatchDisplayTextResolver matchDisplayTextResolver) {
 
             return MatchItemResponse.builder()
                     .id(match.getId())
                     .date(match.getStartAt().toLocalDate())
                     .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam()))
                     .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam()))
-                    .homeScore(homeScore)
-                    .awayScore(awayScore)
+                    .homeScore(match.getHomeScore())
+                    .homeShootOutScore(match.getHomeShootOutScore())
+                    .awayScore(match.getAwayScore())
+                    .awayShootOutScore(match.getAwayShootOutScore())
                     .statusCode(match.getStatusCode().name())
                     .statusName(match.getStatusCode().getDescription())
                     .currentCommentary(detail != null ? detail.getCurrentCommentary() : null)
-                    .timeInfo(MatchTimeInfoResponse.from(match, detail, homeScore, awayScore))
+                    .timeInfo(MatchTimeInfoResponse.from(match, detail, matchDisplayTextResolver))
                     .teamDisplayOrder(resolveTeamDisplayOrder(match))
                     .build();
         }
@@ -126,17 +137,19 @@ public class MatchAppResponse {
     @Builder
     @Schema(description = "앱 경기 시간 정보 응답")
     public static class MatchTimeInfoResponse {
-        private static final DateTimeFormatter SCHEDULED_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
         @Schema(description = "앱 표시용 경기 시간 문구", example = "경기중: 전반 12 / 경기전: 20:30 / 경기종료: 홈팀 패")
         private String displayText;
 
-        @Schema(description = "경기 예정 시작 시간.", example = "2026-06-05T20:00:00")
+        @Schema(description = "경기 예정 시작 시간 (KST)", example = "2026-06-05T20:00:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime startAt;
 
-        @Schema(description = "경기 경과 시간 분", example = "27")
+        @Schema(description = "경기 경과 시간 분 (누적)", example = "75")
         private Integer elapsedMinutes;
+
+        @Schema(description = "경기 경과 시간 분 (구간)", example = "25")
+        private Integer displayElapsedMinutes;
 
         @Schema(description = "경기 경과 시간 초", example = "14")
         private Integer elapsedSeconds;
@@ -159,91 +172,79 @@ public class MatchAppResponse {
         @Schema(description = "승리팀 이름. 무승부나 결과 미확정이면 null", example = "대한민국")
         private String winnerTeamName;
 
-        public static MatchTimeInfoResponse from(Match match, MatchDetailDocument detail, Integer homeScore, Integer awayScore) {
-            MatchAppStatusGroup statusGroup = MatchAppStatusGroup.findBy(match.getStatusCode())
-                    .orElse(null);
+        @Schema(description = "경과 시간 업데이트 기준 시간 (UTC)", example = "")
+        private Instant providerUpdatedAt;
+
+        public static MatchTimeInfoResponse from(
+                Match match,
+                MatchDetailDocument detail,
+                MatchDisplayTextResolver matchDisplayTextResolver) {
+
+            MatchAppStatusGroup statusGroup = MatchAppStatusGroup.findBy(match.getStatusCode()).orElse(null);
 
             if (statusGroup == MatchAppStatusGroup.IN_PLAY) {
-                return toInPlayMatchTimeInfo(detail);
+                return toInPlayMatchTimeInfo(detail, matchDisplayTextResolver);
             }
 
             if (statusGroup == MatchAppStatusGroup.SCHEDULED) {
-                return toScheduledMatchTimeInfo(match);
+                return toScheduledMatchTimeInfo(match, matchDisplayTextResolver);
             }
 
             if (statusGroup == MatchAppStatusGroup.ENDED) {
-                return toEndedMatchTimeInfo(match, homeScore, awayScore);
+                return toEndedMatchTimeInfo(match, matchDisplayTextResolver);
             }
 
             return MatchTimeInfoResponse.builder().build();
         }
 
-        private static MatchTimeInfoResponse toInPlayMatchTimeInfo(MatchDetailDocument detail) {
+        private static MatchTimeInfoResponse toInPlayMatchTimeInfo(
+                MatchDetailDocument detail,
+                MatchDisplayTextResolver matchDisplayTextResolver) {
+
             MatchDetailDocument.MatchClock matchClock = detail != null ? detail.getMatchClock() : null;
             MatchPeriod period = matchClock != null ? matchClock.getPeriod() : null;
 
+            // 시간 관련 정보가 없을 때 보여줄 default 문구
+            if (matchClock == null || matchClock.getPeriod() == null) {
+                return MatchTimeInfoResponse.builder()
+                        .displayText("경기중")
+                        .build();
+            }
+
             return MatchTimeInfoResponse.builder()
-                    .displayText(resolveInPlayDisplayText(matchClock, period))
-                    .elapsedMinutes(matchClock != null ? matchClock.getElapsedMinutes() : null)
-                    .elapsedSeconds(matchClock != null ? matchClock.getElapsedSeconds() : null)
-                    .periodCode(period != null ? period.name() : null)
-                    .periodName(period != null ? period.getDescription() : null)
-                    .running(matchClock != null ? matchClock.getRunning() : null)
+                    .displayText(matchDisplayTextResolver.resolveInPlayDisplayText(matchClock))
+                    .elapsedMinutes(matchClock.getElapsedMinutes())
+                    .displayElapsedMinutes(matchDisplayTextResolver.resolvePeriodElapsedMinutes(matchClock))
+                    .elapsedSeconds(matchClock.getElapsedSeconds())
+                    .periodCode(period.name())
+                    .periodName(period.getDescription())
+                    .running(matchClock.getRunning())
+                    .providerUpdatedAt(matchClock.getProviderUpdatedAt())
                     .build();
         }
 
-        private static String resolveInPlayDisplayText(MatchDetailDocument.MatchClock matchClock, MatchPeriod period) {
-            if (matchClock == null) {
-                return null;
-            }
+        private static MatchTimeInfoResponse toScheduledMatchTimeInfo(
+                Match match,
+                MatchDisplayTextResolver matchDisplayTextResolver) {
 
-            String periodName = period != null ? period.getDescription() : null;
-            Integer elapsedMinutes = matchClock.getElapsedMinutes();
-
-            if (StringUtils.hasText(periodName) && elapsedMinutes != null) {
-                return periodName + " " + elapsedMinutes;
-            }
-
-            if (StringUtils.hasText(periodName)) {
-                return periodName;
-            }
-
-            return elapsedMinutes != null ? String.valueOf(elapsedMinutes) : null;
-        }
-
-        private static MatchTimeInfoResponse toScheduledMatchTimeInfo(Match match) {
             return MatchTimeInfoResponse.builder()
-                    .displayText(resolveScheduledDisplayText(match))
+                    .displayText(matchDisplayTextResolver.resolveScheduledDisplayText(match))
                     .startAt(match.getStartAt())
                     .build();
         }
 
-        private static MatchTimeInfoResponse toEndedMatchTimeInfo(Match match, Integer homeScore, Integer awayScore) {
-            MatchResult matchResult = fromScore(homeScore, awayScore);
+        private static MatchTimeInfoResponse toEndedMatchTimeInfo(
+                Match match,
+                MatchDisplayTextResolver matchDisplayTextResolver) {
+
+            MatchResult matchResult = match.getResultByScore();
 
             return MatchTimeInfoResponse.builder()
-                    .displayText(resolveEndedDisplayText(matchResult))
+                    .displayText(matchDisplayTextResolver.resolveEndedDisplayText(matchResult))
                     .result(matchResult.name())
                     .winnerTeamId(resolveWinnerTeamId(match, matchResult))
                     .winnerTeamName(resolveWinnerTeamName(match, matchResult))
                     .build();
-        }
-
-        private static String resolveScheduledDisplayText(Match match) {
-            if (match.getStartAt() == null) {
-                return null;
-            }
-
-            return match.getStartAt().format(SCHEDULED_TIME_FORMATTER);
-        }
-
-        private static String resolveEndedDisplayText(MatchResult matchResult) {
-            return switch (matchResult) {
-                case HOME_WIN -> "홈팀 승";
-                case AWAY_WIN -> "홈팀 패";
-                case DRAW -> "무승부";
-                case UNKNOWN -> null;
-            };
         }
 
         private static Long resolveWinnerTeamId(Match match, MatchResult matchResult) {
@@ -269,22 +270,6 @@ public class MatchAppResponse {
 
             return null;
         }
-    }
-
-    private static Integer resolveHomeScore(Match match, MatchDetailDocument detail) {
-        if (detail != null && detail.getHomeScore() != null) {
-            return detail.getHomeScore();
-        }
-
-        return match.getHomeScore();
-    }
-
-    private static Integer resolveAwayScore(Match match, MatchDetailDocument detail) {
-        if (detail != null && detail.getAwayScore() != null) {
-            return detail.getAwayScore();
-        }
-
-        return match.getAwayScore();
     }
 
     private static String resolveLeagueName(League league) {

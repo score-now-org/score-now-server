@@ -29,6 +29,8 @@ import static java.util.stream.Collectors.toMap;
 @Transactional(readOnly = true)
 public class MatchAppQueryService {
 
+    private final MatchDisplayTextResolver matchDisplayTextResolver;
+
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
 
@@ -77,7 +79,10 @@ public class MatchAppQueryService {
         return matchesByLeague.values().stream()
                 .map(leagueMatches -> {
                     List<MatchAppResponse.MatchItemResponse> appMatches = leagueMatches.stream()
-                            .map(match -> MatchAppResponse.MatchItemResponse.from(match, detailMap.get(match.getId())))
+                            .map(match -> MatchAppResponse.MatchItemResponse.from(
+                                    match,
+                                    detailMap.get(match.getId()),
+                                    matchDisplayTextResolver))
                             .toList();
 
                     return MatchAppResponse.from(leagueMatches.get(0).getLeague(), appMatches);

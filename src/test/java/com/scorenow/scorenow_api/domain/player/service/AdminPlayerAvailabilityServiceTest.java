@@ -153,7 +153,6 @@ class AdminPlayerAvailabilityServiceTest {
                 .player(player)
                 .team(team)
                 .league(league)
-                .season("2026")
                 .position("F")
                 .shirtNumber("7")
                 .squadOn(true)

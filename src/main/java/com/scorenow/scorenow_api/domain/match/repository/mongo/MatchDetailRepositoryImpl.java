@@ -51,11 +51,19 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
         Query query = new Query(Criteria.where("_id").is(matchDetailDocument.getId()));
         Update update = new Update();
 
+        // 홈팀 골 및 스텟 정보
         update.set("homeScore", matchDetailDocument.getHomeScore());
+        if (matchDetailDocument.getHomeShootOutScore() != null) {
+            update.set("homeShootOutScore", matchDetailDocument.getHomeShootOutScore());
+        }
         update.set("homeStats", matchDetailDocument.getHomeStats());
+
+        // 어웨이팀 골 및 스텟 정보
         update.set("awayScore", matchDetailDocument.getAwayScore());
+        if (matchDetailDocument.getAwayShootOutScore() != null) {
+            update.set("awayShootOutScore", matchDetailDocument.getAwayShootOutScore());
+        }
         update.set("awayStats", matchDetailDocument.getAwayStats());
-        update.set("matchClock", matchDetailDocument.getMatchClock());
 
         // 추가시간의 경우 기존에 저장한 전반 추가시간이나 후반 추가시간이 사라지면 안되기 때문에, 값을 확인하고 부분적으로 수정해주는 방식으로 한다.
         AdditionalTime additionalTime = matchDetailDocument.getAdditionalTime();
@@ -81,6 +89,17 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
                 update.set("additionalTime.extraSecondHalf", extraSecondHalf);
             }
         }
+
+        mongoTemplate.upsert(query, update, MatchDetailDocument.class);
+    }
+
+    @Override
+    public void upsertMatchClock(Long matchId, MatchClock matchClock) {
+        Query query = new Query(Criteria.where("_id").is(matchId));
+        Update update = new Update();
+
+        update.set("matchClock", matchClock);
+        update.setOnInsert("_id", matchId);
 
         mongoTemplate.upsert(query, update, MatchDetailDocument.class);
     }

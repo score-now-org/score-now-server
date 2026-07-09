@@ -20,6 +20,9 @@ public class MatchDetailDocument {
     private Integer homeScore;  // 홈팀 점수
     private Integer awayScore;  // 어웨이팀 점수
 
+    private Integer homeShootOutScore;  // 승부차기 홈팀 점수
+    private Integer awayShootOutScore;  // 승부차기 어웨이팀 점수
+
     private MatchStats homeStats; // 홈팀 지표 (경고, 퇴장, 슈팅 등)
     private MatchStats awayStats; // 어웨이팀 지표
 
@@ -38,6 +41,7 @@ public class MatchDetailDocument {
         private Integer elapsedSeconds;     // 경과 시간 (초)
         private MatchPeriod period;         // 전반, 후반
         private Boolean running;            // 시간 흐르는 여부
+        private Integer additionalMinutes;     // 추가 시간
 
         private Instant providerUpdatedAt;  // 외부 API 에서 데이터를 업데이트 한 시점
     }
@@ -53,10 +57,11 @@ public class MatchDetailDocument {
 
     public void updateFrom(MatchDetailUpdateRequest request) {
         if (request.getHomeScore() != null) this.homeScore = request.getHomeScore();
+        if (request.getHomeShootOutScore() != null) this.homeShootOutScore = request.getHomeShootOutScore();
         if (request.getAwayScore() != null) this.awayScore = request.getAwayScore();
+        if (request.getAwayShootOutScore() != null) this.awayShootOutScore = request.getAwayShootOutScore();
         if (request.getHomeStats() != null) this.homeStats = request.getHomeStats();
         if (request.getAwayStats() != null) this.awayStats = request.getAwayStats();
-        if (request.getMatchClock() != null) this.matchClock = request.getMatchClock();
         if (request.getAdditionalTime() != null) this.additionalTime = request.getAdditionalTime();
     }
 

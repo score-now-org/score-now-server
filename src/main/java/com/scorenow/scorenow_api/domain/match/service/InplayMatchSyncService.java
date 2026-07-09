@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
@@ -24,7 +21,10 @@ import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.*;
 public class InplayMatchSyncService {
 
     private final BetsApiClient betsApiClient;
-    private final InplayMatchStatusUpdater inplayMatchStatusUpdater;
+
+    private final InplayCandidateStatusUpdateService inplayCandidateStatusUpdateService;
+    private final MatchClockSyncService matchClockSyncService;
+
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
     public void syncInplayMatches(ZonedDateTime standardTime) {
@@ -40,19 +40,24 @@ public class InplayMatchSyncService {
                 .toList();
 
         // 3. 종목별 INPLAY API 호출 및 실제 진행 중인 경기 ID 취합
-        Set<String> inplayMatchIds = apiSportIds.stream()
+        Map<String, BetsEventResponse.Event> inplayEvents = apiSportIds.stream()
                 .map(sportId -> {
                     try {
                         return betsApiClient.getInplayEvents(sportId, null);
                     } catch (Exception e) {
-                        log.error("[종목ID:{}] INPLAY API 호출 실패. 해당 종목은 이번 동기화에서 제외", sportId, e);
+                        log.error("[종목ID:{}] 종목별 INPLAY API 호출 실패.", sportId, e);
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
+                .filter(response -> response.getResults() != null)
                 .flatMap(response -> response.getResults().stream())
-                .map(BetsEventResponse.Event::getId)
-                .collect(Collectors.toSet());
+                .filter(event -> event.getId() != null)
+                .collect(Collectors.toMap(
+                        BetsEventResponse.Event::getId,
+                        event -> event,
+                        (first, second) -> first
+                ));
 
 
         // 4. INPLAY API 응답과 대조하여 대상 분류 (진행 중, 유예기간 초과)
@@ -61,25 +66,40 @@ public class InplayMatchSyncService {
         List<MatchCandidate> toBeFixedMatches = new ArrayList<>();
 
         for (MatchCandidate candidate : candidates) {
-            if (inplayMatchIds.contains(candidate.getApiMatchId())) {
+            if (inplayEvents.containsKey(candidate.getApiMatchId())) {
                 inplayMatches.add(candidate);
                 continue;
             }
 
             LocalDateTime startAt = candidate.getStartAt();
             if (startAt.plusMinutes(MAX_GRACE_PERIOD_MINUTES).isBefore(now.toLocalDateTime())) {
-                log.warn("유예 기간 초과. matchId:{}", candidate.getMatchId());
+                log.warn("🟠유예 기간 초과. matchId:{}", candidate.getMatchId());
                 toBeFixedMatches.add(candidate);
             }
         }
 
         // 5. 분류 결과를 기반으로 DB 반영 및 Redis 캐시 정리
-        if (!inplayMatches.isEmpty() || !toBeFixedMatches.isEmpty()) {
-            inplayMatchStatusUpdater.updateMatchStatuses(inplayMatches, toBeFixedMatches);
+        if (!inplayMatches.isEmpty()) {
+            int updatedCount = inplayCandidateStatusUpdateService.updateInplayStatuses(inplayMatches);
+            log.info("🟢IN_PLAY 상태 업데이트 완료. requested={}, updated={}", inplayMatches.size(), updatedCount);
+
+            for (MatchCandidate inplayMatch : inplayMatches) {
+                BetsEventResponse.Event event = inplayEvents.get(inplayMatch.getApiMatchId());
+                matchClockSyncService.syncMatchClock(
+                        inplayMatch.getMatchId(),
+                        event.toMatchClock(inplayMatch.getStartAt()));
+            }
 
             inplayMatchRedisRepository.removeCandidates(inplayMatches);
+        }
+
+        if (!toBeFixedMatches.isEmpty()) {
+            int updatedCount = inplayCandidateStatusUpdateService.updateToBeFixedStatuses(toBeFixedMatches);
+            log.info("🟢TO_BE_FIXED 상태 업데이트 완료. requested={}, updated={}", toBeFixedMatches.size(), updatedCount);
+
             inplayMatchRedisRepository.removeCandidates(toBeFixedMatches);
         }
+
     }
 
 }

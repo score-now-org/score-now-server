@@ -4,10 +4,7 @@ import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument.AdditionalTime;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FakeMatchDetailRepository implements MatchDetailRepository {
@@ -24,13 +21,13 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     public List<MatchDetailDocument> findAllById(List<Long> matchIds) {
         return matchIds.stream()
                 .map(database::get)
-                .filter(matchDetailDocument -> matchDetailDocument != null)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
     @Override
     public MatchDetailDocument save(MatchDetailDocument matchDetail) {
-        Long id = idGenerator.getAndIncrement();
+        Long id = matchDetail.getId() != null ? matchDetail.getId() : idGenerator.getAndIncrement();
         database.put(id, matchDetail);
         ReflectionTestUtils.setField(matchDetail, "id", id);
         return database.get(id);
@@ -60,13 +57,19 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
         MatchDetailDocument saved = database.get(id);
 
         if (saved == null) {
-            save(matchDetailDocument);
+            database.put(id, matchDetailDocument);
             return;
         }
 
         ReflectionTestUtils.setField(saved, "homeScore", matchDetailDocument.getHomeScore());
+        if (matchDetailDocument.getHomeShootOutScore() != null) {
+            ReflectionTestUtils.setField(saved, "homeShootOutScore", matchDetailDocument.getHomeShootOutScore());
+        }
         ReflectionTestUtils.setField(saved, "homeStats", matchDetailDocument.getHomeStats());
         ReflectionTestUtils.setField(saved, "awayScore", matchDetailDocument.getAwayScore());
+        if (matchDetailDocument.getAwayShootOutScore() != null) {
+            ReflectionTestUtils.setField(saved, "awayShootOutScore", matchDetailDocument.getAwayShootOutScore());
+        }
         ReflectionTestUtils.setField(saved, "awayStats", matchDetailDocument.getAwayStats());
 
         AdditionalTime newAdditionalTime = matchDetailDocument.getAdditionalTime();
@@ -92,6 +95,23 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
                 }
             }
         }
+    }
+
+    @Override
+    public void upsertMatchClock(Long matchId, MatchDetailDocument.MatchClock matchClock) {
+        MatchDetailDocument saved = database.get(matchId);
+
+        if (saved == null) {
+            MatchDetailDocument matchDetailDocument = MatchDetailDocument.builder()
+                    .id(matchId)
+                    .matchClock(matchClock)
+                    .build();
+
+            database.put(matchId, matchDetailDocument);
+            return;
+        }
+
+        ReflectionTestUtils.setField(saved, "matchClock", matchClock);
     }
 
 }

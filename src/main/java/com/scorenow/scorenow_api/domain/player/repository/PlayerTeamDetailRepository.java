@@ -34,41 +34,41 @@ public interface PlayerTeamDetailRepository extends JpaRepository<PlayerTeamDeta
 	);
 
 	@Query(value = """
-		   select ptd
-		   from PlayerTeamDetail ptd
-		   join fetch ptd.player p
-		   join fetch ptd.team t
-		   where ptd.squadOn = true
-		     and (:playerId is null or p.id = :playerId)
-		     and (:playerName is null
-		          or p.kName like concat('%', :playerName, '%')
-		          or lower(p.eName) like lower(concat('%', :playerName, '%')))
-		     and (:teamId is null or t.id = :teamId)
-		     and (:teamName is null
-		          or t.kName like concat('%', :teamName, '%')
-		          or lower(t.eName) like lower(concat('%', :teamName, '%')))
-		   order by ptd.id desc
+			select ptd
+			from PlayerTeamDetail ptd
+			join fetch ptd.player p
+			join fetch ptd.team t
+			where ptd.squadOn = true
+			  and (:playerId is null or p.id = :playerId)
+			  and (:playerName is null
+			       or p.kName like concat('%', :playerName, '%')
+			       or lower(p.eName) like lower(concat('%', :playerName, '%')))
+			  and (:teamId is null or t.id = :teamId)
+			  and (:teamName is null
+			       or t.kName like concat('%', :teamName, '%')
+			       or lower(t.eName) like lower(concat('%', :teamName, '%')))
+			order by ptd.id desc
 		""",
-		countQuery = """
-			   select count(ptd)
-			   from PlayerTeamDetail ptd
-			   join ptd.player p
-			   join ptd.team t
-			   where ptd.squadOn = true
-			     and (:playerId is null or p.id = :playerId)
-			     and (:playerName is null
-			          or p.kName like concat('%', :playerName, '%')
-			          or lower(p.eName) like lower(concat('%', :playerName, '%')))
-			     and (:teamId is null or t.id = :teamId)
-			     and (:teamName is null
-			          or t.kName like concat('%', :teamName, '%')
-			          or lower(t.eName) like lower(concat('%', :teamName, '%')))
-			""")
+			countQuery = """
+			select count(ptd)
+			from PlayerTeamDetail ptd
+			join ptd.player p
+			join ptd.team t
+			where ptd.squadOn = true
+			  and (:playerId is null or p.id = :playerId)
+			  and (:playerName is null
+			       or p.kName like concat('%', :playerName, '%')
+			       or lower(p.eName) like lower(concat('%', :playerName, '%')))
+			  and (:teamId is null or t.id = :teamId)
+			  and (:teamName is null
+			       or t.kName like concat('%', :teamName, '%')
+			       or lower(t.eName) like lower(concat('%', :teamName, '%')))
+		""")
 	Page<PlayerTeamDetail> searchPlayers(
-		@Param("playerId") Long playerId,
-		@Param("playerName") String playerName,
-		@Param("teamId") Long teamId,
-		@Param("teamName") String teamName,
-		Pageable pageable
+			@Param("playerId") Long playerId,
+			@Param("playerName") String playerName,
+			@Param("teamId") Long teamId,
+			@Param("teamName") String teamName,
+			Pageable pageable
 	);
 }

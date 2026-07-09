@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 
 import com.scorenow.scorenow_api.domain.match.document.MatchCommentaryDocument;
+import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,8 @@ public class MatchCommentaryService {
     private final MatchRepository matchRepository;
 
     private final FileStorage fileStorage;
+
+    private final MatchRealtimeEventPublisher eventPublisher;
 
     /**
      * 중계 멘트 저장 <br>
@@ -52,6 +56,9 @@ public class MatchCommentaryService {
 
         // 3. MatchDetailDocument 가 있으면 현재 중계 멘트만 갱신하고, 없으면 현재 중계 멘트만 가진 문서를 생성한다.
         matchDetailRepository.upsertCurrentCommentary(matchId, content, savedCommentary.getId());
+
+        // 4. 중계 멘트 변경 이벤트 발행
+        eventPublisher.publishCommentaryChanged(matchId, savedCommentary.getId(), content, imageUrl);
 
         return savedCommentary.getId();
     }

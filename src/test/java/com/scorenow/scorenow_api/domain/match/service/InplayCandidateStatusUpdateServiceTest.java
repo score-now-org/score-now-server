@@ -21,9 +21,9 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-class InplayMatchStatusUpdaterTest {
+class InplayCandidateStatusUpdateServiceTest {
     @InjectMocks
-    private InplayMatchStatusUpdater service;
+    private InplayCandidateStatusUpdateService service;
 
     @Mock
     private MatchRepository matchRepository;
@@ -37,7 +37,8 @@ class InplayMatchStatusUpdaterTest {
         List<MatchCandidate> inplayCandidates = List.of(inplayCandidate1, inplayCandidate2);
         List<MatchCandidate> toBeFixedCandidates = List.of(toBeFixedCandidate);
 
-        service.updateMatchStatuses(inplayCandidates, toBeFixedCandidates);
+        service.updateInplayStatuses(inplayCandidates);
+        service.updateToBeFixedStatuses(toBeFixedCandidates);
 
         List<Long> inplayCandidateIds = inplayCandidates.stream().map(MatchCandidate::getMatchId).toList();
         List<Long> toBeFixedCandidateIds = toBeFixedCandidates.stream().map(MatchCandidate::getMatchId).toList();
@@ -52,7 +53,8 @@ class InplayMatchStatusUpdaterTest {
     void 진행_중인_경기만_있고_유예기간_초과한_경기는_없는_경우_진행_중인_경기에_대해서만_상태_업데이트를_처리한다() {
         MatchCandidate inplayCandidate = new MatchCandidate(1L, 1L, BETS, "100", "SOCCER", LocalDateTime.now());
 
-        service.updateMatchStatuses(List.of(inplayCandidate), Collections.emptyList());
+        service.updateInplayStatuses(List.of(inplayCandidate));
+        service.updateToBeFixedStatuses(Collections.emptyList());
 
         // MatchRepository.updateStatusBulk(any(), IN_PLAY) 1회 호출 검증
         then(matchRepository).should(times(1)).updateStatusBulk(any(), eq(IN_PLAY));
