@@ -151,6 +151,14 @@ public class AdminMatchService {
             }
 
             match.updateStatus(newStatus);
+
+            if (newStatus == MatchStatus.ENDED) {
+                eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, match.getResultByScore());
+                return;
+            }
+
+            eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
+
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
         }
