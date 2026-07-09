@@ -10,7 +10,7 @@ import java.util.Objects;
 @Component
 public class MatchEventResolver {
 
-    private static final String DELIMITER = " - ";
+    private static final String DELIMITER = "-";
     private static final String SCORE = "score";
 
     /**
@@ -26,16 +26,18 @@ public class MatchEventResolver {
             return 0;
         }
 
-        String normalizedTeamName = normalize(teamName);
-
-        return events.stream()
-                .map(this::normalize)   // 양끝 공백 자르고 + 소문자로 만든다.
-                .filter(Objects::nonNull)
-                .map(event -> event.split(DELIMITER))   // 각 이벤트 텍스트를 구분자로 나눈다.
-                .filter(split -> split.length >= 2) // 구분자로 나눈 개수 검증을 한다.
-                .filter(split -> normalizedTeamName.equals(split[0])) // 구분자로 나눈 조각들 중 첫번째 조각은 팀명과 동일해야 한다.
-                .filter(split -> split[1].contains(SCORE))  // 구분자로 나눈 조각들 중 두번째 조각에 SCORE 가 포함되어 있으면 득점
-                .toList().size();
+        return (int) events.stream()
+                .filter(StringUtils::hasText)
+                .map(eventText -> eventText.split(DELIMITER))
+                .filter(split -> split.length >= 2)
+                .filter(split -> {
+                    String normalizedTeamName = normalize(teamName);
+                    return normalizedTeamName != null && normalizedTeamName.equals(normalize(split[0]));
+                })
+                .filter(split -> {
+                    String detail = normalize(split[1]);
+                    return detail != null && detail.contains(SCORE);
+                }).count();
     }
 
     private String normalize(String value) {
