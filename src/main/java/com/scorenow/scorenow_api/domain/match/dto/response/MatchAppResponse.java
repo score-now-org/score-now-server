@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -140,7 +141,7 @@ public class MatchAppResponse {
         @Schema(description = "앱 표시용 경기 시간 문구", example = "경기중: 전반 12 / 경기전: 20:30 / 경기종료: 홈팀 패")
         private String displayText;
 
-        @Schema(description = "경기 예정 시작 시간.", example = "2026-06-05T20:00:00")
+        @Schema(description = "경기 예정 시작 시간 (KST)", example = "2026-06-05T20:00:00")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime startAt;
 
@@ -170,6 +171,9 @@ public class MatchAppResponse {
 
         @Schema(description = "승리팀 이름. 무승부나 결과 미확정이면 null", example = "대한민국")
         private String winnerTeamName;
+
+        @Schema(description = "경과 시간 업데이트 기준 시간 (UTC)", example = "")
+        private Instant providerUpdatedAt;
 
         public static MatchTimeInfoResponse from(
                 Match match,
@@ -215,6 +219,7 @@ public class MatchAppResponse {
                     .periodCode(period.name())
                     .periodName(period.getDescription())
                     .running(matchClock.getRunning())
+                    .providerUpdatedAt(matchClock.getProviderUpdatedAt())
                     .build();
         }
 
