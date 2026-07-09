@@ -41,17 +41,21 @@ public enum ErrorCode {
 
 	// User
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
-    NICKNAME_DUPLICATED(HttpStatus.CONFLICT, "U002", "이미 사용중인 닉네임입니다."),
-	REJOIN_RESTRICTED(HttpStatus.CONFLICT,"U003","재가입이 제한된 계정입니다."),
-	NICKNAME_RESTRICTED(HttpStatus.CONFLICT,"U004","60일 이내 닉네임 재설정 불가합니다."),
-
+	NICKNAME_DUPLICATED(HttpStatus.CONFLICT, "U002", "이미 사용중인 닉네임입니다."),
+	REJOIN_RESTRICTED(HttpStatus.CONFLICT, "U003", "재가입이 제한된 계정입니다."),
+	NICKNAME_RESTRICTED(HttpStatus.CONFLICT, "U004", "60일 이내 닉네임 재설정 불가합니다."),
 
 	// Token
 	TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "A001", "만료된 토큰입니다."),
-    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다."),
-    TOKEN_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "A003", "RefreshToken이 아닙니다.");
+	TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다."),
+	TOKEN_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "A003", "RefreshToken이 아닙니다."),
+	ACCESS_TOKEN_REQUIRED(HttpStatus.UNAUTHORIZED, "A004", "AccessToken이 필요합니다."),
 
-
+	// Chat
+	CHAT_SEND_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CH001", "채팅 전송에는 로그인이 필요합니다."),
+	CHAT_MESSAGE_INVALID(HttpStatus.BAD_REQUEST, "CH002", "채팅 메시지가 올바르지 않습니다."),
+	CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CH003", "채팅방을 찾을 수 없습니다."),
+	CHAT_MESSAGE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "CH004", "채팅 메시지는 1000자를 초과할 수 없습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;
