@@ -135,39 +135,32 @@ public class MatchDetailService {
             Integer newHomeShootOutScore,
             Integer newAwayShootOutScore) {
 
-        // 정규시간 점수
+        // 정규시간 점수 변경
         boolean scoreChanged = false;
-        if (newHomeScore != null && newAwayScore != null) {
-            Integer beforeHomeScore = match.getHomeScore();
-            Integer beforeAwayScore = match.getAwayScore();
 
-            scoreChanged = !newHomeScore.equals(beforeHomeScore) || !newAwayScore.equals(beforeAwayScore);
-
-            // 점수가 변경되었다면 업데이트
-            if (scoreChanged) {
-                match.updateHomeScore(newHomeScore);
-                match.updateAwayScore(newAwayScore);
-            }
+        if (newHomeScore != null && !newHomeScore.equals(match.getHomeScore())) {
+            match.updateHomeScore(newHomeScore);
+            scoreChanged = true;
         }
 
+        if (newAwayScore != null && !newAwayScore.equals(match.getAwayScore())) {
+            match.updateAwayScore(newAwayScore);
+            scoreChanged = true;
+        }
 
-        // 승부차기 점수
+        // 승부차기 점수 변경
         boolean shootOutScoreChanged = false;
-        if (newHomeShootOutScore != null && newAwayShootOutScore != null) {
-            Integer beforeHomeShootOutScore = match.getHomeShootOutScore();
-            Integer beforeAwayShootOutScore = match.getAwayShootOutScore();
 
-            shootOutScoreChanged = !newHomeShootOutScore.equals(beforeHomeShootOutScore) ||
-                    !newAwayShootOutScore.equals(beforeAwayShootOutScore);
-
-            // 승부차기 점수가 변경되었다면 업데이트
-            if (shootOutScoreChanged) {
-                match.updateHomeShootOutScore(newHomeShootOutScore);
-                match.updateAwayShootOutScore(newAwayShootOutScore);
-            }
+        if (newHomeShootOutScore != null && !newHomeShootOutScore.equals(match.getHomeShootOutScore())) {
+            match.updateHomeShootOutScore(newHomeShootOutScore);
+            shootOutScoreChanged = true;
         }
 
-        // 점수 변경 감지 시 점수 변경 이벤트 발행
+        if (newAwayShootOutScore != null && !newAwayShootOutScore.equals(match.getAwayShootOutScore())) {
+            match.updateAwayShootOutScore(newAwayShootOutScore);
+            shootOutScoreChanged = true;
+        }
+
         if (scoreChanged || shootOutScoreChanged) {
             eventPublisher.publishScoreChanged(
                     match.getId(),
