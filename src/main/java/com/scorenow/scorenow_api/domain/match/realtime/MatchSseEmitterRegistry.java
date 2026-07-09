@@ -36,10 +36,16 @@ public class MatchSseEmitterRegistry {
         matchIdsByEmitter.put(emitter, uniqueMatchIds);
 
         // 2. MatchId 를 구독하는 Emitter 추가
-        for (Long uniqueMatchId : uniqueMatchIds) {
+        for (Long matchId : uniqueMatchIds) {
             emittersByMatchId
-                    .computeIfAbsent(uniqueMatchId, key -> ConcurrentHashMap.newKeySet())
-                    .add(emitter);
+                    .compute(matchId, (key, emitters) -> {
+                        if (emitters == null) {
+                            emitters = ConcurrentHashMap.newKeySet();
+                        }
+
+                        emitters.add(emitter);
+                        return emitters;
+                    });
         }
 
         emitter.onCompletion(() -> {
@@ -108,20 +114,10 @@ public class MatchSseEmitterRegistry {
 
         // 2. 각 경기들을 구독하고 있는 Emitter 들 중에서 방금 제거된 Emitter 를 찾아서 제거한다.
         for (Long matchId : matchIds) {
-            Set<SseEmitter> emitters = emittersByMatchId.get(matchId);
-
-            // 경기를 구독하고 있는 Emitter 가 없는 경우 다음 경기를 확인한다.
-            if (emitters == null) {
-                continue;
-            }
-
-            // Emitter 를 제거한다.
-            emitters.remove(emitter);
-
-            // Emitter 제거 후, 더 이상 해당 경기를 구독하고 있는 Emitter 가 없는 경우 Map 에서 지워준다.
-            if (emitters.isEmpty()) {
-                emittersByMatchId.remove(matchId);
-            }
+            emittersByMatchId.computeIfPresent(matchId, (key, emitters) -> {
+                emitters.remove(emitter);
+                return emitters.isEmpty() ? null : emitters;
+            });
         }
 
         return true;
