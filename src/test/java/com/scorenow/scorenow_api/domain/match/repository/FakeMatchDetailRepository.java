@@ -4,10 +4,7 @@ import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument.AdditionalTime;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FakeMatchDetailRepository implements MatchDetailRepository {
@@ -24,7 +21,7 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     public List<MatchDetailDocument> findAllById(List<Long> matchIds) {
         return matchIds.stream()
                 .map(database::get)
-                .filter(matchDetailDocument -> matchDetailDocument != null)
+                .filter(Objects::nonNull)
                 .toList();
     }
 

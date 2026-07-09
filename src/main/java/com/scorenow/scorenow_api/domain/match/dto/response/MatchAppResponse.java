@@ -17,10 +17,10 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.scorenow.scorenow_api.domain.match.entity.MatchResult.*;
+import static com.scorenow.scorenow_api.domain.match.entity.MatchResult.AWAY_WIN;
+import static com.scorenow.scorenow_api.domain.match.entity.MatchResult.HOME_WIN;
 
 @Getter
 @Builder
