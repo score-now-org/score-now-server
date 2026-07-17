@@ -1,0 +1,58 @@
+package com.scorenow.scorenow_api.domain.league.controller;
+
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
+import com.scorenow.scorenow_api.domain.league.service.AdminLeagueSeasonStandingsService;
+import com.scorenow.scorenow_api.global.dto.ApiResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/api/v1/admin/league-season-standings")
+public class AdminLeagueSeasonStandingsController implements AdminLeagueSeasonStandingsApiDocs {
+
+    private final AdminLeagueSeasonStandingsService adminLeagueSeasonStandingsService;
+
+    @PostMapping
+    public ApiResponse<Void> createLeagueSeasonStandings(@RequestBody @Valid LeagueSeasonStandingsCreateRequest request) {
+        adminLeagueSeasonStandingsService.createLeagueSeasonStandings(request);
+        return ApiResponse.success();
+    }
+
+    @GetMapping
+    public ApiResponse<Page<AdminLeagueSeasonStandingsResponse>> searchLeagueSeasonStandings(
+            @ModelAttribute LeagueSeasonStandingsSearchCondition condition,
+            Pageable pageable) {
+
+        return ApiResponse.success(
+                adminLeagueSeasonStandingsService.searchLeagueSeasonStandings(condition, pageable)
+        );
+    }
+
+    @DeleteMapping("/{leagueSeasonId}")
+    public ApiResponse<Void> deleteLeagueSeasonStandings(@PathVariable Long leagueSeasonId) {
+        adminLeagueSeasonStandingsService.deleteLeagueSeasonStandings(leagueSeasonId);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/{leagueSeasonId}/image")
+    public ApiResponse<Void> uploadLeagueSeasonStandingsImage(
+            @PathVariable Long leagueSeasonId,
+            @RequestPart("image") MultipartFile image) {
+
+        adminLeagueSeasonStandingsService.uploadLeagueSeasonStandingsImage(leagueSeasonId, image);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/{leagueSeasonId}/sync")
+    public ApiResponse<Void> syncLeagueSeasonStandingsData(@PathVariable Long leagueSeasonId) {
+        adminLeagueSeasonStandingsService.syncLeagueSeasonStandingsData(leagueSeasonId);
+        return ApiResponse.success();
+    }
+}
