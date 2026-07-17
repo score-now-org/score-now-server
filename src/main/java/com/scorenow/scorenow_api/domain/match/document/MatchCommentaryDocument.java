@@ -1,13 +1,15 @@
 package com.scorenow.scorenow_api.domain.match.document;
 
 import com.scorenow.scorenow_api.global.entity.BaseDocument;
-import jakarta.persistence.Id;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Getter @Builder
+@Getter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Document(collection = "match_commentaries")
 public class MatchCommentaryDocument extends BaseDocument {
     @Id
