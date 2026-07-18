@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.controller;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,7 +25,19 @@ public interface AdminLeagueSeasonStandingsApiDocs {
             @ParameterObject LeagueSeasonStandingsSearchCondition condition,
             @ParameterObject Pageable pageable);
 
-    @Operation(summary = "리그 시즌 순위 관리 삭제", description = "리그 시즌 ID 기준으로 순위 관리 설정을 삭제합니다. 외부 데이터 타입이면 저장된 순위 문서도 함께 삭제합니다.")
+    @Operation(
+            summary = "리그 시즌 순위 관리 타입 수정",
+            description = "리그 시즌 순위 관리 타입을 IMAGE 또는 EXTERNAL_DATA로 변경합니다. 기존 이미지 URL과 외부 순위 문서는 삭제하지 않습니다."
+    )
+    ApiResponse<Void> updateLeagueSeasonStandingsType(
+            @Parameter(description = "수정할 순위 관리 설정의 리그 시즌 ID", required = true, example = "1")
+            Long leagueSeasonId,
+
+            @Parameter(description = "변경할 리그 시즌 순위 관리 타입", required = true)
+            LeagueSeasonStandingsTypeUpdateRequest request
+    );
+
+    @Operation(summary = "리그 시즌 순위 관리 삭제", description = "리그 시즌 ID 기준으로 순위 관리 설정을 삭제합니다. 타입과 무관하게 연결된 외부 순위 문서도 함께 삭제합니다.")
     ApiResponse<Void> deleteLeagueSeasonStandings(
             @Parameter(description = "삭제할 순위 관리 설정의 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId);
 

@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.service;
 
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueSeason;
@@ -159,6 +160,102 @@ class AdminLeagueSeasonStandingsServiceTest {
     }
 
     @Test
+    void 이미지_타입을_외부_데이터_타입으로_변경한다() {
+        LeagueSeason leagueSeason = season(10L, betsLeague(1L));
+        LeagueSeasonStandings standings = standings(10L, LeagueSeasonStandingsType.IMAGE, leagueSeason);
+        standings.updateImageUrl("https://cdn.example.com/standing.png");
+
+        given(leagueSeasonStandingsRepository.findByLeagueSeasonIdWithSeasonAndLeague(10L))
+                .willReturn(Optional.of(standings));
+        given(leagueExternalMappingRepository.findByDataOriginAndInternalLeagueId(DataOrigin.BETS, 1L))
+                .willReturn(Optional.of(LeagueExternalMapping.of(DataOrigin.BETS, "94", 1L, true)));
+
+        service.updateLeagueSeasonStandingsType(
+                10L,
+                updateTypeRequest(LeagueSeasonStandingsType.EXTERNAL_DATA)
+        );
+
+        assertThat(standings.getStandingsType()).isEqualTo(LeagueSeasonStandingsType.EXTERNAL_DATA);
+        assertThat(standings.getImageUrl()).isEqualTo("https://cdn.example.com/standing.png");
+        then(leagueSeasonStandingsMongoRepository).should(never()).deleteByLeagueSeasonId(any());
+    }
+
+    @Test
+    void 외부_데이터_타입을_이미지_타입으로_변경한다() {
+        LeagueSeason leagueSeason = season(10L, betsLeague(1L));
+        LeagueSeasonStandings standings = standings(10L, LeagueSeasonStandingsType.EXTERNAL_DATA, leagueSeason);
+
+        given(leagueSeasonStandingsRepository.findByLeagueSeasonIdWithSeasonAndLeague(10L))
+                .willReturn(Optional.of(standings));
+
+        service.updateLeagueSeasonStandingsType(
+                10L,
+                updateTypeRequest(LeagueSeasonStandingsType.IMAGE)
+        );
+
+        assertThat(standings.getStandingsType()).isEqualTo(LeagueSeasonStandingsType.IMAGE);
+        then(leagueExternalMappingRepository).should(never()).findByDataOriginAndInternalLeagueId(any(), any());
+        then(leagueSeasonStandingsMongoRepository).should(never()).deleteByLeagueSeasonId(any());
+    }
+
+    @Test
+    void 동일한_타입으로_변경하면_아무것도_하지_않는다() {
+        LeagueSeasonStandings standings = standings(10L, LeagueSeasonStandingsType.IMAGE);
+        given(leagueSeasonStandingsRepository.findByLeagueSeasonIdWithSeasonAndLeague(10L))
+                .willReturn(Optional.of(standings));
+
+        service.updateLeagueSeasonStandingsType(
+                10L,
+                updateTypeRequest(LeagueSeasonStandingsType.IMAGE)
+        );
+
+        assertThat(standings.getStandingsType()).isEqualTo(LeagueSeasonStandingsType.IMAGE);
+        then(leagueExternalMappingRepository).should(never()).findByDataOriginAndInternalLeagueId(any(), any());
+        then(leagueSeasonStandingsMongoRepository).should(never()).deleteByLeagueSeasonId(any());
+    }
+
+    @Test
+    void 수동_관리_리그는_외부_데이터_타입으로_변경할_수_없다() {
+        LeagueSeason leagueSeason = season(10L, manualLeague(1L));
+        LeagueSeasonStandings standings = standings(10L, LeagueSeasonStandingsType.IMAGE, leagueSeason);
+
+        given(leagueSeasonStandingsRepository.findByLeagueSeasonIdWithSeasonAndLeague(10L))
+                .willReturn(Optional.of(standings));
+
+        assertThatThrownBy(() -> service.updateLeagueSeasonStandingsType(
+                10L,
+                updateTypeRequest(LeagueSeasonStandingsType.EXTERNAL_DATA)
+        ))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
+
+        assertThat(standings.getStandingsType()).isEqualTo(LeagueSeasonStandingsType.IMAGE);
+        then(leagueExternalMappingRepository).should(never()).findByDataOriginAndInternalLeagueId(any(), any());
+    }
+
+    @Test
+    void 외부_데이터_타입으로_변경할때_외부_매핑이_없으면_실패한다() {
+        LeagueSeason leagueSeason = season(10L, betsLeague(1L));
+        LeagueSeasonStandings standings = standings(10L, LeagueSeasonStandingsType.IMAGE, leagueSeason);
+
+        given(leagueSeasonStandingsRepository.findByLeagueSeasonIdWithSeasonAndLeague(10L))
+                .willReturn(Optional.of(standings));
+        given(leagueExternalMappingRepository.findByDataOriginAndInternalLeagueId(DataOrigin.BETS, 1L))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateLeagueSeasonStandingsType(
+                10L,
+                updateTypeRequest(LeagueSeasonStandingsType.EXTERNAL_DATA)
+        ))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
+
+        assertThat(standings.getStandingsType()).isEqualTo(LeagueSeasonStandingsType.IMAGE);
+    }
+
+    @Test
     void 외부_데이터_타입이면_수동_동기화를_호출한다() {
         given(leagueSeasonStandingsRepository.findByLeagueSeasonId(10L))
                 .willReturn(Optional.of(standings(10L, LeagueSeasonStandingsType.EXTERNAL_DATA)));
@@ -193,13 +290,13 @@ class AdminLeagueSeasonStandingsServiceTest {
     }
 
     @Test
-    void 이미지_타입_순위_관리를_삭제하면_Mongo_문서는_삭제하지_않는다() {
+    void 이미지_타입_순위_관리를_삭제해도_Mongo_문서를_삭제한다() {
         LeagueSeasonStandings standings = standings(10L, LeagueSeasonStandingsType.IMAGE);
         given(leagueSeasonStandingsRepository.findByLeagueSeasonId(10L)).willReturn(Optional.of(standings));
 
         service.deleteLeagueSeasonStandings(10L);
 
-        then(leagueSeasonStandingsMongoRepository).should(never()).deleteByLeagueSeasonId(any());
+        then(leagueSeasonStandingsMongoRepository).should().deleteByLeagueSeasonId(10L);
         then(leagueSeasonStandingsRepository).should().delete(standings);
     }
 
@@ -211,6 +308,12 @@ class AdminLeagueSeasonStandingsServiceTest {
         given(request.getLeagueSeasonId()).willReturn(leagueSeasonId);
         given(request.getStandingsType()).willReturn(standingsType);
         return request;
+    }
+
+    private LeagueSeasonStandingsTypeUpdateRequest updateTypeRequest(LeagueSeasonStandingsType standingsType) {
+        return LeagueSeasonStandingsTypeUpdateRequest.builder()
+                .standingsType(standingsType)
+                .build();
     }
 
     private LeagueSeason season(Long id, League league) {
@@ -230,6 +333,18 @@ class AdminLeagueSeasonStandingsServiceTest {
         return LeagueSeasonStandings.builder()
                 .leagueSeasonId(leagueSeasonId)
                 .standingsType(type)
+                .build();
+    }
+
+    private LeagueSeasonStandings standings(
+            Long leagueSeasonId,
+            LeagueSeasonStandingsType type,
+            LeagueSeason leagueSeason
+    ) {
+        return LeagueSeasonStandings.builder()
+                .leagueSeasonId(leagueSeasonId)
+                .standingsType(type)
+                .leagueSeason(leagueSeason)
                 .build();
     }
 

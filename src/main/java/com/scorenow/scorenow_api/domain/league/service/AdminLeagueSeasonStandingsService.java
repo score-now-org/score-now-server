@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.service;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueSeason;
@@ -57,6 +58,8 @@ public class AdminLeagueSeasonStandingsService {
             throw new BusinessException(ErrorCode.LEAGUE_ALREADY_EXISTS, "이미 순위 관리 중인 시즌입니다.");
         }
 
+        LeagueSeasonStandings.validateStandingsTypeAllowed(leagueSeason, standingsType);
+
         // 순위 정보를 외부 데이터에 기반하는 경우, 사전에 리그 외부 매핑 정보가 있는지 확인
         if (standingsType == LeagueSeasonStandingsType.EXTERNAL_DATA) {
             League league = leagueSeason.getLeague();
@@ -91,6 +94,36 @@ public class AdminLeagueSeasonStandingsService {
     }
 
     /**
+     * 리그 순위 관리 방식 타입 변경
+     */
+    @Transactional
+    public void updateLeagueSeasonStandingsType(Long leagueSeasonId, LeagueSeasonStandingsTypeUpdateRequest updateRequest) {
+
+        LeagueSeasonStandingsType newType = updateRequest.getStandingsType();
+
+        LeagueSeasonStandings seasonStanding = leagueSeasonStandingsRepository
+                .findByLeagueSeasonIdWithSeasonAndLeague(leagueSeasonId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "리그 시즌 순위 정보를 찾을 수 없습니다."));
+
+        // 변화가 없는 경우 종료
+        if (seasonStanding.getStandingsType() == newType) {
+            return;
+        }
+
+        LeagueSeason leagueSeason = seasonStanding.getLeagueSeason();
+        LeagueSeasonStandings.validateStandingsTypeAllowed(leagueSeason, newType);
+        League league = leagueSeason.getLeague();
+
+        // 외부 데이터를 사용하게끔 변경한다면, League External Mapping 에 사전 등록되어 있어야 한다.
+        if (newType == LeagueSeasonStandingsType.EXTERNAL_DATA) {
+            leagueExternalMappingRepository.findByDataOriginAndInternalLeagueId(league.getDataOrigin(), league.getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_PARAMETER, "외부 API 리그 매핑이 필요합니다."));
+        }
+
+        seasonStanding.updateStandingsType(leagueSeason, newType);
+    }
+
+    /**
      * 리그 순위 관리 방식 삭제
      */
     @Transactional
@@ -101,10 +134,7 @@ public class AdminLeagueSeasonStandingsService {
                 .findByLeagueSeasonId(leagueSeasonId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "리그 시즌 순위 정보를 찾을 수 없습니다."));
 
-        if (seasonStanding.getStandingsType() == LeagueSeasonStandingsType.EXTERNAL_DATA) {
-            leagueSeasonStandingsMongoRepository.deleteByLeagueSeasonId(leagueSeasonId);
-        }
-
+        leagueSeasonStandingsMongoRepository.deleteByLeagueSeasonId(leagueSeasonId);
         leagueSeasonStandingsRepository.delete(seasonStanding);
     }
 

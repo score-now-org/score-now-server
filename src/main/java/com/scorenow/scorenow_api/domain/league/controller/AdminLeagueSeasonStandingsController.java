@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.controller;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
 import com.scorenow.scorenow_api.domain.league.service.AdminLeagueSeasonStandingsService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -33,6 +34,15 @@ public class AdminLeagueSeasonStandingsController implements AdminLeagueSeasonSt
         return ApiResponse.success(
                 adminLeagueSeasonStandingsService.searchLeagueSeasonStandings(condition, pageable)
         );
+    }
+
+    @PatchMapping("/{leagueSeasonId}/type")
+    public ApiResponse<Void> updateLeagueSeasonStandingsType(
+            @PathVariable Long leagueSeasonId,
+            @RequestBody @Valid LeagueSeasonStandingsTypeUpdateRequest request) {
+
+        adminLeagueSeasonStandingsService.updateLeagueSeasonStandingsType(leagueSeasonId, request);
+        return ApiResponse.success();
     }
 
     @DeleteMapping("/{leagueSeasonId}")
