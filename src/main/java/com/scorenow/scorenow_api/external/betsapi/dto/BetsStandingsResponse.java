@@ -1,6 +1,8 @@
 package com.scorenow.scorenow_api.external.betsapi.dto;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -23,6 +25,16 @@ public class BetsStandingsResponse {
 
     public boolean hasResults() {
         return isSuccess() && results != null && !results.isEmpty();
+    }
+
+    public Optional<Result> firstResult() {
+        if (results == null || results.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return results.stream()
+                .filter(Objects::nonNull)
+                .findFirst();
     }
 
     @Getter
