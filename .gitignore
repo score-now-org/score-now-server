@@ -42,3 +42,5 @@ gcp-key.json
 ### Local config ###
 src/main/resources/application.yml
 .env
+/docs/
+/logs/
