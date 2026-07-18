@@ -17,7 +17,7 @@ public class PlayerSyncScheduler {
 	private final JobLauncher jobLauncher;
 	private final Job playerSyncJob;
 
-	@Scheduled(initialDelay = 10000, fixedRate = 1000000)
+	@Scheduled(cron = "0 0 16 * * *", zone = "Asia/Seoul")
 	public void runPlayerSyncJob() throws Exception {
 		JobParameters jobParameters = new JobParametersBuilder()
 			.addString("runType", "SCHEDULED")
