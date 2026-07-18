@@ -46,7 +46,10 @@ public class LeagueSeasonStandingsSyncService {
             return;
         }
 
-        LeagueSeasonStandingsDataDocument document = mapper.toDocument(response.getResults().get(0), syncTarget);
+        BetsStandingsResponse.Result result = response.firstResult()
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_PARAMETER, "리그 순위 API 응답에 유효한 결과가 없습니다."));
+
+        LeagueSeasonStandingsDataDocument document = mapper.toDocument(result, syncTarget);
 
         Query query = new Query(Criteria.where("leagueSeasonId").is(document.getLeagueSeasonId()));
 

@@ -4,11 +4,15 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDataDocument;
 import com.scorenow.scorenow_api.domain.league.dto.LeagueSeasonStandingsSyncTarget;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LeagueSeasonStandingsMapperTest {
 
@@ -94,6 +98,45 @@ class LeagueSeasonStandingsMapperTest {
     }
 
     @Test
+    void tables_내부_null_요소는_무시하고_첫번째_유효한_table을_변환한다() {
+        BetsStandingsResponse.Table table = table(List.of(row(
+                1,
+                0,
+                10,
+                5,
+                3,
+                30,
+                12,
+                35,
+                null,
+                team("101", "Liverpool", "liverpool.png", "gb")
+        )));
+        BetsStandingsResponse.Overall overall = new BetsStandingsResponse.Overall();
+        overall.setTables(Arrays.asList(null, table));
+
+        LeagueSeasonStandingsDataDocument document = mapper.toDocument(
+                result(season("2025/26", 1L, 2L), overall),
+                syncTarget()
+        );
+
+        assertThat(document.getStandingsTable().getRows()).hasSize(1);
+        assertThat(document.getStandingsTable().getRows().get(0).getTeam().getApiTeamId()).isEqualTo("101");
+    }
+
+    @Test
+    void tables_내부에_null만_있으면_standingsTable은_null이다() {
+        BetsStandingsResponse.Overall overall = new BetsStandingsResponse.Overall();
+        overall.setTables(Arrays.asList(null, null));
+
+        LeagueSeasonStandingsDataDocument document = mapper.toDocument(
+                result(season("2025/26", 1L, 2L), overall),
+                syncTarget()
+        );
+
+        assertThat(document.getStandingsTable()).isNull();
+    }
+
+    @Test
     void rows가_null이면_빈_리스트로_변환한다() {
         LeagueSeasonStandingsDataDocument document = mapper.toDocument(
                 result(season("2025/26", 1L, 2L), overall(table(null))),
@@ -101,6 +144,30 @@ class LeagueSeasonStandingsMapperTest {
         );
 
         assertThat(document.getStandingsTable().getRows()).isEmpty();
+    }
+
+    @Test
+    void rows_내부_null_요소는_무시한다() {
+        BetsStandingsResponse.Row row = row(
+                1,
+                0,
+                10,
+                5,
+                3,
+                30,
+                12,
+                35,
+                null,
+                team("101", "Liverpool", "liverpool.png", "gb")
+        );
+
+        LeagueSeasonStandingsDataDocument document = mapper.toDocument(
+                result(season("2025/26", 1L, 2L), overall(table(Arrays.asList(null, row)))),
+                syncTarget()
+        );
+
+        assertThat(document.getStandingsTable().getRows()).hasSize(1);
+        assertThat(document.getStandingsTable().getRows().get(0).getTeam().getApiTeamId()).isEqualTo("101");
     }
 
     @Test
@@ -133,6 +200,14 @@ class LeagueSeasonStandingsMapperTest {
         assertThat(standingsRow.getGoalDifference()).isZero();
         assertThat(standingsRow.getPromotion()).isNull();
         assertThat(standingsRow.getTeam()).isNull();
+    }
+
+    @Test
+    void result가_null이면_변환에_실패한다() {
+        assertThatThrownBy(() -> mapper.toDocument(null, syncTarget()))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
     }
 
     private LeagueSeasonStandingsSyncTarget syncTarget() {

@@ -3,15 +3,22 @@ package com.scorenow.scorenow_api.domain.league.mapper;
 import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDataDocument;
 import com.scorenow.scorenow_api.domain.league.dto.LeagueSeasonStandingsSyncTarget;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class LeagueSeasonStandingsMapper {
     public LeagueSeasonStandingsDataDocument toDocument(
             BetsStandingsResponse.Result result,
             LeagueSeasonStandingsSyncTarget syncTarget) {
+
+        if (result == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "리그 순위 결과는 필수입니다.");
+        }
 
         BetsStandingsResponse.Season externalSeason = result.getSeason();
 
@@ -36,7 +43,14 @@ public class LeagueSeasonStandingsMapper {
             return null;
         }
 
-        BetsStandingsResponse.Table table = overall.getTables().get(0);
+        BetsStandingsResponse.Table table = overall.getTables().stream()
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+
+        if (table == null) {
+            return null;
+        }
 
         return LeagueSeasonStandingsDataDocument.StandingsTable.builder()
                 .name(table.getName())
@@ -53,6 +67,7 @@ public class LeagueSeasonStandingsMapper {
         }
 
         return rows.stream()
+                .filter(Objects::nonNull)
                 .map(this::toStandingRow)
                 .toList();
     }

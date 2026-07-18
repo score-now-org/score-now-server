@@ -19,6 +19,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -89,6 +91,45 @@ class LeagueSeasonStandingsSyncServiceTest {
 
         then(mapper).should(never()).toDocument(any(), any());
         then(mongoTemplate).should(never()).upsert(any(Query.class), any(Update.class), eq(LeagueSeasonStandingsDataDocument.class));
+    }
+
+    @Test
+    void 결과가_null_요소만_있으면_동기화에_실패한다() {
+        LeagueSeasonStandingsSyncTarget target = syncTarget();
+        BetsStandingsResponse response = response(1, Collections.singletonList(null));
+        given(syncTargetReader.read(10L)).willReturn(target);
+        given(betsApiClient.getStandings("94")).willReturn(response);
+
+        assertThatThrownBy(() -> syncService.sync(10L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
+
+        then(mapper).should(never()).toDocument(any(), any());
+        then(mongoTemplate).should(never()).upsert(any(Query.class), any(Update.class), eq(LeagueSeasonStandingsDataDocument.class));
+    }
+
+    @Test
+    void 첫번째_결과가_null이면_다음_유효한_결과로_동기화한다() {
+        LeagueSeasonStandingsSyncTarget target = syncTarget();
+        BetsStandingsResponse.Result result = new BetsStandingsResponse.Result();
+        BetsStandingsResponse response = response(1, Arrays.asList(null, result));
+        LeagueSeasonStandingsDataDocument document = LeagueSeasonStandingsDataDocument.builder()
+                .leagueId(1L)
+                .apiLeagueId("94")
+                .dataOrigin(DataOrigin.BETS)
+                .leagueSeasonId(10L)
+                .externalSeasonName("2025/26")
+                .build();
+
+        given(syncTargetReader.read(10L)).willReturn(target);
+        given(betsApiClient.getStandings("94")).willReturn(response);
+        given(mapper.toDocument(result, target)).willReturn(document);
+
+        syncService.sync(10L);
+
+        then(mapper).should().toDocument(result, target);
+        then(mongoTemplate).should().upsert(any(Query.class), any(Update.class), eq(LeagueSeasonStandingsDataDocument.class));
     }
 
     @Test
