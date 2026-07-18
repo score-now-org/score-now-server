@@ -159,7 +159,7 @@ class AdminLeagueSeasonServiceTest {
         given(leagueRepository.existsById(1L)).willReturn(true);
         given(leagueSeasonRepository.existsByLeagueIdAndSeasonName(1L, "2025/26")).willReturn(false);
         given(leagueSeasonRepository.findAllByLeagueIdAndIsActiveTrue(1L)).willReturn(List.of(currentSeason));
-        given(leagueSeasonRepository.findCurrentSeasonByLeagueId(1L)).willReturn(Optional.of(currentSeason));
+        given(leagueSeasonRepository.findCurrentSeasonByLeagueId(1L)).willReturn(List.of(currentSeason));
 
         adminLeagueSeasonService.createLeagueSeason(createRequest(
                 1L,
