@@ -47,7 +47,7 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: OFF
 
 betsapi:
   base-url: https://api.b365api.com
