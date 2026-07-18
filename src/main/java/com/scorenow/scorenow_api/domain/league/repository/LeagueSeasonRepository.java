@@ -21,7 +21,7 @@ public interface LeagueSeasonRepository extends JpaRepository<LeagueSeason, Long
               and ls.leagueId = :leagueId
               and ls.isActive = true
             """)
-    Optional<LeagueSeason> findCurrentSeasonByLeagueId(@Param("leagueId") Long leagueId);
+    List<LeagueSeason> findCurrentSeasonByLeagueId(@Param("leagueId") Long leagueId);
 
     Optional<LeagueSeason> findByIdAndIsActiveTrue(Long id);
 

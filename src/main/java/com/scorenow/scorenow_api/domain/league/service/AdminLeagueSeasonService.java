@@ -66,7 +66,7 @@ public class AdminLeagueSeasonService {
         // 새로운 "현재 시즌" 등록의 경우 기존 "현재 시즌" 을 해제
         if (request.isCurrent()) {
             leagueSeasonRepository.findCurrentSeasonByLeagueId(leagueId)
-                    .ifPresent(leagueSeason -> leagueSeason.updateCurrent(false));
+                    .forEach(leagueSeason -> leagueSeason.updateCurrent(false));
         }
 
         // 등록
