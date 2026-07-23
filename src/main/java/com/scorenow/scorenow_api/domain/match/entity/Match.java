@@ -169,4 +169,14 @@ public class Match extends BaseEntity {
                 && !homeShootOutScore.equals(awayShootOutScore);
     }
 
+    /**
+     * 경기 시작 일자 변경 여부 (시간이 아닌 일자 변경 기준)
+     */
+    public boolean isStartDateChanged(LocalDateTime newStartAt) {
+        if (this.startAt == null || newStartAt == null) {
+            return false;
+        }
+        return !this.startAt.toLocalDate().equals(newStartAt.toLocalDate());
+    }
+
 }
