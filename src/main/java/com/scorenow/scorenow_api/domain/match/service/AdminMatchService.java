@@ -37,6 +37,8 @@ public class AdminMatchService {
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
 
+    private final AdminFeaturedMatchService adminFeaturedMatchService;
+
     private final MatchMapper matchMapper;
 
     private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
@@ -120,6 +122,12 @@ public class AdminMatchService {
 
     private void applyUpdates(Match match, MatchUpdateRequest request) {
         if (request.getStartAt() != null) {
+
+            // 일자 기준 변경이 발생했을 때, 상단고정/핫매치 설정 해제 처리
+            if (match.isStartDateChanged(request.getStartAt())) {
+                adminFeaturedMatchService.deleteFeaturedMatchByMatchId(match.getId());
+            }
+
             match.updateStartAt(request.getStartAt());
         }
 

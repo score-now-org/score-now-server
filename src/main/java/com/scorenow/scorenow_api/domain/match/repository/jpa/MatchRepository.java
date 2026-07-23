@@ -114,4 +114,16 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             @Param("scheduledStatuses") List<MatchStatus> scheduledStatuses,
             @Param("endedStatuses") List<MatchStatus> endedStatuses
     );
+
+    @Query("""
+            select m
+            from Match m
+            join fetch m.league l
+            join fetch m.homeTeam ht
+            join fetch m.awayTeam at
+            where m.startAt >= :start and m.startAt < :endExclusive
+              and m.isActive = true
+            """)
+    List<Match> findMatchesByDateRange(LocalDateTime start, LocalDateTime endExclusive);
+
 }

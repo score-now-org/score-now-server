@@ -30,15 +30,16 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MatchEventSyncService {
 
-	private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of(MatchConstants.SEOUL_TIME_ZONE);
+    private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of(MatchConstants.SEOUL_TIME_ZONE);
 
-	private final LeagueService leagueService;
-	private final TeamService teamService;
-	private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
+    private final LeagueService leagueService;
+    private final TeamService teamService;
+    private final AdminFeaturedMatchService adminFeaturedMatchService;
+    private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
 
-	private final MatchRepository matchRepository;
+    private final MatchRepository matchRepository;
 
-	private final SportExternalMappingRepository sportExternalMappingRepository;
+    private final SportExternalMappingRepository sportExternalMappingRepository;
 
     /**
      * 개별 경기 동기화 - league → team → match 순서 보장
@@ -71,7 +72,7 @@ public class MatchEventSyncService {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, String.format("%s 에서 팀 정보를 제공하지 않았습니다.", dataOrigin));
         }
 
-		String imageUrl = teamService.buildImageUrl(betsTeam.getImageId());
+        String imageUrl = teamService.buildImageUrl(betsTeam.getImageId());
 
         return teamService.getOrCreateTeam(dataOrigin, internalSportId, betsTeam.getId(), betsTeam.getName(), betsTeam.getCc(), imageUrl);
     }
@@ -84,10 +85,10 @@ public class MatchEventSyncService {
             Team homeTeam,
             Team awayTeam) {
 
-		if (event.getLeague() == null || event.getHome() == null || event.getAway() == null) {
-			log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
-			return;
-		}
+        if (event.getLeague() == null || event.getHome() == null || event.getAway() == null) {
+            log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
+            return;
+        }
 
         Match match = matchRepository.findByExternalInfo(dataOrigin, event.getId())
                 .orElseGet(() -> Match.builder()
@@ -97,35 +98,43 @@ public class MatchEventSyncService {
                         .teamDisplayOrder(matchTeamDisplayOrderPolicy.decide(league))
                         .build());
 
-		match.updateSportId(internalSportId);
-		match.updateLeagueId(league.getId());
-		match.updateHomeId(homeTeam.getId());
-		match.updateAwayId(awayTeam.getId());
-		match.updateStatus(MatchStatus.fromCode(event.getTimeStatus()));
+        match.updateSportId(internalSportId);
+        match.updateLeagueId(league.getId());
+        match.updateHomeId(homeTeam.getId());
+        match.updateAwayId(awayTeam.getId());
+        match.updateStatus(MatchStatus.fromCode(event.getTimeStatus()));
 
-		if (event.getTime() != null) {
-			try {
-				long timestamp = Long.parseLong(event.getTime());
-				match.updateStartAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), DEFAULT_ZONE_ID));
-			} catch (NumberFormatException e) {
-				log.warn("Invalid timestamp format for eventId {}: time='{}'", event.getId(), event.getTime());
-			}
-		}
+        if (event.getTime() != null) {
+            try {
+                long timestamp = Long.parseLong(event.getTime());
 
-		if (event.getSs() != null && event.getSs().contains("-")) {
-			String[] scores = event.getSs().split("-");
-			if (scores.length == 2) {
-				try {
-					match.updateHomeScore(Integer.parseInt(scores[0].trim()));
-					match.updateAwayScore(Integer.parseInt(scores[1].trim()));
-				} catch (NumberFormatException e) {
-					log.warn("Invalid score format for eventId {}: ss='{}'", event.getId(), event.getSs());
-				}
+                LocalDateTime newStartAt = LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), DEFAULT_ZONE_ID);
 
-			}
-		}
+                // 일자 기준 변경이 발생했을 때, 상단고정/핫매치 설정 해제 처리
+                if (match.getId() != null && match.isStartDateChanged(newStartAt)) {
+                    adminFeaturedMatchService.deleteFeaturedMatchByMatchId(match.getId());
+                }
 
-		Match savedMatch = matchRepository.save(match);
-		log.debug("경기 저장 - {}", savedMatch.getId());
-	}
+                match.updateStartAt(newStartAt);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid timestamp format for eventId {}: time='{}'", event.getId(), event.getTime());
+            }
+        }
+
+        if (event.getSs() != null && event.getSs().contains("-")) {
+            String[] scores = event.getSs().split("-");
+            if (scores.length == 2) {
+                try {
+                    match.updateHomeScore(Integer.parseInt(scores[0].trim()));
+                    match.updateAwayScore(Integer.parseInt(scores[1].trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid score format for eventId {}: ss='{}'", event.getId(), event.getSs());
+                }
+
+            }
+        }
+
+        Match savedMatch = matchRepository.save(match);
+        log.debug("경기 저장 - {}", savedMatch.getId());
+    }
 }
