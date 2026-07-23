@@ -29,7 +29,7 @@ public interface LeagueSeasonRepository extends JpaRepository<LeagueSeason, Long
 
     @Query(value = """
             select new com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonResponse(
-                ls.id,
+                ls.leagueId,
                 coalesce(l.kName, l.eName),
                 ls.id,
                 ls.seasonName,
