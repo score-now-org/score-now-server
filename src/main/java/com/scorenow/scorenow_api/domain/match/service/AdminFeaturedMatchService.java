@@ -123,7 +123,7 @@ public class AdminFeaturedMatchService {
      */
     private void updateOrder(LocalDate displayDate, FeaturedMatchType type, List<Long> reorderedIds) {
         if (reorderedIds == null) {
-            return;
+            throw new BusinessException(ErrorCode.FEATURED_MATCH_INVALID_ORDER);
         }
 
         List<FeaturedMatch> featuredMatches = featuredMatchRepository.findByDisplayDateAndTypeOrderByDisplayOrderAsc(displayDate, type);
