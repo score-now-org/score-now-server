@@ -52,6 +52,10 @@ public class AdminFeaturedMatchService {
             throw new BusinessException(ErrorCode.FEATURED_MATCH_ALREADY_EXISTS);
         }
 
+        if (match.getStartAt() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 시작 일자가 존재하지 않습니다.");
+        }
+
         LocalDate displayDate = match.getStartAt().toLocalDate();
         Integer displayOrder = getNextDisplayOrder(displayDate, type);
 
