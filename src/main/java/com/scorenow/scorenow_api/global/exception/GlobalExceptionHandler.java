@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -113,7 +114,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 파라미터 타입 불일치 처리
+     * 파라미터 타입 불일치 처리 (쿼리 파라미터, Path Variable 등)
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
@@ -126,6 +127,24 @@ public class GlobalExceptionHandler {
         ApiResponse<Void> response = ApiResponse.error(
                 ErrorCode.INVALID_PARAMETER.getCode(),
                 message
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+
+    /**
+     * Request Body 역직렬화 실패 처리
+     * 예: Request Body 내부의 잘못된 enum 값, LocalDate format 불일치, JSON 문법 오류
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("Request body is not readable: {}", sanitizeForLogging(e.getMessage()));
+
+        ApiResponse<Void> response = ApiResponse.error(
+                ErrorCode.INVALID_PARAMETER.getCode(),
+                "요청 본문 형식이 올바르지 않습니다."
         );
 
         return ResponseEntity
