@@ -20,6 +20,11 @@ public enum ErrorCode {
 	MATCH_ALREADY_EXIST(HttpStatus.CONFLICT, "M002", "이미 존재하는 경기입니다."),
 	MATCH_INVALID_STATUS(HttpStatus.BAD_REQUEST, "M003", "잘못된 경기 상태입니다."),
 
+	// FeaturedMatch
+	FEATURED_MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "FM001", "상단고정/핫매치 설정을 찾을 수 없습니다."),
+	FEATURED_MATCH_ALREADY_EXISTS(HttpStatus.CONFLICT, "FM002", "이미 상단고정/핫매치로 등록된 경기입니다."),
+	FEATURED_MATCH_INVALID_ORDER(HttpStatus.BAD_REQUEST, "FM003", "상단고정/핫매치 순서 정보가 올바르지 않습니다."),
+
 	// MatchLineup
 	MATCH_LINEUP_NOT_FOUND(HttpStatus.NOT_FOUND, "ML001", "라인업을 찾을 수 없습니다."),
 	MATCH_LINEUP_PLAYER_NOT_FOUND(HttpStatus.NOT_FOUND, "ML002", "라인업에서 선수를 찾을 수 없습니다."),

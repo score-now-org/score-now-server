@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.StringUtils;
 
 @Entity
 @Table(name = "leagues",
@@ -72,5 +73,18 @@ public class League extends BaseEntity {
 
     public boolean hasTeamDisplayOrder() {
         return teamDisplayOrder != null;
+    }
+
+    public String resolveLeagueName() {
+        if (StringUtils.hasText(kName)) {
+            return kName;
+        }
+        if (StringUtils.hasText(eName)) {
+            return eName;
+        }
+        if (StringUtils.hasText(sName)) {
+            return sName;
+        }
+        return "";
     }
 }
