@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 @Entity
 @Table(name = "sports")
@@ -18,4 +19,14 @@ public class Sport extends BaseEntity {
 
     private String kName;
     private String eName;
+
+    public String resolveSportName() {
+        if (StringUtils.hasText(kName)) {
+            return kName;
+        }
+        if (StringUtils.hasText(eName)) {
+            return eName;
+        }
+        return "";
+    }
 }

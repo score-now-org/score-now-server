@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSearchCondition;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.service.AdminMatchService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -29,6 +30,15 @@ import lombok.RequiredArgsConstructor;
 public class AdminMatchController {
 
     private final AdminMatchService adminMatchService;
+
+    /**
+     * 경기 리스트 검색 옵션 조회
+     */
+    @GetMapping("/search-options")
+    public ApiResponse<AdminMatchSearchOptionsResponse> getSearchOptions() {
+        AdminMatchSearchOptionsResponse result = adminMatchService.getSearchOptions();
+        return ApiResponse.success(result);
+    }
 
     /**
      * 경기 리스트 조회

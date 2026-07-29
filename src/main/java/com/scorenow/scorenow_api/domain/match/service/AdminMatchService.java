@@ -13,6 +13,7 @@ import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSearchCondition;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
@@ -51,6 +52,15 @@ public class AdminMatchService {
     public Page<MatchListResponse> getMatches(MatchSearchCondition condition, Pageable pageable) {
         return matchRepository.searchMatches(condition, pageable)
                 .map(matchMapper::toResponse);
+    }
+
+    /**
+     * 경기 리스트 검색 옵션 조회
+     */
+    public AdminMatchSearchOptionsResponse getSearchOptions() {
+        return AdminMatchSearchOptionsResponse.of(
+                sportRepository.findAll(),
+                leagueRepository.findAll());
     }
 
     /**
