@@ -129,6 +129,10 @@ public class Match extends BaseEntity {
         this.awayShootOutScore = awayShootOutScore;
     }
 
+    public void updateIsManual(Boolean isManual) {
+        this.isManual = isManual;
+    }
+
     public void updateIsActive(boolean isActive) {
         this.isActive = isActive;
     }
@@ -178,5 +182,4 @@ public class Match extends BaseEntity {
         }
         return !this.startAt.toLocalDate().equals(newStartAt.toLocalDate());
     }
-
 }
