@@ -19,7 +19,9 @@ public class MatchUpdateRequest {
 
 	private Integer awayScore;
 
-	private Boolean isActive;
+	private Boolean isManual;	// 자동, 수동 경기 여부
+
+	private Boolean isActive;	// 앱 노출 여부
 
 	@JsonProperty("teamDisplayOrder")
 	private TeamDisplayOrder teamDisplayOrder;

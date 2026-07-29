@@ -153,6 +153,10 @@ public class AdminMatchService {
             match.updateAwayScore(request.getAwayScore());
         }
 
+        if (request.getIsManual() != null) {
+            match.updateIsManual(request.getIsManual());
+        }
+
         if (request.getIsActive() != null) {
             match.updateIsActive(request.getIsActive());
         }
