@@ -154,6 +154,10 @@ public class AdminMatchService {
         }
 
         if (request.getIsManual() != null) {
+            // 수동 관리 경기의 경우에는 자동 관리 경기로 전환이 불가능하다.
+            if (match.getDataOrigin() == DataOrigin.MANUAL && !request.getIsManual()) {
+                throw new BusinessException(ErrorCode.INVALID_PARAMETER, "수동 등록 경기는 자동 관리 경기로 전환할 수 없습니다.");
+            }
             match.updateIsManual(request.getIsManual());
         }
 
