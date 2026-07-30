@@ -1,19 +1,24 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.List;
+
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSearchCondition;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchSearchOptionsResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchTeamCandidateResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
@@ -32,6 +37,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminMatchService {
+
+    /* 수동 경기 등록 과정에서 팀명 조회 시 최대 조회 결과 수 */
+    private static final int TEAM_CANDIDATE_LIMIT = 10;
 
     private final MatchRepository matchRepository;
     private final LeagueRepository leagueRepository;
@@ -64,6 +72,21 @@ public class AdminMatchService {
     }
 
     /**
+     * 경기 등록용 팀 후보 검색
+     */
+    public List<MatchTeamCandidateResponse> searchTeamCandidates(String keyword, Long sportId) {
+
+        return teamRepository.searchMatchTeamCandidates(
+                        sportId,
+                        normalize(keyword),
+                        PageRequest.of(0, TEAM_CANDIDATE_LIMIT)
+                )
+                .stream()
+                .map(MatchTeamCandidateResponse::from)
+                .toList();
+    }
+
+    /**
      * 경기 수동 등록
      * <p>
      * 경기 수동 등록할 때, 리그 정보도 넣어준다.
@@ -73,7 +96,7 @@ public class AdminMatchService {
      * League 로 추론이 불가능한 경우, 기본값인 HOME_AWAY 들어감.
      */
     @Transactional
-    public MatchListResponse createMatch(MatchCreateRequest request) {
+    public void createMatch(MatchCreateRequest request) {
         validateMatchCreateRequest(request);
 
         Match match = matchMapper.toEntity(request);
@@ -88,10 +111,6 @@ public class AdminMatchService {
         matchRepository.save(match);
 
         log.info("수동 경기 등록 완료 - matchId: {}", match.getId());
-
-        return matchRepository.findByIdWithRelations(match.getId())
-                .map(matchMapper::toResponse)
-                .orElseGet(() -> matchMapper.toResponse(match));
     }
 
     /**
@@ -124,6 +143,10 @@ public class AdminMatchService {
     }
 
     // === Helper Methods ===
+
+    private String normalize(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
 
     private Match findMatchById(Long matchId) {
         return matchRepository.findById(matchId)

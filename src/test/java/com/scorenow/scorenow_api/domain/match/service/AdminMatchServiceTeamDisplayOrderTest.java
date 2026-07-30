@@ -67,13 +67,10 @@ class AdminMatchServiceTeamDisplayOrderTest {
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> invocation.getArgument(0));
         given(matchRepository.findByIdWithRelations(any())).willReturn(Optional.empty());
 
-        MatchListResponse response = adminMatchService.createMatch(request);
-
         ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
         then(matchRepository).should().save(matchCaptor.capture());
 
         assertThat(matchCaptor.getValue().getTeamDisplayOrder()).isEqualTo(AWAY_HOME);
-        assertThat(response.getTeamDisplayOrder()).isEqualTo(List.of("AWAY","HOME"));
     }
 
     @Test
@@ -90,13 +87,12 @@ class AdminMatchServiceTeamDisplayOrderTest {
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> invocation.getArgument(0));
         given(matchRepository.findByIdWithRelations(any())).willReturn(Optional.empty());
 
-        MatchListResponse response = adminMatchService.createMatch(request);
+        adminMatchService.createMatch(request);
 
         ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
         then(matchRepository).should().save(matchCaptor.capture());
 
         assertThat(matchCaptor.getValue().getTeamDisplayOrder()).isEqualTo(HOME_AWAY);
-        assertThat(response.getTeamDisplayOrder()).isEqualTo(List.of("HOME","AWAY"));
     }
 
     @Test

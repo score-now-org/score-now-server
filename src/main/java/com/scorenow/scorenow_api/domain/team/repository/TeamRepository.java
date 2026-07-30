@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.team.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.team.entity.Team;
@@ -50,6 +51,30 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             @Param("teamId") Long teamId,
             @Param("kName") String kName,
             @Param("eName") String eName,
+            Pageable pageable
+    );
+
+    @Query("""
+            select t
+            from Team t
+            left join fetch t.sport
+            where t.isActive = true
+              and t.sport.id = :sportId
+              and (lower(t.kName) like lower(concat('%', :keyword, '%'))
+                   or lower(t.eName) like lower(concat('%', :keyword, '%'))
+                   or lower(t.sName) like lower(concat('%', :keyword, '%')))
+            order by
+              case
+                when t.kName is not null and t.kName <> '' then t.kName
+                when t.eName is not null and t.eName <> '' then t.eName
+                when t.sName is not null and t.sName <> '' then t.sName
+                else ''
+              end asc,
+              t.id asc
+            """)
+    List<Team> searchMatchTeamCandidates(
+            @Param("sportId") Long sportId,
+            @Param("keyword") String keyword,
             Pageable pageable
     );
 
