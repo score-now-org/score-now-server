@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
@@ -8,6 +9,7 @@ import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublish
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -81,5 +84,15 @@ class AdminMatchServiceTest {
 
         then(adminFeaturedMatchService).should(never()).deleteFeaturedMatchByMatchId(matchId);
         assertThat(match.getStartAt()).isEqualTo(LocalDateTime.of(2026, 7, 23, 21, 0));
+    }
+
+    @Test
+    void 수동_경기_등록시_홈팀ID_와_어웨이팀ID가_동일한_경우_예외가_발생한다() {
+        MatchCreateRequest request = new MatchCreateRequest();
+        request.setHomeId(1L);
+        request.setAwayId(1L);
+
+        assertThatThrownBy(() -> adminMatchService.createMatch(request))
+                .isInstanceOf(BusinessException.class);
     }
 }

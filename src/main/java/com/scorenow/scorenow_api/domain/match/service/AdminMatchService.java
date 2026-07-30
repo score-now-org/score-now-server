@@ -128,17 +128,28 @@ public class AdminMatchService {
     // === Validation Methods ===
 
     private void validateMatchCreateRequest(MatchCreateRequest request) {
+        // 1. 리그가 존재하지 않는 경우
         if (!leagueRepository.existsById(request.getLeagueId())) {
             throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
         }
+
+        // 2. 존재하지 않는 팀인 경우
         if (!teamRepository.existsByIdAndIsActiveTrue(request.getHomeId())) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "홈팀을 찾을 수 없습니다.");
         }
+
         if (!teamRepository.existsByIdAndIsActiveTrue(request.getAwayId())) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "원정팀을 찾을 수 없습니다.");
         }
+
+        // 3. 존재하지 않는 종목인 경우
         if (request.getSportId() != null && !sportRepository.existsById(request.getSportId())) {
             throw new BusinessException(ErrorCode.SPORT_NOT_FOUND);
+        }
+
+        // 4. 홈팀과 어웨이팀이 동일한 경우
+        if (request.getHomeId().equals(request.getAwayId())) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "홈팀과 어웨이팀이 같습니다.");
         }
     }
 
