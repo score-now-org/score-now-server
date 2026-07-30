@@ -48,11 +48,11 @@ public class AdminMatchController {
      * 경기 등록용 팀 후보 검색
      */
     @GetMapping("/team-candidates")
-    public ApiResponse<List<MatchTeamCandidateResponse>> searchTeamCandidates(
+    public ApiResponse<List<MatchTeamCandidateResponse>> getTeamCandidates(
             @RequestParam String keyword,
             @RequestParam Long sportId) {
 
-        List<MatchTeamCandidateResponse> result = adminMatchService.searchTeamCandidates(keyword, sportId);
+        List<MatchTeamCandidateResponse> result = adminMatchService.getTeamCandidates(keyword, sportId);
         return ApiResponse.success(result);
     }
 

@@ -74,7 +74,7 @@ public class AdminMatchService {
     /**
      * 경기 등록용 팀 후보 검색
      */
-    public List<MatchTeamCandidateResponse> searchTeamCandidates(String keyword, Long sportId) {
+    public List<MatchTeamCandidateResponse> getTeamCandidates(String keyword, Long sportId) {
 
         return teamRepository.searchMatchTeamCandidates(
                         sportId,
