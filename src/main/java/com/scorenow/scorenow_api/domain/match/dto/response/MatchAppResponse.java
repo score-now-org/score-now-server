@@ -82,6 +82,9 @@ public class MatchAppResponse {
         @Schema(description = "현재 앱에 보여줄 중계 멘트", example = "홈팀이 선제골 이후 흐름을 잡습니다.")
         private String currentCommentary;
 
+        @Schema(description = "현재 앱에 보여줄 중계 멘트 강조 여부", example = "true/false/null")
+        private Boolean isCurrentCommentaryHighlighted;
+
         @Schema(description = "경기 시간 정보")
         private MatchTimeInfoResponse timeInfo;
 
@@ -90,7 +93,7 @@ public class MatchAppResponse {
 
         public static MatchItemResponse from(
                 Match match,
-                MatchDetailDocument detail,
+                MatchDetailDocument matchDetail,
                 MatchDisplayTextResolver matchDisplayTextResolver) {
 
             return MatchItemResponse.builder()
@@ -104,8 +107,9 @@ public class MatchAppResponse {
                     .awayShootOutScore(match.getAwayShootOutScore())
                     .statusCode(match.getStatusCode().name())
                     .statusName(match.getStatusCode().getDescription())
-                    .currentCommentary(detail != null ? detail.getCurrentCommentary() : null)
-                    .timeInfo(MatchTimeInfoResponse.from(match, detail, matchDisplayTextResolver))
+                    .currentCommentary(matchDetail.getCurrentCommentary() != null ? matchDetail.getCurrentCommentary() : null)
+                    .isCurrentCommentaryHighlighted(matchDetail.getCurrentCommentary() != null ? matchDetail.isCurrentCommentaryHighlighted() : null)
+                    .timeInfo(MatchTimeInfoResponse.from(match, matchDetail, matchDisplayTextResolver))
                     .teamDisplayOrder(resolveTeamDisplayOrder(match))
                     .build();
         }
