@@ -36,11 +36,12 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
+    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted) {
         Query query = new Query(Criteria.where("_id").is(matchId));
         Update update = new Update()
                 .set("currentCommentary", content)
                 .set("currentCommentaryId", commentaryId)
+                .set("currentCommentaryHighlighted", highlighted)
                 .setOnInsert("_id", matchId);
 
         mongoTemplate.upsert(query, update, MatchDetailDocument.class);

@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 
 import com.scorenow.scorenow_api.domain.match.document.MatchCommentaryDocument;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchCommentaryResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
@@ -33,7 +34,7 @@ public class MatchCommentaryService {
      * 중계 멘트 저장 <br>
      * (단, 중계 멘트 저장 ON/OFF 에 따라서 작성한 중계글 모음에서 조회 여부가 결정)
      */
-    public String saveCommentary(Long matchId, String minute, String content, boolean recordEnabled, MultipartFile file) {
+    public void saveCommentary(Long matchId, String content, boolean highlighted, boolean recordEnabled, MultipartFile file) {
         String imageUrl = null;
 
         if (file != null && !file.isEmpty()) {
@@ -46,8 +47,8 @@ public class MatchCommentaryService {
         // 2. mongoDB 에 저장할 MatchCommentaryDocument 인스턴스 생성 후 저장
         MatchCommentaryDocument commentary = MatchCommentaryDocument.builder()
                 .matchId(matchId)
-                .currentMatchTime(minute)
                 .content(content)
+                .highlighted(highlighted)
                 .imageUrl(imageUrl)
                 .visible(recordEnabled)
                 .build();
@@ -55,21 +56,19 @@ public class MatchCommentaryService {
         MatchCommentaryDocument savedCommentary = commentaryRepository.save(commentary);
 
         // 3. MatchDetailDocument 가 있으면 현재 중계 멘트만 갱신하고, 없으면 현재 중계 멘트만 가진 문서를 생성한다.
-        matchDetailRepository.upsertCurrentCommentary(matchId, content, savedCommentary.getId());
+        matchDetailRepository.upsertCurrentCommentary(matchId, content, savedCommentary.getId(), highlighted);
 
         // 4. 중계 멘트 변경 이벤트 발행
-        eventPublisher.publishCommentaryChanged(matchId, savedCommentary.getId(), content, imageUrl);
-
-        return savedCommentary.getId();
+        eventPublisher.publishCommentaryChanged(matchId, savedCommentary.getId(), content, highlighted, imageUrl);
     }
 
     /**
      * 해당 경기에서 작성된 중계 멘트 목록 조회 <br>
      * (단, 중계 멘트 저장 ON 에서 작성된 중계 멘트들만 조회 가능)
      */
-    public List<String> getCommentariesByMatchId(Long matchId) {
+    public List<AdminMatchCommentaryResponse> getCommentariesByMatchId(Long matchId) {
         return commentaryRepository.findVisibleCommentaries(matchId).stream()
-                .map(MatchCommentaryDocument::getContent)
+                .map(AdminMatchCommentaryResponse::from)
                 .toList();
     }
 

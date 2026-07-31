@@ -3,17 +3,19 @@ package com.scorenow.scorenow_api.domain.match.document;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.model.MatchStats;
+import com.scorenow.scorenow_api.global.entity.BaseDocument;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
 @Document(collection = "match_details")
-public class MatchDetailDocument {
+public class MatchDetailDocument extends BaseDocument {
     @Id
     private Long id;
 
@@ -29,8 +31,9 @@ public class MatchDetailDocument {
     private MatchClock matchClock;          // 경기 시간 정보
     private AdditionalTime additionalTime;  // 추가시간 정보
 
-    private String currentCommentary;   // 현재 보여야 하는 중계 멘트
-    private String currentCommentaryId; // 현재 보여야 하는 중계 멘트의 id
+    private String currentCommentaryId; // 현재 중계 멘트 id
+    private String currentCommentary;   // 현재 중계 멘트
+    private boolean currentCommentaryHighlighted;   // 현재 중계 멘트 강조 여부
 
     @Getter
     @Builder
@@ -65,8 +68,9 @@ public class MatchDetailDocument {
         if (request.getAdditionalTime() != null) this.additionalTime = request.getAdditionalTime();
     }
 
-    public void updateCurrentCommentary(String content, String commentaryId) {
+    public void updateCurrentCommentary(String content, String commentaryId, boolean highlighted) {
         this.currentCommentary = content;
         this.currentCommentaryId = commentaryId;
+        this.currentCommentaryHighlighted = highlighted;
     }
 }

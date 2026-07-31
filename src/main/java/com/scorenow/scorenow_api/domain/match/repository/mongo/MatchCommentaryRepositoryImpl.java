@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -16,6 +17,12 @@ public class MatchCommentaryRepositoryImpl implements MatchCommentaryRepository 
     public MatchCommentaryDocument save(MatchCommentaryDocument commentary) {
         return mongoRepository.save(commentary);
     }
+
+    @Override
+    public Optional<MatchCommentaryDocument> findById(String id) {
+        return mongoRepository.findById(id);
+    }
+
 
     @Override
     public List<MatchCommentaryDocument> findVisibleCommentaries(Long matchId) {

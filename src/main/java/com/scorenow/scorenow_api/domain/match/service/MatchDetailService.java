@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchDetailResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
@@ -27,8 +28,8 @@ import static com.scorenow.scorenow_api.domain.match.entity.MatchStatus.NOT_STAR
 @Slf4j
 @RequiredArgsConstructor
 public class MatchDetailService {
-
     private final StadiumCacheService stadiumCacheService;
+
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
 
@@ -36,6 +37,26 @@ public class MatchDetailService {
     private final MatchRealtimeEventPublisher eventPublisher;
 
     private final MatchEventResolver matchEventResolver;
+
+    @Transactional(readOnly = true)
+    public MatchDetailResponse getMatchDetail(Long matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        // TODO: 에러코드 새로 추가하는게 좋을 듯. (MATCH_DETAIL_NOT_FOUND)
+        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        return MatchDetailResponse.builder()
+                .startAt(match.getStartAt())
+                .statusCode(match.getStatusCode().name())
+                .statusName(match.getStatusCode().getDescription())
+                .homeScore(matchDetailDocument.getHomeScore())
+                .awayScore(matchDetailDocument.getAwayScore())
+                .currentCommentary(matchDetailDocument.getCurrentCommentary())
+                .currentCommentaryHighlighted(matchDetailDocument.isCurrentCommentaryHighlighted())
+                .build();
+    }
 
     @Transactional
     public void updateInplayMatchDetail(DataOrigin dataOrigin, ViewResult viewResult) {
@@ -197,6 +218,5 @@ public class MatchDetailService {
 
         eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
     }
-
 
 }

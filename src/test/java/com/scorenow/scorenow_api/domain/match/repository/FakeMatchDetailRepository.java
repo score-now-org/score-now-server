@@ -34,21 +34,22 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
+    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted) {
         MatchDetailDocument saved = database.get(matchId);
 
         if (saved == null) {
             MatchDetailDocument matchDetailDocument = MatchDetailDocument.builder()
                     .id(matchId)
-                    .currentCommentary(content)
                     .currentCommentaryId(commentaryId)
+                    .currentCommentary(content)
+                    .currentCommentaryHighlighted(highlighted)
                     .build();
 
             database.put(matchId, matchDetailDocument);
             return;
         }
 
-        saved.updateCurrentCommentary(content, commentaryId);
+        saved.updateCurrentCommentary(content, commentaryId, highlighted);
     }
 
     @Override

@@ -12,7 +12,7 @@ public interface MatchDetailRepository {
 
     MatchDetailDocument save(MatchDetailDocument detail);
 
-    void upsertCurrentCommentary(Long matchId, String content, String commentaryId);
+    void upsertCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted);
 
     void upsertMatchDetail(MatchDetailDocument matchDetailDocument);
 
