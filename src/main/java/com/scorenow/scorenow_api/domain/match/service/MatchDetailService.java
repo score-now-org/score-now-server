@@ -43,9 +43,8 @@ public class MatchDetailService {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
-        // TODO: 에러코드 새로 추가하는게 좋을 듯. (MATCH_DETAIL_NOT_FOUND)
         MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
 
         return MatchDetailResponse.builder()
                 .startAt(match.getStartAt())
