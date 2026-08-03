@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
@@ -29,6 +30,21 @@ public class MatchLineupController {
 
 	private final MatchLineupCommandService lineupCommandSvc;
 	private final MatchLineupQueryService lineupQuerySvc;
+
+	/**
+	 * 라인업 팀 설정 수정
+	 * - 포메이션, 유니폼 컬러 변경
+	 */
+	@PatchMapping("/{matchId}/lineup/teams/{teamId}")
+	public ApiResponse<String> updateLineupSide(
+		@PathVariable Long matchId,
+		@PathVariable Long teamId,
+		@RequestBody MatchLineupSideUpdateRequest request
+	) {
+		return ApiResponse.success(
+			lineupCommandSvc.updateLineupSide(matchId, teamId, request)
+		);
+	}
 
 	/**
 	 * 라인업 수정

@@ -1,9 +1,12 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.Objects;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
@@ -160,6 +163,105 @@ public class MatchLineupCommandService {
 		}
 
 		return false;
+	}
+
+	/**
+	 * 라인업 팀 설정 수정
+	 * - 포메이션, 유니폼 컬러 변경
+	 */
+	@Transactional
+	public String updateLineupSide(
+		Long matchId,
+		Long teamId,
+		MatchLineupSideUpdateRequest request
+	) {
+		if (matchId == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"matchId가 비어있습니다."
+			);
+		}
+
+		if (teamId == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"teamId가 비어있습니다."
+			);
+		}
+
+		if (request == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"request가 null입니다."
+			);
+		}
+
+		if (request.getFormation() == null
+			&& request.getUniformColor() == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"수정할 포메이션 또는 유니폼 컬러가 없습니다."
+			);
+		}
+
+		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.MATCH_LINEUP_NOT_FOUND,
+				"라인업이 존재하지 않습니다.",
+				"matchId=" + matchId
+			));
+
+		LineupSide side = findSide(doc, teamId);
+
+		if (side == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"팀 라인업을 찾을 수 없습니다.",
+				"matchId=" + matchId + ", teamId=" + teamId
+			);
+		}
+
+		boolean changed = false;
+
+		if (request.getFormation() != null) {
+			String formation = request.getFormation().trim();
+
+			if (formation.isBlank()) {
+				throw new BusinessException(
+					ErrorCode.INVALID_PARAMETER,
+					"포메이션이 비어있습니다."
+				);
+			}
+
+			if (!Objects.equals(side.getFormation(), formation)) {
+				side.setFormation(formation);
+				changed = true;
+			}
+		}
+
+		if (request.getUniformColor() != null) {
+			String uniformColor = request.getUniformColor().trim();
+
+			if (uniformColor.isBlank()) {
+				throw new BusinessException(
+					ErrorCode.INVALID_PARAMETER,
+					"유니폼 컬러가 비어있습니다."
+				);
+			}
+
+			if (!Objects.equals(side.getUniformColor(), uniformColor)) {
+				side.setUniformColor(uniformColor);
+				changed = true;
+			}
+		}
+
+		if (!changed) {
+			return "NO_CHANGES";
+		}
+
+		matchLineupRepo.save(doc);
+
+		return matchId + ":" + teamId;
 	}
 
 	@Transactional
