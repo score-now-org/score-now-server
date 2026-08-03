@@ -60,7 +60,19 @@ public enum ErrorCode {
 	CHAT_SEND_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CH001", "채팅 전송에는 로그인이 필요합니다."),
 	CHAT_MESSAGE_INVALID(HttpStatus.BAD_REQUEST, "CH002", "채팅 메시지가 올바르지 않습니다."),
 	CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CH003", "채팅방을 찾을 수 없습니다."),
-	CHAT_MESSAGE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "CH004", "채팅 메시지는 1000자를 초과할 수 없습니다.");
+	CHAT_MESSAGE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "CH004", "채팅 메시지는 1000자를 초과할 수 없습니다."),
+
+	// Community
+	COMMUNITY_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CO001", "커뮤니티 기능은 로그인이 필요합니다."),
+	COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "CO002", "게시글을 찾을 수 없습니다."),
+	COMMUNITY_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CO003", "댓글을 찾을 수 없습니다."),
+	COMMUNITY_FORBIDDEN(HttpStatus.FORBIDDEN, "CO004", "권한이 없습니다."),
+	COMMUNITY_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "CO005", "올바르지 않은 커뮤니티 카테고리입니다."),
+	COMMUNITY_POST_INVALID(HttpStatus.BAD_REQUEST, "CO006", "게시글 내용이 올바르지 않습니다."),
+	COMMUNITY_COMMENT_INVALID(HttpStatus.BAD_REQUEST, "CO007", "댓글 내용이 올바르지 않습니다."),
+	COMMUNITY_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "CO008", "이미지가 올바르지 않습니다."),
+	COMMUNITY_IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "CO009", "이미지는 최대 10개까지 첨부할 수 있습니다."),
+	COMMUNITY_REPORT_DUPLICATED(HttpStatus.CONFLICT, "CO010", "이미 신고한 게시글입니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;

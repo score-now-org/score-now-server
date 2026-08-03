@@ -9,13 +9,14 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -33,19 +34,71 @@ public class S3Service implements FileStorage {
         if (file == null || file.isEmpty())
             return null;
 
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String key = uploadFileAndReturnKey(file, "");
+
+        return getFileUrl(key);
+    }
+
+    @Override
+    public String uploadFileAndReturnKey(MultipartFile file, String directory) {
+        if (file == null || file.isEmpty())
+            return null;
+
+        String key = buildKey(file, directory);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
-                .key(fileName)
+                .key(key)
                 .contentType(file.getContentType())
                 .build();
 
         uploadFileToS3(file, putObjectRequest);
 
+        return key;
+    }
+
+    @Override
+    public String getFileUrl(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+
         return s3Client.utilities()
-                .getUrl(GetUrlRequest.builder().bucket(bucket).key(fileName).build())
+                .getUrl(GetUrlRequest.builder().bucket(bucket).key(key).build())
                 .toString();
+    }
+
+    private String buildKey(MultipartFile file, String directory) {
+        String normalizedDirectory = normalizeDirectory(directory);
+        String originalFilename = Optional.ofNullable(file.getOriginalFilename()).orElse("");
+        String extension = extractExtension(originalFilename);
+        return normalizedDirectory + UUID.randomUUID() + extension;
+    }
+
+    private String normalizeDirectory(String directory) {
+        if (directory == null || directory.isBlank()) {
+            return "";
+        }
+
+        String normalized = directory.trim().replace("\\", "/");
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+
+        if (!normalized.endsWith("/")) {
+            normalized += "/";
+        }
+
+        return normalized;
+    }
+
+    private String extractExtension(String filename) {
+        int index = filename.lastIndexOf('.');
+        if (index < 0 || index == filename.length() - 1) {
+            return "";
+        }
+
+        return filename.substring(index);
     }
 
     private void uploadFileToS3(MultipartFile file, PutObjectRequest putObjectRequest) {
