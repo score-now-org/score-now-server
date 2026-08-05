@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class MatchLineupUpdateRequest {
+public class MatchLineupPlayerUpdateRequest {
 
 	private String position;
 	private String shirtNumber;

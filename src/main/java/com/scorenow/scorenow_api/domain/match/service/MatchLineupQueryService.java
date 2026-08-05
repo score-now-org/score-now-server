@@ -60,6 +60,15 @@ public class MatchLineupQueryService {
 		MatchLineupDocument doc = getByMatchId(matchId);
 
 		LineupSide side = getSideByTeamId(doc, teamId);
+
+		if (side == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"팀 라인업을 찾을 수 없습니다.",
+				"matchId=" + matchId + ", teamId=" + teamId
+			);
+		}
+
 		Set<Long> selectedPlayerIds = extractSelectedPlayerIds(side);
 
 		List<MatchLineupPlayerResponse> players =
@@ -85,22 +94,42 @@ public class MatchLineupQueryService {
 	 * - 현재 라인업 반영 여부(selected) 포함
 	 */
 	@Transactional(readOnly = true)
-	public List<MatchLineupPlayerResponse> searchSelectablePlayers(Long matchId, String keyword) {
+	public List<MatchLineupPlayerResponse> searchSelectablePlayers(Long matchId, Long teamId, String keyword) {
 		if (matchId == null) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
+		}
+		if (teamId == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"teamId가 비어있습니다."
+			);
 		}
 		if (keyword == null || keyword.isBlank()) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "keyword가 비어있습니다.");
 		}
 
-		keyword = keyword.trim();
+		String trimmedKeyword = keyword.trim();
 
 		MatchLineupDocument doc = getByMatchId(matchId);
 
-		Set<Long> selectedPlayerIds = extractAllSelectedPlayerIds(doc);
+		LineupSide side = getSideByTeamId(doc, teamId);
+
+		if (side == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"팀 라인업을 찾을 수 없습니다.",
+				"matchId=" + matchId + ", teamId=" + teamId
+			);
+		}
+
+		Set<Long> selectedPlayerIds =
+			extractSelectedPlayerIds(side);
 
 		List<MatchLineupPlayerResponse> players =
-			matchLineupSearchRepository.searchSelectablePlayers(keyword, 30);
+			matchLineupSearchRepository.searchSelectablePlayers(
+				trimmedKeyword,
+				30
+			);
 
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
@@ -145,20 +174,6 @@ public class MatchLineupQueryService {
 				.map(LineupPlayer::getPlayerId)
 				.filter(Objects::nonNull)
 				.forEach(selectedPlayerIds::add);
-		}
-
-		return selectedPlayerIds;
-	}
-
-	private Set<Long> extractAllSelectedPlayerIds(MatchLineupDocument doc) {
-		Set<Long> selectedPlayerIds = new HashSet<>();
-
-		if (doc.getHome() != null) {
-			selectedPlayerIds.addAll(extractSelectedPlayerIds(doc.getHome()));
-		}
-
-		if (doc.getAway() != null) {
-			selectedPlayerIds.addAll(extractSelectedPlayerIds(doc.getAway()));
 		}
 
 		return selectedPlayerIds;
