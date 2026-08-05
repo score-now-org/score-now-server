@@ -37,7 +37,7 @@ class MatchAppQueryServiceTest {
     private MatchDetailRepository matchDetailRepository;
 
     @Spy
-    private MatchDisplayTextResolver matchDisplayTextResolver = new MatchDisplayTextResolver();
+    private FootballTimeDisplayTextResolver footballTimeDisplayTextResolver = new FootballTimeDisplayTextResolver();
 
     @InjectMocks
     private MatchAppQueryService matchAppQueryService;

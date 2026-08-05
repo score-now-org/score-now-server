@@ -52,56 +52,11 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
         Query query = new Query(Criteria.where("_id").is(matchDetailDocument.getId()));
         Update update = new Update();
 
-        // 홈팀 골 및 스텟 정보
-        update.set("homeScore", matchDetailDocument.getHomeScore());
-        if (matchDetailDocument.getHomeShootOutScore() != null) {
-            update.set("homeShootOutScore", matchDetailDocument.getHomeShootOutScore());
-        }
-        update.set("homeStats", matchDetailDocument.getHomeStats());
-
-        // 어웨이팀 골 및 스텟 정보
-        update.set("awayScore", matchDetailDocument.getAwayScore());
-        if (matchDetailDocument.getAwayShootOutScore() != null) {
-            update.set("awayShootOutScore", matchDetailDocument.getAwayShootOutScore());
-        }
-        update.set("awayStats", matchDetailDocument.getAwayStats());
-
-        // 추가시간의 경우 기존에 저장한 전반 추가시간이나 후반 추가시간이 사라지면 안되기 때문에, 값을 확인하고 부분적으로 수정해주는 방식으로 한다.
-        AdditionalTime additionalTime = matchDetailDocument.getAdditionalTime();
-        if (additionalTime != null) {
-            Integer firstHalf = additionalTime.getFirstHalf();
-            Integer secondHalf = additionalTime.getSecondHalf();
-            Integer extraFirstHalf = additionalTime.getExtraFirstHalf();
-            Integer extraSecondHalf = additionalTime.getExtraSecondHalf();
-
-            if (firstHalf != null) {
-                update.set("additionalTime.firstHalf", firstHalf);
-            }
-
-            if (secondHalf != null) {
-                update.set("additionalTime.secondHalf", secondHalf);
-            }
-
-            if (extraFirstHalf != null) {
-                update.set("additionalTime.extraFirstHalf", extraFirstHalf);
-            }
-
-            if (extraSecondHalf != null) {
-                update.set("additionalTime.extraSecondHalf", extraSecondHalf);
-            }
-        }
+        update.set("homeScore", matchDetailDocument.getHomeScore());    // 홈팀 골
+        update.set("awayScore", matchDetailDocument.getAwayScore());    // 어웨이팀 골
+        update.set("sportDetail", matchDetailDocument.getSportDetail()); // 종목 별 상세 정보
 
         mongoTemplate.upsert(query, update, MatchDetailDocument.class);
     }
 
-    @Override
-    public void upsertMatchClock(Long matchId, MatchClock matchClock) {
-        Query query = new Query(Criteria.where("_id").is(matchId));
-        Update update = new Update();
-
-        update.set("matchClock", matchClock);
-        update.setOnInsert("_id", matchId);
-
-        mongoTemplate.upsert(query, update, MatchDetailDocument.class);
-    }
 }

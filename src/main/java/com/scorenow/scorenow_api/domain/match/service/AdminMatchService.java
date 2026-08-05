@@ -1,11 +1,16 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.dto.response.stage.MatchStageResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
+import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
+import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +47,7 @@ public class AdminMatchService {
     private static final int TEAM_CANDIDATE_LIMIT = 10;
 
     private final MatchRepository matchRepository;
+    private final MatchDetailRepository matchDetailRepository;
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
@@ -53,6 +59,8 @@ public class AdminMatchService {
     private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
 
     private final MatchRealtimeEventPublisher eventPublisher;
+
+    private final MatchStageResponseResolver matchStageResponseResolver;
 
     /**
      * 경기 리스트 조회
@@ -175,16 +183,17 @@ public class AdminMatchService {
             match.updateStartAt(request.getStartAt());
         }
 
-        if (request.getStatusCode() != null) {
-            updateMatchStatusAndPublishEvent(match, MatchStatus.valueOf(request.getStatusCode()));
-        }
-
+        /* TODO: 점수 수정 없어질 수 있음. 참고*/
         if (request.getHomeScore() != null) {
             match.updateHomeScore(request.getHomeScore());
         }
 
         if (request.getAwayScore() != null) {
             match.updateAwayScore(request.getAwayScore());
+        }
+
+        if (request.getStatusCode() != null) {
+            updateMatchStatusAndPublishEvent(match, MatchStatus.valueOf(request.getStatusCode()));
         }
 
         if (request.getIsManual() != null) {
@@ -205,24 +214,18 @@ public class AdminMatchService {
     }
 
     private void updateMatchStatusAndPublishEvent(Match match, MatchStatus newStatus) {
-        try {
-            if (match.getStatusCode() == newStatus) {
-                return;
-            }
 
-            match.updateStatus(newStatus);
-
-            if (newStatus == MatchStatus.ENDED) {
-                eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, match.getResultByScore());
-                return;
-            }
-
-            eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
-
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
+        if (Objects.equals(match.getStatusCode(), newStatus)) {
+            return;
         }
 
+        match.updateStatus(newStatus);
+
+        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(match.getId())
+                .orElse(null);
+
+        MatchStageResponse matchStageResponse = matchStageResponseResolver.resolve(match, matchDetailDocument);
+        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, matchStageResponse.getDisplayText());
     }
 
 

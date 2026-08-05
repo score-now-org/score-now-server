@@ -1,6 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.controller;
 
-import com.scorenow.scorenow_api.domain.match.dto.request.MatchDetailUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.FootballMatchDetailUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchDetailResponse;
 import com.scorenow.scorenow_api.domain.match.service.MatchDetailService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -20,12 +20,11 @@ public class AdminMatchDetailController {
     }
 
     @PatchMapping
-    public ApiResponse<Long> updateMatchDetail(
+    public ApiResponse<Void> updateMatchDetail(
             @PathVariable Long matchId,
-            @RequestBody MatchDetailUpdateRequest request) {
+            @RequestBody FootballMatchDetailUpdateRequest request) {
 
-        Long updatedId = matchDetailService.updateMatchDetailManual(matchId, request);
-
-        return ApiResponse.success(updatedId);
+        matchDetailService.updateMatchDetailManual(matchId, request);
+        return ApiResponse.success();
     }
 }

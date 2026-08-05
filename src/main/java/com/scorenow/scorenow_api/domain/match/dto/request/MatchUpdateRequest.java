@@ -15,9 +15,9 @@ public class MatchUpdateRequest {
 
 	private String statusCode; // NOT_STARTED, INPLAY, ENDED
 
-	private Integer homeScore;
+	private Integer homeScore;	// TODO: 점수 변경 아마 없을텐데 이거 추후에 삭제 고려
 
-	private Integer awayScore;
+	private Integer awayScore;	// TODO: 점수 변경 아마 없을텐데 이거 추후에 삭제 고려
 
 	private Boolean isManual;	// 자동, 수동 경기 여부
 
