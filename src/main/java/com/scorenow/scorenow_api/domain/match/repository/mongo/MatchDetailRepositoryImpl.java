@@ -12,8 +12,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-import static com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument.*;
-
 @Repository
 @RequiredArgsConstructor
 public class MatchDetailRepositoryImpl implements MatchDetailRepository {
