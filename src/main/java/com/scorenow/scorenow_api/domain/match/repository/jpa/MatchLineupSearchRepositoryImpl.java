@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository.jpa;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
@@ -25,6 +26,36 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 	private static final QPlayer player = QPlayer.player;
 	private static final QPlayerTeamDetail detail = QPlayerTeamDetail.playerTeamDetail;
 	private static final QTeam team = QTeam.team;
+
+	@Override
+	public Optional<MatchLineupPlayerResponse> findPlayerByIdAndTeamId(
+		Long playerId,
+		Long teamId
+	) {
+		MatchLineupPlayerResponse result = jpaQueryFactory
+			.select(Projections.constructor(
+				MatchLineupPlayerResponse.class,
+				player.id,
+				player.kName,
+				player.eName,
+				detail.position,
+				team.id,
+				displayTeamName(),
+				detail.shirtNumber,
+				player.id.isNotNull()
+			))
+			.from(detail)
+			.join(detail.player, player)
+			.join(detail.team, team)
+			.where(
+				player.id.eq(playerId),
+				team.id.eq(teamId),
+				detail.squadOn.isTrue()
+			)
+			.fetchOne();
+
+		return Optional.ofNullable(result);
+	}
 
 	@Override
 	public List<MatchLineupPlayerResponse> findPlayersByTeamId(

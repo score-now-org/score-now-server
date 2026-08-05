@@ -26,8 +26,6 @@ public class LineupPlayer {
 	private String position;
 	private Integer goals;
 
-	private boolean substitute;  // startinglineup=false, substitute=true
-
 	/**
 	 * 기타 선수
 	 * - DB에 없는 선수 라인업 등록

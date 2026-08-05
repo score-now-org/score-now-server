@@ -7,11 +7,11 @@ import lombok.Getter;
 @AllArgsConstructor
 public class MatchLineupPlayerResponse {
 
-	private String playerId;
+	private Long playerId;
 	private String kName;
 	private String eName;
 	private String position;
-	private String teamId;
+	private Long teamId;
 	private String teamName;
 	private String shirtNumber;
 	private boolean selected;
