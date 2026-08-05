@@ -89,11 +89,27 @@ public class MatchAppResponse {
                     .awayScore(match.getAwayScore())
                     .statusCode(match.getStatusCode().name())
                     .statusName(match.getStatusCode().getDescription())
-                    .currentCommentary(matchDetail.getCurrentCommentary() != null ? matchDetail.getCurrentCommentary() : null)
-                    .isCurrentCommentaryHighlighted(matchDetail.getCurrentCommentary() != null ? matchDetail.isCurrentCommentaryHighlighted() : null)
+                    .currentCommentary(resolveCurrentCommentary(matchDetail))
+                    .isCurrentCommentaryHighlighted(resolveCurrentCommentaryHighlighted(matchDetail))
                     .stage(matchStageResponse)
                     .teamDisplayOrder(match.resolveTeamDisplayOrder())
                     .build();
+        }
+
+        private static String resolveCurrentCommentary(MatchDetailDocument matchDetail) {
+            if (matchDetail == null) {
+                return null;
+            }
+
+            return matchDetail.getCurrentCommentary();
+        }
+
+        private static Boolean resolveCurrentCommentaryHighlighted(MatchDetailDocument matchDetail) {
+            if (matchDetail == null || matchDetail.getCurrentCommentary() == null) {
+                return null;
+            }
+
+            return matchDetail.isCurrentCommentaryHighlighted();
         }
     }
 

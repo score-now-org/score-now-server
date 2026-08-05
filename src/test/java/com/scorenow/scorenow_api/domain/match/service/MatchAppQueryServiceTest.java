@@ -3,23 +3,26 @@ package com.scorenow.scorenow_api.domain.match.service;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.stage.EndedStageDetailResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.stage.MatchStageResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
-import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,32 +39,29 @@ class MatchAppQueryServiceTest {
     @Mock
     private MatchDetailRepository matchDetailRepository;
 
-    @Spy
-    private FootballTimeDisplayTextResolver footballTimeDisplayTextResolver = new FootballTimeDisplayTextResolver();
+    @Mock
+    private MatchStageResponseResolver matchStageResponseResolver;
 
     @InjectMocks
     private MatchAppQueryService matchAppQueryService;
 
     @Test
-    void 진행중_경기는_MatchDetailDocument의_진행시간과_중계멘트를_조합한다() {
+    void 진행중_경기는_MatchDetailDocument의_중계멘트와_stage_정보를_내려준다() {
         LocalDate date = LocalDate.of(2026, 6, 2);
         Match match = createMatch(1L, MatchStatus.IN_PLAY, LocalDateTime.of(2026, 6, 2, 20, 0), 1, 0);
+        MatchStageResponse stageResponse = stage("전반 27");
         MatchDetailDocument detail = MatchDetailDocument.builder()
                 .id(match.getId())
+                .type(SportDetailType.FOOTBALL)
                 .homeScore(1)
                 .awayScore(0)
                 .currentCommentary("선제골 이후 홈팀이 흐름을 잡습니다.")
-                .matchClock(MatchDetailDocument.MatchClock.builder()
-                        .elapsedMinutes(27)
-                        .elapsedSeconds(14)
-                        .period(MatchPeriod.FIRST_HALF)
-                        .running(true)
-                        .providerUpdatedAt(Instant.parse("2026-06-02T11:27:14Z"))
-                        .build())
+                .currentCommentaryHighlighted(true)
                 .build();
 
         givenAppMatches(date, 1L, 2L, match);
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of(detail));
+        given(matchStageResponseResolver.resolve(match, detail)).willReturn(stageResponse);
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
@@ -74,43 +74,56 @@ class MatchAppQueryServiceTest {
         assertThat(response.getCurrentCommentary()).isEqualTo("선제골 이후 홈팀이 흐름을 잡습니다.");
         assertThat(response.getHomeScore()).isEqualTo(1);
         assertThat(response.getAwayScore()).isEqualTo(0);
-        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("전반 27");
-        assertThat(response.getTimeInfo().getElapsedMinutes()).isEqualTo(27);
-        assertThat(response.getTimeInfo().getPeriodCode()).isEqualTo("FIRST_HALF");
+        assertThat(response.getStage()).isSameAs(stageResponse);
+        assertThat(response.getStage().getDisplayText()).isEqualTo("전반 27");
     }
 
     @Test
-    void 종료된_경기는_점수를_기반으로_승패정보를_내려준다() {
+    void 종료된_경기는_stage_resolver가_만든_승패정보를_내려준다() {
         LocalDate date = LocalDate.of(2026, 6, 2);
         Match match = createMatch(2L, MatchStatus.ENDED, LocalDateTime.of(2026, 6, 2, 18, 0), 2, 3);
+        EndedStageDetailResponse endedDetail = EndedStageDetailResponse.builder()
+                .result(MatchResult.AWAY_WIN.name())
+                .winnerTeamId(20L)
+                .winnerTeamName("Away")
+                .build();
+        MatchStageResponse stageResponse = stage("홈팀 패", endedDetail);
 
         givenAppMatches(date, 1L, 2L, match);
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
+        given(matchStageResponseResolver.resolve(match, null)).willReturn(stageResponse);
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
         MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
-        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("홈팀 패");
-        assertThat(response.getTimeInfo().getResult()).isEqualTo(MatchResult.AWAY_WIN.name());
-        assertThat(response.getTimeInfo().getWinnerTeamId()).isEqualTo(20L);
-        assertThat(response.getTimeInfo().getWinnerTeamName()).isEqualTo("Away");
+        assertThat(response.getStage().getDisplayText()).isEqualTo("홈팀 패");
+        assertThat(response.getStage().getDetail()).isSameAs(endedDetail);
     }
 
     @Test
-    void 승부차기_점수가_있는_종료_경기는_승부차기_점수로_승패정보를_내려준다() {
+    void 종료된_축구_경기는_상세_문서를_stage_resolver에_전달한다() {
         LocalDate date = LocalDate.of(2026, 6, 2);
-        Match match = createMatch(
-                5L,
-                MatchStatus.ENDED,
-                LocalDateTime.of(2026, 6, 2, 18, 0),
-                1,
-                1,
-                4,
-                3);
+        Match match = createMatch(5L, MatchStatus.ENDED, LocalDateTime.of(2026, 6, 2, 18, 0), 1, 1);
+        MatchStageResponse stageResponse = stage("홈팀 승", EndedStageDetailResponse.builder()
+                .result(MatchResult.HOME_WIN.name())
+                .winnerTeamId(10L)
+                .winnerTeamName("Home")
+                .build());
+        MatchDetailDocument detail = MatchDetailDocument.builder()
+                .id(match.getId())
+                .type(SportDetailType.FOOTBALL)
+                .sportDetail(FootballDetail.builder()
+                        .shootOutScore(FootballShootOutScore.builder()
+                                .homeScore(4)
+                                .awayScore(3)
+                                .build())
+                        .build())
+                .build();
 
         givenAppMatches(date, 1L, 2L, match);
-        given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
+        given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of(detail));
+        given(matchStageResponseResolver.resolve(match, detail)).willReturn(stageResponse);
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
@@ -118,28 +131,25 @@ class MatchAppQueryServiceTest {
         MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
         assertThat(response.getHomeScore()).isEqualTo(1);
         assertThat(response.getAwayScore()).isEqualTo(1);
-        assertThat(response.getHomeShootOutScore()).isEqualTo(4);
-        assertThat(response.getAwayShootOutScore()).isEqualTo(3);
-        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("홈팀 승");
-        assertThat(response.getTimeInfo().getResult()).isEqualTo(MatchResult.HOME_WIN.name());
-        assertThat(response.getTimeInfo().getWinnerTeamId()).isEqualTo(10L);
-        assertThat(response.getTimeInfo().getWinnerTeamName()).isEqualTo("Home");
+        assertThat(response.getStage()).isSameAs(stageResponse);
     }
 
     @Test
-    void 예정_경기는_경기_시작_시간을_HH_mm_형식으로_내려준다() {
+    void 예정_경기는_stage_resolver가_만든_시작시간_문구를_내려준다() {
         LocalDate date = LocalDate.of(2026, 6, 2);
         Match match = createMatch(4L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 9, 5), 0, 0);
+        MatchStageResponse stageResponse = stage("09:05");
 
         givenAppMatches(date, 1L, 2L, match);
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
+        given(matchStageResponseResolver.resolve(match, null)).willReturn(stageResponse);
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
         MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
-        assertThat(response.getTimeInfo().getDisplayText()).isEqualTo("09:05");
-        assertThat(response.getTimeInfo().getStartAt()).isEqualTo(LocalDateTime.of(2026, 6, 2, 9, 5));
+        assertThat(response.getStage()).isSameAs(stageResponse);
+        assertThat(response.getStage().getDisplayText()).isEqualTo("09:05");
     }
 
     @Test
@@ -151,6 +161,9 @@ class MatchAppQueryServiceTest {
 
         givenAppMatches(date, 1L, null, eplInPlay, laLigaScheduled, eplEnded);
         given(matchDetailRepository.findAllById(List.of(1L, 2L, 3L))).willReturn(List.of());
+        given(matchStageResponseResolver.resolve(eplInPlay, null)).willReturn(stage("전반 1"));
+        given(matchStageResponseResolver.resolve(laLigaScheduled, null)).willReturn(stage("21:00"));
+        given(matchStageResponseResolver.resolve(eplEnded, null)).willReturn(stage("홈팀 승"));
 
         List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, null);
 
@@ -184,32 +197,6 @@ class MatchAppQueryServiceTest {
     }
 
     private Match createMatch(Long id, Long leagueId, String leagueName, MatchStatus status, LocalDateTime startAt, Integer homeScore, Integer awayScore) {
-        return createMatch(id, leagueId, leagueName, status, startAt, homeScore, awayScore, null, null);
-    }
-
-    private Match createMatch(
-            Long id,
-            MatchStatus status,
-            LocalDateTime startAt,
-            Integer homeScore,
-            Integer awayScore,
-            Integer homeShootOutScore,
-            Integer awayShootOutScore) {
-
-        return createMatch(id, 2L, "Premier League", status, startAt, homeScore, awayScore, homeShootOutScore, awayShootOutScore);
-    }
-
-    private Match createMatch(
-            Long id,
-            Long leagueId,
-            String leagueName,
-            MatchStatus status,
-            LocalDateTime startAt,
-            Integer homeScore,
-            Integer awayScore,
-            Integer homeShootOutScore,
-            Integer awayShootOutScore) {
-
         return Match.builder()
                 .id(id)
                 .sportId(1L)
@@ -234,11 +221,20 @@ class MatchAppQueryServiceTest {
                 .startAt(startAt)
                 .statusCode(status)
                 .homeScore(homeScore)
-                .homeShootOutScore(homeShootOutScore)
                 .awayScore(awayScore)
-                .awayShootOutScore(awayShootOutScore)
                 .isActive(true)
                 .teamDisplayOrder(TeamDisplayOrder.HOME_AWAY)
+                .build();
+    }
+
+    private MatchStageResponse stage(String displayText) {
+        return stage(displayText, null);
+    }
+
+    private MatchStageResponse stage(String displayText, Object detail) {
+        return MatchStageResponse.builder()
+                .displayText(displayText)
+                .detail(detail)
                 .build();
     }
 }
