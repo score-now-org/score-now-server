@@ -24,7 +24,7 @@ public class FootballDetailEventProcessor implements SportDetailEventProcessor {
 
     @Override
     public SportDetailType type() {
-        return null;
+        return SportDetailType.FOOTBALL;
     }
 
     @Override

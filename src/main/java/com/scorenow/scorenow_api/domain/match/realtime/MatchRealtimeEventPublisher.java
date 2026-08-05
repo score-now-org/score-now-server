@@ -22,6 +22,7 @@ public class MatchRealtimeEventPublisher {
         MatchCommentaryChangedPayload payload = MatchCommentaryChangedPayload.builder()
                 .commentaryId(commentaryId)
                 .content(content)
+                .highlighted(highlighted)
                 .imageUrl(imageUrl)
                 .build();
 
