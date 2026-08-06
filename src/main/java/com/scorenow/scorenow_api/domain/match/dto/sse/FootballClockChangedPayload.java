@@ -23,7 +23,9 @@ public class FootballClockChangedPayload {
                 .elapsedMinutes(footballClock.getElapsedMinutes())
                 .displayElapsedMinutes(footballClock.resolvePhaseElapsedMinutes())
                 .elapsedSeconds(footballClock.getElapsedSeconds())
-                .phase(footballClock.getPhase().getDescription())
+                .phase(footballClock.getPhase() != null
+                        ? footballClock.getPhase().getDescription()
+                        : null)
                 .running(footballClock.getRunning())
                 .providerUpdatedAt(footballClock.getProviderUpdatedAt())
                 .build();
