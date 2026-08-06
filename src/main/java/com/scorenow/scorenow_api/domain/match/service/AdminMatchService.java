@@ -197,7 +197,7 @@ public class AdminMatchService {
         }
 
         if (request.getStatusCode() != null) {
-            updateMatchStatusAndPublishEvent(match, MatchStatus.valueOf(request.getStatusCode()));
+            updateMatchStatusAndPublishEvent(match, request.getStatusCode());
         }
 
         if (request.getIsManual() != null) {
