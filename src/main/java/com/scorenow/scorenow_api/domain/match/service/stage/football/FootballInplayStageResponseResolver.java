@@ -30,8 +30,10 @@ public class FootballInplayStageResponseResolver implements SportInplayStageResp
     public MatchStageResponse resolve(Match match, MatchDetailDocument matchDetailDocument) {
         FootballClock clock = resolveFootballClock(matchDetailDocument);
 
-        if (clock.getPhase() == null) {
-            return MatchStageResponse.empty();
+        if (clock == null || clock.getPhase() == null) {
+            return MatchStageResponse.builder()
+                    .displayText(match.getStatusCode().getDescription())
+                    .build();
         }
 
         return MatchStageResponse.builder()
@@ -41,8 +43,8 @@ public class FootballInplayStageResponseResolver implements SportInplayStageResp
     }
 
     private FootballClock resolveFootballClock(MatchDetailDocument matchDetailDocument) {
-        if (matchDetailDocument == null) {
-            return FootballClock.empty();
+        if (matchDetailDocument == null || matchDetailDocument.getSportDetail() == null) {
+            return null;
         }
 
         SportDetail sportDetail = matchDetailDocument.getSportDetail();
