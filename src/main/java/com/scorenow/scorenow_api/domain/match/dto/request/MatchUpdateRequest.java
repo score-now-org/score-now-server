@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +14,7 @@ import lombok.Setter;
 @Setter
 public class MatchUpdateRequest {
 
-	private String statusCode; // NOT_STARTED, INPLAY, ENDED
+	private MatchStatus statusCode; // NOT_STARTED, INPLAY, ENDED
 
 	private Integer homeScore;	// TODO: 점수 변경 아마 없을텐데 이거 추후에 삭제 고려
 
