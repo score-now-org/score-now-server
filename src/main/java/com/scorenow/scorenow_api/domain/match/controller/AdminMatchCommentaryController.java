@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
+// TODO: 추후 관리자 프론트 페이지 개발할 때 맞춰서 /api/v1/admin/matches/{matchId}/commentaries 로 수정 고려
 @RequestMapping("/api/v1/matches/{matchId}/commentaries")
 @RequiredArgsConstructor
 public class AdminMatchCommentaryController implements AdminMatchCommentaryApiDocs {
