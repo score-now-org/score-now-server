@@ -10,6 +10,8 @@ import com.scorenow.scorenow_api.domain.match.dto.response.stage.football.Footba
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.service.display.football.FootballClockDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.match.service.stage.SportInplayStageResponseResolver;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +48,7 @@ public class FootballInplayStageResponseResolver implements SportInplayStageResp
         SportDetail sportDetail = matchDetailDocument.getSportDetail();
 
         if (!(sportDetail instanceof FootballDetail footballDetail)) {
-            return FootballClock.empty();
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "축구 상세 정보가 아닙니다.");
         }
 
         if (footballDetail.getClock() == null) {

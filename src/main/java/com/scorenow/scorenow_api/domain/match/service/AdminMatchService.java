@@ -7,6 +7,7 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.dto.response.stage.MatchStageResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
@@ -116,7 +117,10 @@ public class AdminMatchService {
         TeamDisplayOrder teamDisplayOrder = matchTeamDisplayOrderPolicy.decide(league);
         match.updateTeamDisplayOrder(teamDisplayOrder);
 
-        matchRepository.save(match);
+        Match savedMatch = matchRepository.save(match);
+
+        SportDetailType type = SportDetailType.fromSportId(savedMatch.getSportId());
+        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), type);
 
         log.info("수동 경기 등록 완료 - matchId: {}", match.getId());
     }

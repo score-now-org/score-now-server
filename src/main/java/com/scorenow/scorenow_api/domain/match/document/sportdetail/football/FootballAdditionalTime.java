@@ -16,4 +16,8 @@ public class FootballAdditionalTime {
     private Integer secondHalf;         // 후반 추가시간
     private Integer extraFirstHalf;     // 연장 전반 추가시간
     private Integer extraSecondHalf;    // 연장 후반 추가시간
+
+    public static FootballAdditionalTime empty() {
+        return FootballAdditionalTime.builder().build();
+    }
 }

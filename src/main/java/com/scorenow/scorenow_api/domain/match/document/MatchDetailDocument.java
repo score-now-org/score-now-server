@@ -17,9 +17,6 @@ public class MatchDetailDocument extends BaseDocument {
 
     private SportDetailType type; //  종목
 
-    private Integer homeScore;  // 홈팀 점수
-    private Integer awayScore;  // 어웨이팀 점수
-
     private String currentCommentaryId; // 현재 중계 멘트 id
     private String currentCommentary;   // 현재 중계 멘트
     private boolean currentCommentaryHighlighted;   // 현재 중계 멘트 강조 여부

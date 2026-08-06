@@ -8,6 +8,8 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.Foot
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.service.display.football.FootballClockDisplayTextResolver;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,8 +33,8 @@ public class FootballDetailEventProcessor implements SportDetailEventProcessor {
     public void process(MatchDetailDocument currentMatchDetailDocument, MatchDetailDocument newMatchDetailDocument) {
 
         // SportDetail 이 축구인지 검증 및 타입 캐스팅
-        FootballDetail currentFootballDetail = validFootballDetail(currentMatchDetailDocument.getSportDetail());
-        FootballDetail newFootballDetail = validFootballDetail(newMatchDetailDocument.getSportDetail());
+        FootballDetail currentFootballDetail = resolveFootballDetail(currentMatchDetailDocument.getSportDetail());
+        FootballDetail newFootballDetail = resolveFootballDetail(newMatchDetailDocument.getSportDetail());
 
         Long matchId = newMatchDetailDocument.getId();
 
@@ -78,20 +80,22 @@ public class FootballDetailEventProcessor implements SportDetailEventProcessor {
             FootballShootOutScore currentShootOutScore,
             FootballShootOutScore newShootOutScore) {
 
-        if (currentShootOutScore.isShootOutScoreChanged(newShootOutScore)) {
+        if (newShootOutScore == null) {
+            return;
+        }
+
+        if (currentShootOutScore == null || currentShootOutScore.isShootOutScoreChanged(newShootOutScore)) {
             eventPublisher.publishFootballShootOutScoreChanged(matchId, newShootOutScore);
         }
     }
 
-    private static FootballDetail validFootballDetail(SportDetail sportDetail) {
+    private static FootballDetail resolveFootballDetail(SportDetail sportDetail) {
         if (sportDetail == null) {
-            log.info("처리할 종목 상세 정보가 없습니다.");
             return FootballDetail.empty();
         }
 
         if (!(sportDetail instanceof FootballDetail footballDetail)) {
-            log.info("지원하지 않는 종목 상세 정보입니다.");
-            return FootballDetail.empty();
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "축구 상세 정보가 아닙니다.");
         }
 
         return footballDetail;

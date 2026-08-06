@@ -7,6 +7,8 @@ import com.scorenow.scorenow_api.domain.match.repository.FakeFileStorage;
 import com.scorenow.scorenow_api.domain.match.repository.FakeMatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.FakeMatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +19,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatRuntimeException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 
@@ -92,15 +95,13 @@ class MatchCommentaryServiceTest {
     }
 
     @Test
-    void 중계_멘트를_저장하는데_MatchDetailDocument가_없으면_현재_중계_멘트를_가진_새로운_문서를_생성한다() {
+    void 중계_멘트를_저장하는데_MatchDetailDocument가_없으면_예외가_발생한다() {
         Long matchId = 10L;
-        String content = "중계 멘트 입니다.";
         given(matchRepository.existsById(matchId)).willReturn(true);
 
-        matchCommentaryService.saveCommentary(matchId, content, false, true, null);
-
-        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId).get();
-        assertThat(matchDetailDocument.getCurrentCommentary()).isEqualTo(content);
+        assertThatThrownBy(() -> matchCommentaryService.saveCommentary(matchId, "중계 멘트 입니다.", false, true, null))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.MATCH_DETAIL_NOT_FOUND.getMessage());
     }
 
     private MatchDetailDocument createMatchDetailDocument() {

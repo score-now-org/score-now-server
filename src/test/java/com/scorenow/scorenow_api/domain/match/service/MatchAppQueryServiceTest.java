@@ -53,8 +53,6 @@ class MatchAppQueryServiceTest {
         MatchDetailDocument detail = MatchDetailDocument.builder()
                 .id(match.getId())
                 .type(SportDetailType.FOOTBALL)
-                .homeScore(1)
-                .awayScore(0)
                 .currentCommentary("선제골 이후 홈팀이 흐름을 잡습니다.")
                 .currentCommentaryHighlighted(true)
                 .build();

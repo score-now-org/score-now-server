@@ -41,8 +41,9 @@ public class MatchCommentaryService {
             imageUrl = fileStorage.uploadFile(file);
         }
 
-        // 1. matchId 기반으로 존재하는 경기인지 먼저 확인
+        // 1. matchId 기반으로 Match, MatchDetailDocument 등록 여부 검증
         validateMatchExists(matchId);
+        validateMatchDetailDocumentExists(matchId);
 
         // 2. mongoDB 에 저장할 MatchCommentaryDocument 인스턴스 생성 후 저장
         MatchCommentaryDocument commentary = MatchCommentaryDocument.builder()
@@ -55,8 +56,8 @@ public class MatchCommentaryService {
 
         MatchCommentaryDocument savedCommentary = commentaryRepository.save(commentary);
 
-        // 3. MatchDetailDocument 가 있으면 현재 중계 멘트만 갱신하고, 없으면 현재 중계 멘트만 가진 문서를 생성한다.
-        matchDetailRepository.upsertCurrentCommentary(matchId, content, savedCommentary.getId(), highlighted);
+        // 3. 현재 중계 멘트만 갱신
+        matchDetailRepository.updateCurrentCommentary(matchId, content, savedCommentary.getId(), highlighted);
 
         // 4. 중계 멘트 변경 이벤트 발행
         eventPublisher.publishCommentaryChanged(matchId, savedCommentary.getId(), content, highlighted, imageUrl);
@@ -76,5 +77,10 @@ public class MatchCommentaryService {
         if (!matchRepository.existsById(matchId)) {
             throw new BusinessException(ErrorCode.MATCH_NOT_FOUND);
         }
+    }
+
+    private void validateMatchDetailDocumentExists(Long matchId) {
+        matchDetailRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
     }
 }

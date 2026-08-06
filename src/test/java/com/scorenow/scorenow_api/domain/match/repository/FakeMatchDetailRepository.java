@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
@@ -33,18 +34,10 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted) {
+    public void updateCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted) {
         MatchDetailDocument saved = database.get(matchId);
 
         if (saved == null) {
-            MatchDetailDocument matchDetailDocument = MatchDetailDocument.builder()
-                    .id(matchId)
-                    .currentCommentaryId(commentaryId)
-                    .currentCommentary(content)
-                    .currentCommentaryHighlighted(highlighted)
-                    .build();
-
-            database.put(matchId, matchDetailDocument);
             return;
         }
 
@@ -62,9 +55,19 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
         }
 
         ReflectionTestUtils.setField(saved, "type", matchDetailDocument.getType());
-        ReflectionTestUtils.setField(saved, "homeScore", matchDetailDocument.getHomeScore());
-        ReflectionTestUtils.setField(saved, "awayScore", matchDetailDocument.getAwayScore());
         ReflectionTestUtils.setField(saved, "sportDetail", matchDetailDocument.getSportDetail());
+    }
+
+    @Override
+    public void createInitialMatchDetailIfAbsent(Long matchId, SportDetailType type) {
+        if (database.containsKey(matchId)) {
+            return;
+        }
+
+        database.put(matchId, MatchDetailDocument.builder()
+                .id(matchId)
+                .type(type)
+                .build());
     }
 
 }

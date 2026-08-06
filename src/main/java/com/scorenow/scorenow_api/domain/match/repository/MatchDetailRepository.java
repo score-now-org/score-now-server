@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +13,9 @@ public interface MatchDetailRepository {
 
     MatchDetailDocument save(MatchDetailDocument detail);
 
-    void upsertCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted);
+    void updateCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted);
 
     void upsertMatchDetail(MatchDetailDocument matchDetailDocument);
+
+    void createInitialMatchDetailIfAbsent(Long matchId, SportDetailType type);
 }

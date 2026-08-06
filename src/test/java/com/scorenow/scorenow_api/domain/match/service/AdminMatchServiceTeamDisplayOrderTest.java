@@ -24,6 +24,7 @@ import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
+import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
@@ -33,6 +34,9 @@ class AdminMatchServiceTeamDisplayOrderTest {
 
     @Mock
     private MatchRepository matchRepository;
+
+    @Mock
+    private MatchDetailRepository matchDetailRepository;
 
     @Mock
     private LeagueRepository leagueRepository;
@@ -65,7 +69,8 @@ class AdminMatchServiceTeamDisplayOrderTest {
         givenValidCreateRequest(request);
         given(leagueRepository.findById(request.getLeagueId())).willReturn(Optional.of(league));
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> invocation.getArgument(0));
-        given(matchRepository.findByIdWithRelations(any())).willReturn(Optional.empty());
+
+        adminMatchService.createMatch(request);
 
         ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
         then(matchRepository).should().save(matchCaptor.capture());
@@ -85,7 +90,6 @@ class AdminMatchServiceTeamDisplayOrderTest {
         givenValidCreateRequest(request);
         given(leagueRepository.findById(request.getLeagueId())).willReturn(Optional.of(league));
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> invocation.getArgument(0));
-        given(matchRepository.findByIdWithRelations(any())).willReturn(Optional.empty());
 
         adminMatchService.createMatch(request);
 

@@ -14,6 +14,7 @@ public class AdminMatchDetailController {
 
     private final MatchDetailService matchDetailService;
 
+    //TODO: 추후 야구 추가시 엔드포인트를 구분지을지, 아니면 다형성을 활용해서 확장된 응답을 내려줄지 고민 필요
     @GetMapping
     public ApiResponse<MatchDetailResponse> getMatchDetail(@PathVariable Long matchId) {
         return ApiResponse.success(matchDetailService.getMatchDetail(matchId));
