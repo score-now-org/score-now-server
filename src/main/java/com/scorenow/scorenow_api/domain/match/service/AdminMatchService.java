@@ -155,7 +155,7 @@ public class AdminMatchService {
         }
 
         // 3. 존재하지 않는 종목인 경우
-        if (request.getSportId() != null && !sportRepository.existsById(request.getSportId())) {
+        if (request.getSportId() == null || !sportRepository.existsById(request.getSportId())) {
             throw new BusinessException(ErrorCode.SPORT_NOT_FOUND);
         }
 
