@@ -8,10 +8,10 @@ import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
-import com.scorenow.scorenow_api.domain.match.dto.response.stage.MatchStageResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
-import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
+import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -61,7 +61,7 @@ public class AdminMatchService {
 
     private final MatchRealtimeEventPublisher eventPublisher;
 
-    private final MatchStageResponseResolver matchStageResponseResolver;
+    private final MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     /**
      * 경기 리스트 조회
@@ -228,8 +228,8 @@ public class AdminMatchService {
         MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(match.getId())
                 .orElse(null);
 
-        MatchStageResponse matchStageResponse = matchStageResponseResolver.resolve(match, matchDetailDocument);
-        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, matchStageResponse.getDisplayText());
+        MatchStatusDisplayResponse matchStatusDisplayResponse = matchStatusDisplayResolver.resolve(match, matchDetailDocument);
+        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, matchStatusDisplayResponse.getDisplayText());
     }
 
 

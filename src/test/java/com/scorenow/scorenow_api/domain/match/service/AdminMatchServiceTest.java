@@ -11,7 +11,7 @@ import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
-import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
+import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -55,7 +55,7 @@ class AdminMatchServiceTest {
     @Mock
     private MatchRealtimeEventPublisher eventPublisher;
     @Mock
-    private MatchStageResponseResolver matchStageResponseResolver;
+    private MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     @Test
     void 경기_시작_일자가_변경되면_상단고정_핫매치_설정을_해제한다() {

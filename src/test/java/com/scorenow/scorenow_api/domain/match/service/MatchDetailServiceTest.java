@@ -9,7 +9,7 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer.SportDetailNormalizerRegistry;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
-import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
+import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -44,7 +44,7 @@ class MatchDetailServiceTest {
     @Mock
     private SportDetailEventProcessorRegistry eventProcessorRegistry;
     @Mock
-    private MatchStageResponseResolver matchStageResponseResolver;
+    private MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     @Test
     void 진행중_경기_상세_동기화시_MatchDetailDocument가_없으면_예외가_발생한다() {

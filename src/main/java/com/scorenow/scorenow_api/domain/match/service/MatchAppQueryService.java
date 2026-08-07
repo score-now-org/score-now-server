@@ -6,7 +6,7 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
-import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
+import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ import static java.util.stream.Collectors.toMap;
 @Transactional(readOnly = true)
 public class MatchAppQueryService {
 
-    private final MatchStageResponseResolver matchStageResponseResolver;
+    private final MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
@@ -83,7 +83,7 @@ public class MatchAppQueryService {
                             .map(match -> MatchAppResponse.MatchItemResponse.from(
                                     match,
                                     detailMap.get(match.getId()),
-                                    matchStageResponseResolver.resolve(match, detailMap.get(match.getId()))))
+                                    matchStatusDisplayResolver.resolve(match, detailMap.get(match.getId()))))
                             .toList();
 
                     return MatchAppResponse.from(leagueMatches.get(0).getLeague(), appMatches);

@@ -6,7 +6,7 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailTy
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.dto.request.FootballMatchDetailUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchDetailResponse;
-import com.scorenow.scorenow_api.domain.match.dto.response.stage.MatchStageResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
@@ -14,7 +14,7 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer.SportDetailNormalizerRegistry;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
-import com.scorenow.scorenow_api.domain.match.service.stage.MatchStageResponseResolver;
+import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.StadiumData;
@@ -44,7 +44,7 @@ public class MatchDetailService {
     private final SportDetailNormalizerRegistry normalizerRegistry;
     private final SportDetailEventProcessorRegistry eventProcessorRegistry;
 
-    private final MatchStageResponseResolver matchStageResponseResolver;
+    private final MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     @Transactional(readOnly = true)
     public MatchDetailResponse getMatchDetail(Long matchId) {
@@ -300,9 +300,9 @@ public class MatchDetailService {
 
         match.updateStatus(newStatus);
 
-        MatchStageResponse matchStageResponse = matchStageResponseResolver.resolve(match, matchDetailDocument);
+        MatchStatusDisplayResponse matchStatusDisplayResponse = matchStatusDisplayResolver.resolve(match, matchDetailDocument);
 
-        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, matchStageResponse.getDisplayText());
+        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, matchStatusDisplayResponse.getDisplayText());
     }
 
     private FootballDetail resolveFootballDetail(SportDetail sportDetail) {

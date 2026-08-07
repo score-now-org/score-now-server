@@ -3,7 +3,7 @@ package com.scorenow.scorenow_api.domain.match.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.dto.response.stage.MatchStageResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -69,8 +69,8 @@ public class MatchAppResponse {
         @Schema(description = "현재 앱에 보여줄 중계 멘트 강조 여부", example = "true/false/null")
         private Boolean isCurrentCommentaryHighlighted;
 
-        @Schema(description = "경기 시간 정보")   // TODO: 스웨거 변경 필요
-        private MatchStageResponse stage;
+        @Schema(description = "경기 상태 표시 정보")
+        private MatchStatusDisplayResponse statusDisplay;
 
         @Schema(description = "팀 표시 순서", example = "[\"HOME\", \"AWAY\"]")
         private List<String> teamDisplayOrder;
@@ -78,7 +78,7 @@ public class MatchAppResponse {
         public static MatchItemResponse from(
                 Match match,
                 MatchDetailDocument matchDetail,
-                MatchStageResponse matchStageResponse) {
+                MatchStatusDisplayResponse matchStatusDisplayResponse) {
 
             return MatchItemResponse.builder()
                     .id(match.getId())
@@ -91,7 +91,7 @@ public class MatchAppResponse {
                     .statusName(match.getStatusCode().getDescription())
                     .currentCommentary(resolveCurrentCommentary(matchDetail))
                     .isCurrentCommentaryHighlighted(resolveCurrentCommentaryHighlighted(matchDetail))
-                    .stage(matchStageResponse)
+                    .statusDisplay(matchStatusDisplayResponse)
                     .teamDisplayOrder(match.resolveTeamDisplayOrder())
                     .build();
         }
