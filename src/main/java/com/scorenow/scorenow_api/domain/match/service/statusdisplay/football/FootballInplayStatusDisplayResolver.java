@@ -8,7 +8,7 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.Foot
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.football.FootballInplayStatusDisplayDetailResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
-import com.scorenow.scorenow_api.domain.match.service.display.football.FootballClockDisplayTextResolver;
+import com.scorenow.scorenow_api.domain.match.service.displaytext.football.FootballClockDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.InplayStatusDisplayResolver;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;

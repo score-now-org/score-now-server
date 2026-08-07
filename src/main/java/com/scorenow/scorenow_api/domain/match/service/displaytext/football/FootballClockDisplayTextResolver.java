@@ -1,4 +1,4 @@
-package com.scorenow.scorenow_api.domain.match.service.display.football;
+package com.scorenow.scorenow_api.domain.match.service.displaytext.football;
 
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballClock;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballPhase;
