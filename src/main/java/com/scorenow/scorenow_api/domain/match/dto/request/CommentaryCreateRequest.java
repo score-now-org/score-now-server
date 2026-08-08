@@ -7,14 +7,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@Schema(description = "관리자 중계 멘트 등록 요청")
 public class CommentaryCreateRequest {
     @Schema(description = "중계 멘트", example = "손흥민 오늘 굉장한 퍼포먼스를 보여줍니다.")
     @NotBlank(message = "중계 멘트는 필수입니다.")
     private String content;
 
-    @Schema(description = "중계 멘트 강조 여부", example = "true/false")
+    @Schema(description = "중계 멘트 강조 여부", example = "true")
     private boolean highlighted;
 
-    @Schema(description = "중계글 기록 저장 ON/OFF", example = "true/false")
+    @Schema(description = "중계글 기록 저장 ON/OFF", example = "true")
     private boolean recordEnabled;
 }

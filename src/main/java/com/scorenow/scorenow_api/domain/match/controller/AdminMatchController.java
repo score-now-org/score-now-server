@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/admin/matches")
 @RequiredArgsConstructor
-public class AdminMatchController {
+public class AdminMatchController implements AdminMatchApiDocs {
 
     private final AdminMatchService adminMatchService;
 

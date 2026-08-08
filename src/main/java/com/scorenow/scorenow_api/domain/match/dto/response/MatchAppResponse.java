@@ -57,19 +57,32 @@ public class MatchAppResponse {
         @Schema(description = "어웨이팀 점수", example = "0")
         private Integer awayScore;
 
-        @Schema(description = "경기 상태 코드", example = "NOT_STARTED, IN_PLAY, ENDED, INTERRUPTED, POSTPONED, CANCELLED, ABANDONED")
+        @Schema(
+                description = "경기 상태 코드",
+                example = "IN_PLAY",
+                allowableValues = {
+                        "NOT_STARTED", "IN_PLAY", "ENDED", "INTERRUPTED",
+                        "POSTPONED", "CANCELLED", "ABANDONED"
+                }
+        )
         private String statusCode;
 
-        @Schema(description = "경기 상태명", example = "경기전, 진행중, 종료, 중지, 연기, 취소, 취소")
+        @Schema(description = "경기 상태명", example = "진행중")
         private String statusName;
 
         @Schema(description = "현재 앱에 보여줄 중계 멘트", example = "홈팀이 선제골 이후 흐름을 잡습니다.")
         private String currentCommentary;
 
-        @Schema(description = "현재 앱에 보여줄 중계 멘트 강조 여부", example = "true/false/null")
+        @Schema(description = "현재 앱에 보여줄 중계 멘트 강조 여부. currentCommentary가 없으면 null입니다.", example = "true")
         private Boolean isCurrentCommentaryHighlighted;
 
-        @Schema(description = "경기 상태 표시 정보")
+        @Schema(
+                description = """
+                        경기 상태 표시 정보입니다.
+                        앱의 시간/결과 표시 영역은 statusDisplay.displayText를 우선 사용합니다.
+                        detail은 경기 상태와 종목에 따라 구조가 달라질 수 있습니다.
+                        """
+        )
         private MatchStatusDisplayResponse statusDisplay;
 
         @Schema(description = "팀 표시 순서", example = "[\"HOME\", \"AWAY\"]")

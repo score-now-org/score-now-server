@@ -18,7 +18,7 @@ public class AdminMatchCommentaryResponse {
     @Schema(description = "강조 중계 멘트 여부", example = "true")
     private boolean highlighted;
 
-    @Schema(description = "중계 멘트 등록 일자")
+    @Schema(description = "중계 멘트 등록 일자", example = "2026-06-05T20:35:00")
     private LocalDateTime createdAt;
 
     public static AdminMatchCommentaryResponse from(MatchCommentaryDocument document) {

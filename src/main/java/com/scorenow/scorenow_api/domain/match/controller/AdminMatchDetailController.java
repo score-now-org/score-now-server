@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/matches/{matchId}/detail")
-public class AdminMatchDetailController {
+public class AdminMatchDetailController implements AdminMatchDetailApiDocs {
 
     private final MatchDetailService matchDetailService;
 
