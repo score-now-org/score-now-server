@@ -35,9 +35,6 @@ class InplayMatchSyncServiceTest {
     private InplayCandidateStatusUpdateService inplayCandidateStatusUpdateService;
 
     @Mock
-    private MatchClockSyncService matchClockSyncService;
-
-    @Mock
     private InplayMatchRedisRepository inplayMatchRedisRepository;
 
     @Test

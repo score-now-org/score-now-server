@@ -43,7 +43,7 @@ public class InplayCandidateStatusUpdateService {
         int updatedCount = matchRepository.updateStatusBulk(matchIds, matchStatus);
 
         if (updatedCount > 0) {
-            matchIds.forEach(matchId -> eventPublisher.publishMatchStatusChanged(matchId, matchStatus));
+            matchIds.forEach(matchId -> eventPublisher.publishMatchStatusChanged(matchId, matchStatus, matchStatus.getDescription()));
         }
 
         return updatedCount;

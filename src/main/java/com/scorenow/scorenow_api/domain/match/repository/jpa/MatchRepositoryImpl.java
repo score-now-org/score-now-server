@@ -47,6 +47,7 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 				leagueNameContains(condition.getLeagueName()),
 				statusEq(condition.getStatus()),
 				isActiveEq(condition.getIsActive()),
+				isManualEq(condition.getIsManual()),
 				dateBetween(condition.getDate())
 			)
 			.orderBy(createOrderSpecifier(condition.getSortBy(), condition.getSortDirection()))
@@ -64,6 +65,7 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 				leagueNameContains(condition.getLeagueName()),
 				statusEq(condition.getStatus()),
 				isActiveEq(condition.getIsActive()),
+				isManualEq(condition.getIsManual()),
 				dateBetween(condition.getDate())
 			)
 			.fetchOne();
@@ -114,6 +116,10 @@ public class MatchRepositoryImpl implements MatchRepositoryCustom{
 
 	private BooleanExpression isActiveEq(Boolean isActive){
 		return isActive != null ? match.isActive.eq(isActive): null;
+	}
+
+	private BooleanExpression isManualEq(Boolean isManual){
+		return isManual != null ? match.isManual.eq(isManual): null;
 	}
 
 	private BooleanExpression dateBetween(String date){

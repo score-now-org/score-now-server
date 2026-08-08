@@ -51,7 +51,7 @@ public class MatchMapper {
                 .statusCode(MatchStatus.NOT_STARTED)
                 .matchType("A")
                 .isManual(true)
-                .isActive(false)
+                .isActive(true)
                 .build();
     }
 

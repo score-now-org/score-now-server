@@ -17,7 +17,9 @@ public interface MatchAppApiDocs {
             description = """
                     앱에서 사용하는 경기 목록을 리그별로 그룹핑하여 조회합니다.
                     날짜, 종목, 리그 조건으로 필터링할 수 있으며 각 리그 하위 경기 정렬 순서는 진행중 > 경기 예정 > 경기 종료입니다.
-                    경기 진행 시간과 현재 중계 멘트는 MatchDetailDocument 정보를 조합하여 반환합니다.
+                    경기 시간/결과 표시값은 statusDisplay.displayText를 우선 사용합니다.
+                    statusDisplay.detail은 경기 상태와 종목에 따라 구조가 달라질 수 있습니다.
+                    현재 중계 멘트가 있으면 currentCommentary와 isCurrentCommentaryHighlighted를 함께 반환합니다.
                     """
     )
     ApiResponse<List<MatchAppResponse>> getMatches(
