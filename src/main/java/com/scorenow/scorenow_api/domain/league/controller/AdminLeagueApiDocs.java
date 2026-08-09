@@ -5,6 +5,7 @@ import java.util.List;
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueCreateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueApiLeagueIdUpdateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueResponse;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -12,13 +13,14 @@ import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 
 @Tag(name = "Admin League API", description = "관리자 리그 관리 API")
 public interface AdminLeagueApiDocs {
 
-    @Operation(summary = "리그 목록 조회", description = "keyword로 리그 한글명 또는 영문명을 검색합니다. keyword가 없으면 전체 리그를 조회합니다.")
+    @Operation(summary = "리그 검색", description = "리그 ID 또는 keyword로 리그 목록을 검색합니다. 조건이 없으면 전체 리그를 조회합니다.")
     ApiResponse<List<AdminLeagueResponse>> getLeagues(
-            @Parameter(description = "리그명 검색어", example = "Premier") String keyword);
+            @ParameterObject LeagueSearchCondition condition);
 
     @Operation(summary = "리그 단건 조회", description = "리그 ID로 리그 상세 정보를 조회합니다.")
     ApiResponse<AdminLeagueResponse> getLeagues(

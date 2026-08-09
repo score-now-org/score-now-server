@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.service;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueCreateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueApiLeagueIdUpdateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueResponse;
 import com.scorenow.scorenow_api.domain.league.entity.League;
@@ -20,10 +21,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.BETS;
 import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.MANUAL;
+import static com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder.HOME_AWAY;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +67,9 @@ class AdminLeagueServiceTest {
         AdminLeagueResponse savedLeague = adminLeagueService.createLeague(request);
 
         assertThat(savedLeague.getDataOrigin()).isEqualTo(MANUAL);
+        assertThat(savedLeague.getSportName()).isEqualTo("soccer");
+        assertThat(savedLeague.getTeamDisplayOrder()).isEqualTo(HOME_AWAY);
+        assertThat(savedLeague.getSyncEnabled()).isNull();
         then(leagueExternalMappingRepository).should(never()).save(any());
     }
 
@@ -77,6 +83,9 @@ class AdminLeagueServiceTest {
         AdminLeagueResponse savedLeague = adminLeagueService.createLeague(request);
 
         assertThat(savedLeague.getDataOrigin()).isEqualTo(BETS);
+        assertThat(savedLeague.getSportName()).isEqualTo("soccer");
+        assertThat(savedLeague.getTeamDisplayOrder()).isEqualTo(HOME_AWAY);
+        assertThat(savedLeague.getSyncEnabled()).isTrue();
 
         ArgumentCaptor<LeagueExternalMapping> captor = ArgumentCaptor.forClass(LeagueExternalMapping.class);
         then(leagueExternalMappingRepository).should().save(captor.capture());
@@ -106,6 +115,60 @@ class AdminLeagueServiceTest {
 
         then(leagueRepository).should(never()).save(any());
         then(leagueExternalMappingRepository).should(never()).save(any());
+    }
+
+    @Test
+    void 리그_ID와_키워드로_검색하고_종목명과_외부_동기화_여부를_응답한다() {
+        Sport sport = Sport.builder()
+                .id(1L)
+                .kName("축구")
+                .build();
+        League league = League.builder()
+                .id(10L)
+                .sportId(1L)
+                .sport(sport)
+                .eName("Premier League")
+                .kName("프리미어리그")
+                .dataOrigin(BETS)
+                .build();
+        LeagueSearchCondition condition = new LeagueSearchCondition();
+        condition.setLeagueId(10L);
+        condition.setKeyword(" 프리미어 ");
+
+        given(leagueRepository.searchLeagues(10L, "프리미어"))
+                .willReturn(List.of(league));
+        given(leagueExternalMappingRepository.findByInternalLeagueIdIn(List.of(10L)))
+                .willReturn(List.of(LeagueExternalMapping.of(BETS, "api_league_id", 10L, TRUE)));
+
+        List<AdminLeagueResponse> result = adminLeagueService.searchLeagues(condition);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(10L);
+        assertThat(result.get(0).getSportName()).isEqualTo("축구");
+        assertThat(result.get(0).getSyncEnabled()).isTrue();
+        then(leagueRepository).should().searchLeagues(10L, "프리미어");
+        then(leagueExternalMappingRepository).should().findByInternalLeagueIdIn(List.of(10L));
+    }
+
+    @Test
+    void 수동_관리_리그_검색시_외부_동기화_여부는_null로_응답한다() {
+        League league = League.builder()
+                .id(10L)
+                .sportId(1L)
+                .eName("Manual League")
+                .kName("수동 리그")
+                .dataOrigin(MANUAL)
+                .build();
+        LeagueSearchCondition condition = new LeagueSearchCondition();
+
+        given(leagueRepository.searchLeagues(null, null))
+                .willReturn(List.of(league));
+
+        List<AdminLeagueResponse> result = adminLeagueService.searchLeagues(condition);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getSyncEnabled()).isNull();
+        then(leagueExternalMappingRepository).should(never()).findByInternalLeagueIdIn(any());
     }
 
     @Test

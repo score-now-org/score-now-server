@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.league.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
@@ -15,12 +16,15 @@ public class AdminLeagueUpdateRequest {
 	private Long sportId;
 
 	@Schema(description = "영문 리그명. null이면 변경하지 않습니다.", example = "Premier League")
+	@JsonProperty("eName")
 	private String eName;
 
 	@Schema(description = "한글 리그명. null이면 변경하지 않습니다.", example = "프리미어리그")
+	@JsonProperty("kName")
 	private String kName;
 
 	@Schema(description = "숏 리그명. null이면 변경하지 않습니다.", example = "EPL")
+	@JsonProperty("sName")
 	private String sName;
 
 	@Schema(description = "팀 표시 순서. null이면 변경하지 않습니다.", example = "HOME_AWAY", allowableValues = {"HOME_AWAY", "AWAY_HOME"})

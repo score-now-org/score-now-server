@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.league.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -25,8 +26,36 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
             @Param("cc") String cc
     );
 
-    @Query("SELECT l FROM League l WHERE " +
-            "(:keyword IS NULL OR l.kName LIKE %:keyword% OR " +
-            "l.eName LIKE %:keyword%)")
-    List<League> searchByKeyword(@Param("keyword") String keyword);
+    @Query("""
+            select l
+            from League l
+            left join fetch l.sport
+            where (:leagueId is null or l.id = :leagueId)
+              and (
+                    :keyword is null
+                    or l.kName like concat('%', :keyword, '%')
+                    or lower(l.eName) like lower(concat('%', :keyword, '%'))
+                    or lower(l.sName) like lower(concat('%', :keyword, '%'))
+              )
+            order by
+              case
+                when l.kName is not null and l.kName <> '' then l.kName
+                when l.eName is not null and l.eName <> '' then l.eName
+                when l.sName is not null and l.sName <> '' then l.sName
+                else ''
+              end asc,
+              l.id asc
+            """)
+    List<League> searchLeagues(
+            @Param("leagueId") Long leagueId,
+            @Param("keyword") String keyword
+    );
+
+    @Query("""
+            select l
+            from League l
+            left join fetch l.sport
+            where l.id = :leagueId
+            """)
+    Optional<League> findByIdWithSport(@Param("leagueId") Long leagueId);
 }

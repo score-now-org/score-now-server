@@ -41,4 +41,9 @@ public class LeagueExternalMappingRepositoryImpl implements LeagueExternalMappin
 	public List<LeagueExternalMapping> findByDataOrigin(DataOrigin dataOrigin) {
 		return jpaRepository.findByDataOrigin(dataOrigin);
 	}
+
+	@Override
+	public List<LeagueExternalMapping> findByInternalLeagueIdIn(List<Long> internalLeagueIds) {
+		return jpaRepository.findByInternalLeagueIdIn(internalLeagueIds);
+	}
 }

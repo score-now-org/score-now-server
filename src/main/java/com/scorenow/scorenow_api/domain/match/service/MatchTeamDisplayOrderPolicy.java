@@ -16,8 +16,8 @@ public class MatchTeamDisplayOrderPolicy {
      * 2. 만약 리그에 할당된 TeamDisplayOrder 가 있다면 해당 리그에 속한 모든 경기는 리그의 TeamDisplayOrder 를 따른다.
      */
     public TeamDisplayOrder decide(League league) {
-        if (league != null && league.hasTeamDisplayOrder()) {
-            return league.getTeamDisplayOrder();
+        if (league != null) {
+            return league.resolveTeamDisplayOrder();
         }
 
         return TeamDisplayOrder.HOME_AWAY;
