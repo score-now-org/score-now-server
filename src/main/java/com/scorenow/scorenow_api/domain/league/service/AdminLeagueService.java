@@ -21,6 +21,7 @@ import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueResponse;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -39,6 +40,13 @@ public class AdminLeagueService {
     private final LeagueRepository leagueRepository;
     private final LeagueExternalMappingRepository leagueExternalMappingRepository;
     private final SportRepository sportRepository;
+
+    /**
+     * 리그 등록 시 옵션 조회 (종목)
+     */
+    public AdminLeagueSearchOptionsResponse getSearchOptions() {
+        return AdminLeagueSearchOptionsResponse.of(sportRepository.findAll());
+    }
 
     /**
      * 리그 검색 (리그 ID, 리그명)

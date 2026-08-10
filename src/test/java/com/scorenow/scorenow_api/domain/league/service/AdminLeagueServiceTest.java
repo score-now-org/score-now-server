@@ -5,6 +5,7 @@ import com.scorenow.scorenow_api.domain.league.dto.request.LeagueApiLeagueIdUpda
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueResponse;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
@@ -51,6 +52,28 @@ class AdminLeagueServiceTest {
 
     @InjectMocks
     private AdminLeagueService adminLeagueService;
+
+    @Test
+    void 리그_관리_옵션을_조회한다() {
+        Sport sport = Sport.builder()
+                .id(1L)
+                .kName("축구")
+                .build();
+        given(sportRepository.findAll()).willReturn(List.of(sport));
+
+        AdminLeagueSearchOptionsResponse result = adminLeagueService.getSearchOptions();
+
+        assertThat(result.getSports()).hasSize(1);
+        assertThat(result.getSports().get(0).getId()).isEqualTo(1L);
+        assertThat(result.getSports().get(0).getLabel()).isEqualTo("축구");
+        assertThat(result.getTeamDisplayOrders())
+                .extracting(AdminLeagueSearchOptionsResponse.EnumOption::getValue)
+                .containsExactly("HOME_AWAY", "AWAY_HOME");
+        assertThat(result.getDataOrigins())
+                .extracting(AdminLeagueSearchOptionsResponse.EnumOption::getValue)
+                .containsExactly("BETS")
+                .doesNotContain("MANUAL");
+    }
 
     @Test
     void 외부_API_연동_없이_리그를_생성한다() {

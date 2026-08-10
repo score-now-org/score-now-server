@@ -19,6 +19,7 @@ import com.scorenow.scorenow_api.domain.league.dto.request.LeagueApiLeagueIdUpda
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueResponse;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.league.service.AdminLeagueService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
@@ -31,6 +32,11 @@ import lombok.RequiredArgsConstructor;
 public class AdminLeagueController implements AdminLeagueApiDocs {
 
 	private final AdminLeagueService adminLeagueService;
+
+	@GetMapping("/search-options")
+	public ApiResponse<AdminLeagueSearchOptionsResponse> getSearchOptions() {
+		return ApiResponse.success(adminLeagueService.getSearchOptions());
+	}
 
 	@GetMapping
 	public ApiResponse<List<AdminLeagueResponse>> getLeagues(@ModelAttribute LeagueSearchCondition condition) {
