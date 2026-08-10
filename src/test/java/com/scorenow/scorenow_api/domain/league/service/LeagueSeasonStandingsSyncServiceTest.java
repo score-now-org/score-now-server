@@ -4,6 +4,8 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDataDocument;
 import com.scorenow.scorenow_api.domain.league.dto.LeagueSeasonStandingsSyncTarget;
 import com.scorenow.scorenow_api.domain.league.mapper.LeagueSeasonStandingsMapper;
+import com.scorenow.scorenow_api.domain.league.service.standings.LeagueSeasonStandingsSyncService;
+import com.scorenow.scorenow_api.domain.league.service.standings.LeagueSeasonStandingsSyncTargetReader;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;

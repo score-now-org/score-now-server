@@ -12,6 +12,7 @@ import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingR
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsMongoRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsRepository;
+import com.scorenow.scorenow_api.domain.league.service.standings.LeagueSeasonStandingsSyncService;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;

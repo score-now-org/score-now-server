@@ -1,4 +1,4 @@
-package com.scorenow.scorenow_api.domain.league.service;
+package com.scorenow.scorenow_api.domain.league.service.standings;
 
 import com.scorenow.scorenow_api.domain.league.dto.LeagueSeasonStandingsSyncTarget;
 import com.scorenow.scorenow_api.domain.league.entity.*;
