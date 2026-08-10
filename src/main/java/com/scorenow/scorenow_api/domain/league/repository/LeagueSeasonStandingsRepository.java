@@ -39,6 +39,18 @@ public interface LeagueSeasonStandingsRepository extends JpaRepository<LeagueSea
                    or lower(l.eName) like lower(concat('%', :leagueName, '%'))
               )
               and ls.isActive = true
+            order by
+              case
+                when ls.isCurrent = true then 0
+                else 1
+              end asc,
+              case
+                when l.kName is not null and l.kName <> '' then l.kName
+                when l.eName is not null and l.eName <> '' then l.eName
+                when l.sName is not null and l.sName <> '' then l.sName
+                else ''
+              end asc,
+              ls.seasonStartAt desc
             """,
             countQuery = """
             select count(s)

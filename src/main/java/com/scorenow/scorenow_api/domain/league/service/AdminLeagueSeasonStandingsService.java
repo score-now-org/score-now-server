@@ -73,7 +73,7 @@ public class AdminLeagueSeasonStandingsService {
     }
 
     /**
-     * 리그 시즌 순위 검색 (전체 조회, 리그명, 리그ID)
+     * 리그 시즌 순위 관리 방식 검색 (전체 조회, 리그명, 리그ID)
      */
     public Page<AdminLeagueSeasonStandingsResponse> searchLeagueSeasonStandings(
             LeagueSeasonStandingsSearchCondition condition,
@@ -83,7 +83,7 @@ public class AdminLeagueSeasonStandingsService {
                 ? condition
                 : new LeagueSeasonStandingsSearchCondition();
 
-        // 리그 시즌 순위 조회
+        // 리그 시즌 순위 관리 조회
         Page<LeagueSeasonStandings> seasonStandings = leagueSeasonStandingsRepository.searchLeagueSeasonStandings(
                 safeCondition.getLeagueId(),
                 normalize(safeCondition.getLeagueName()),
