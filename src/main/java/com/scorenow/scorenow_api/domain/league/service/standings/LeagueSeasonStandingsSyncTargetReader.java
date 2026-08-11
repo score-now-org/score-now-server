@@ -40,6 +40,7 @@ public class LeagueSeasonStandingsSyncTargetReader {
                 .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND, "외부 API 리그 ID 가 존재하지 않습니다."));
 
         return LeagueSeasonStandingsSyncTarget.builder()
+                .sportId(league.getSportId())
                 .leagueId(league.getId())
                 .leagueSeasonId(leagueSeasonId)
                 .leagueSeasonStandingsId(seasonStanding.getId())

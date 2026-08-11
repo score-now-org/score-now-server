@@ -87,6 +87,10 @@ public class BetsStandingsResponse {
     @Setter
     public static class Row {
         private Integer pos;            // 순위
+
+        @JsonProperty("sort_pos")
+        private Integer sortPos;        // 정렬 순위 (동순위 고려한 순위)
+
         private Integer change;         // 순위 변동값 (ex: 1위→2위 = -1 / 3위→1위 = 2)
         private Integer win;            // 승
         private Integer draw;           // 무
@@ -97,6 +101,9 @@ public class BetsStandingsResponse {
 
         @JsonProperty("goalsagainst")
         private Integer goalsAgainst;   // 실점
+
+        @JsonProperty("goalDiffTotal")
+        private Integer goalDiffTotal;  // 득실차
 
         private Integer points;         // 승점
         private Promotion promotion;    // 승격,진출,강등 상태
@@ -109,26 +116,6 @@ public class BetsStandingsResponse {
 
         public int goalDifference() {
             return valueOrZero(goalsFor) - valueOrZero(goalsAgainst);
-        }
-
-        public int safeWin() {
-            return valueOrZero(win);
-        }
-
-        public int safeDraw() {
-            return valueOrZero(draw);
-        }
-
-        public int safeLoss() {
-            return valueOrZero(loss);
-        }
-
-        public int safeGoalsFor() {
-            return valueOrZero(goalsFor);
-        }
-
-        public int safeGoalsAgainst() {
-            return valueOrZero(goalsAgainst);
         }
 
         private int valueOrZero(Integer value) {

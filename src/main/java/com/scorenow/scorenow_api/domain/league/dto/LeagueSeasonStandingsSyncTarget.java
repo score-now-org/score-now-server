@@ -11,6 +11,7 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class LeagueSeasonStandingsSyncTarget {
 
+    private final Long sportId;
     private final Long leagueSeasonStandingsId;
     private final Long leagueSeasonId;
     private final Long leagueId;
