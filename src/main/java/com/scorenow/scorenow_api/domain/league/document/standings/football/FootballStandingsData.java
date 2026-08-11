@@ -1,7 +1,6 @@
 package com.scorenow.scorenow_api.domain.league.document.standings.football;
 
 import com.scorenow.scorenow_api.domain.league.document.standings.StandingsData;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.TypeAlias;
