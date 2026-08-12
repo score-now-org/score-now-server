@@ -1,8 +1,10 @@
 package com.scorenow.scorenow_api.domain.league.controller;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsGroupMappingsUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsGroupMappingsResponse;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
 import com.scorenow.scorenow_api.domain.league.service.AdminLeagueSeasonStandingsService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -63,6 +65,22 @@ public class AdminLeagueSeasonStandingsController implements AdminLeagueSeasonSt
     @PostMapping("/{leagueSeasonId}/sync")
     public ApiResponse<Void> syncLeagueSeasonStandingsData(@PathVariable Long leagueSeasonId) {
         adminLeagueSeasonStandingsService.syncLeagueSeasonStandingsData(leagueSeasonId);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/{leagueSeasonId}/group-mappings")
+    public ApiResponse<AdminLeagueSeasonStandingsGroupMappingsResponse> getGroupMappings(
+            @PathVariable Long leagueSeasonId) {
+
+        return ApiResponse.success(adminLeagueSeasonStandingsService.getGroupMappings(leagueSeasonId));
+    }
+
+    @PutMapping("/{leagueSeasonId}/group-mappings")
+    public ApiResponse<Void> updateGroupMappings(
+            @PathVariable Long leagueSeasonId,
+            @RequestBody @Valid LeagueSeasonStandingsGroupMappingsUpdateRequest request) {
+
+        adminLeagueSeasonStandingsService.updateGroupMappings(leagueSeasonId, request);
         return ApiResponse.success();
     }
 }

@@ -1,8 +1,10 @@
 package com.scorenow.scorenow_api.domain.league.controller;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsGroupMappingsUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsGroupMappingsResponse;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,4 +51,13 @@ public interface AdminLeagueSeasonStandingsApiDocs {
     @Operation(summary = "리그 시즌 순위 외부 데이터 동기화", description = "외부 데이터 타입으로 관리되는 리그 시즌 순위를 즉시 동기화합니다.")
     ApiResponse<Void> syncLeagueSeasonStandingsData(
             @Parameter(description = "동기화할 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId);
+
+    @Operation(summary = "리그 시즌 순위 그룹 표시 설정 조회", description = "외부 순위 그룹명과 관리자가 설정한 표시명 및 표시 순서를 조회합니다.")
+    ApiResponse<AdminLeagueSeasonStandingsGroupMappingsResponse> getGroupMappings(
+            @Parameter(description = "조회할 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId);
+
+    @Operation(summary = "리그 시즌 순위 그룹 표시 설정 수정", description = "그룹 key는 유지하고 앱에 노출할 표시명과 표시 순서를 일괄 수정합니다.")
+    ApiResponse<Void> updateGroupMappings(
+            @Parameter(description = "수정할 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId,
+            @Parameter(description = "수정할 그룹 표시 설정", required = true) LeagueSeasonStandingsGroupMappingsUpdateRequest request);
 }
