@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.league.dto.LeagueSeasonStandingsSyncTarg
 import com.scorenow.scorenow_api.domain.league.entity.*;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsRepository;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class LeagueSeasonStandingsSyncTargetReader {
 
         LeagueSeason leagueSeason = seasonStanding.getLeagueSeason();
         League league = leagueSeason.getLeague();
+        Sport sport = league.getSport();
 
         // 외부 API 리그 ID 조회
         LeagueExternalMapping leagueExternalMapping = leagueExternalMappingRepository
@@ -41,6 +43,7 @@ public class LeagueSeasonStandingsSyncTargetReader {
 
         return LeagueSeasonStandingsSyncTarget.builder()
                 .sportId(league.getSportId())
+                .sportCode(sport.getSportCode())
                 .leagueId(league.getId())
                 .leagueSeasonId(leagueSeasonId)
                 .leagueSeasonStandingsId(seasonStanding.getId())

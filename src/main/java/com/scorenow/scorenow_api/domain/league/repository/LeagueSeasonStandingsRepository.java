@@ -21,6 +21,7 @@ public interface LeagueSeasonStandingsRepository extends JpaRepository<LeagueSea
             from LeagueSeasonStandings lss
             join fetch lss.leagueSeason ls
             join fetch ls.league l
+            join fetch l.sport s
             where lss.leagueSeasonId = :leagueSeasonId
               and ls.isActive = true
             """)

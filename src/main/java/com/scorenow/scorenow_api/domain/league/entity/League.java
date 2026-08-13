@@ -42,6 +42,8 @@ public class League extends BaseEntity {
 
     private String cc;
 
+    private String imageUrl;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private TeamDisplayOrder teamDisplayOrder = TeamDisplayOrder.HOME_AWAY;

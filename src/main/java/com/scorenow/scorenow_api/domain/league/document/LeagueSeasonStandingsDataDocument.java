@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.document;
 
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.league.document.standings.StandingsData;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.entity.BaseDocument;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -19,9 +20,12 @@ public class LeagueSeasonStandingsDataDocument extends BaseDocument {
     @Id
     private String id;
 
-    // 내부 정보
+    /* 내부 정보 */
     private Long sportId;
+    private SportCode sportCode;
+
     private Long leagueId;
+
     private String apiLeagueId;
     private DataOrigin dataOrigin;
 
@@ -32,13 +36,13 @@ public class LeagueSeasonStandingsDataDocument extends BaseDocument {
 
     private Instant syncedAt;
 
-    // 정규화된 순위 정보
+    /* 정규화된 순위 정보 */
     private StandingsData data;
 
-    // 외부 API 응답 시즌 정보
+    /* 외부 API 응답 시즌 정보 */
     private ExternalSeason externalSeason;
 
-    // 관리자 관리 영역
+    /* 관리자 관리 */
     private List<GroupMapping> groupMappings;
 
     @Getter

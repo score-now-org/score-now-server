@@ -141,6 +141,7 @@ public class LeagueSeasonStandingsSyncService {
     private Update commonDataUpdate(LeagueSeasonStandingsDataDocument newDocument) {
         Update update = new Update();
         update.set("sportId", newDocument.getSportId());
+        update.set("sportCode", newDocument.getSportCode());
         update.set("leagueId", newDocument.getLeagueId());
         update.set("apiLeagueId", newDocument.getApiLeagueId());
         update.set("dataOrigin", newDocument.getDataOrigin());

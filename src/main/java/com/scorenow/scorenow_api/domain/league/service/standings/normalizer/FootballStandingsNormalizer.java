@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDat
 import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDataDocument.ExternalSeason;
 import com.scorenow.scorenow_api.domain.league.document.standings.football.FootballStandingsData;
 import com.scorenow.scorenow_api.domain.league.dto.LeagueSeasonStandingsSyncTarget;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -26,8 +27,8 @@ public class FootballStandingsNormalizer implements StandingsNormalizer {
 
 
     @Override
-    public Long sportId() { //TODO: 추후 sportCode 도입 예정
-        return 1L;
+    public SportCode sportCode() { //TODO: 추후 sportCode 도입 예정
+        return SportCode.FOOTBALL;
     }
 
     @Override
@@ -48,6 +49,7 @@ public class FootballStandingsNormalizer implements StandingsNormalizer {
 
         return LeagueSeasonStandingsDataDocument.builder()
                 .sportId(syncTarget.getSportId())
+                .sportCode(syncTarget.getSportCode())
                 .leagueId(syncTarget.getLeagueId())
                 .apiLeagueId(syncTarget.getApiLeagueId())
                 .dataOrigin(syncTarget.getDataOrigin())
