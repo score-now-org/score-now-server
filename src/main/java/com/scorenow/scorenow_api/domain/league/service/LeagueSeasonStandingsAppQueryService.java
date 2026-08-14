@@ -60,6 +60,7 @@ public class LeagueSeasonStandingsAppQueryService {
         StandingsDataResponse resolvedStandingsDataResponse = standingsResolverRegistry.resolve(document);
 
         return LeagueSeasonStandingsAppResponse.builder()
+                .sportCode(document.getSportCode())
                 .leagueId(leagueId)
                 .leagueSeasonId(leagueSeason.getId())
                 .leagueImageUrl(league.getImageUrl())

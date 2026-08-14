@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.league.dto.response.standings;
 
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,6 +9,8 @@ import java.time.LocalDate;
 @Getter
 @Builder
 public class LeagueSeasonStandingsAppResponse {
+
+    private SportCode sportCode;
 
     private Long leagueId;
     private Long leagueSeasonId;
