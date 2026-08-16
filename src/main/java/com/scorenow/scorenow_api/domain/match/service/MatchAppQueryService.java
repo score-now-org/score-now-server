@@ -1,5 +1,8 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import com.scorenow.scorenow_api.domain.league.service.standings.TeamStandingLookupService;
+import com.scorenow.scorenow_api.domain.league.service.standings.model.LeagueTeamKey;
+import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
@@ -15,10 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.SEOUL_TIME_ZONE;
@@ -32,6 +32,8 @@ public class MatchAppQueryService {
 
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
 
+    private final TeamStandingLookupService teamStandingLookupService;
+
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
 
@@ -40,7 +42,7 @@ public class MatchAppQueryService {
         LocalDateTime startAt = targetDate.atStartOfDay();
         LocalDateTime endAt = targetDate.plusDays(1).atStartOfDay();
 
-        // 1. 경기 목록을 조회한다.
+        // 경기 목록을 조회
         List<Match> matches = matchRepository.findAppMatches(
                 startAt,
                 endAt,
@@ -57,33 +59,49 @@ public class MatchAppQueryService {
             return List.of();
         }
 
-        // 2. 경기 목록 조회 결과 기반으로 경기 상세 정보를 조회한다.
+        // 경기 목록 조회 결과 기반으로 경기 상세 정보를 조회
         List<Long> matchIds = matches.stream()
                 .map(Match::getId)
                 .toList();
 
-        Map<Long, MatchDetailDocument> detailMap = matchDetailRepository.findAllById(matchIds).stream()
+        Map<Long, MatchDetailDocument> matchDetailById = matchDetailRepository.findAllById(matchIds).stream()
                 .collect(toMap(
                         MatchDetailDocument::getId,
                         Function.identity(),
                         (first, second) -> first));
 
-
-        // 3. 조회 정렬 순서를 유지하면서 리그별 경기 목록으로 그룹핑한다.
+        // 조회 정렬 순서를 유지하면서 리그별 경기 목록으로 그룹핑
         Map<Long, List<Match>> matchesByLeague = new LinkedHashMap<>();
+        Map<Long, Set<Long>> teamIdsByLeague = new LinkedHashMap<>();
+
         for (Match match : matches) {
             matchesByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new ArrayList<>())
                     .add(match);
+
+            Set<Long> teamIds = teamIdsByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new HashSet<>());
+            teamIds.add(match.getHomeId());
+            teamIds.add(match.getAwayId());
         }
 
-        // 4. 리그 정보를 최상위로 두고, 각 리그 하위에 경기 목록을 반환한다.
+        Map<LeagueTeamKey, List<TeamStandingSummary>> teamStandings = teamStandingLookupService.getTeamStandings(
+                teamIdsByLeague,
+                targetDate);
+
+        // 리그 정보를 최상위로 두고, 각 리그 하위에 경기 목록을 반환
         return matchesByLeague.values().stream()
                 .map(leagueMatches -> {
                     List<MatchAppResponse.MatchItemResponse> appMatches = leagueMatches.stream()
                             .map(match -> MatchAppResponse.MatchItemResponse.from(
                                     match,
-                                    detailMap.get(match.getId()),
-                                    matchStatusDisplayResolver.resolve(match, detailMap.get(match.getId()))))
+                                    matchDetailById.get(match.getId()),
+                                    matchStatusDisplayResolver.resolve(match, matchDetailById.get(match.getId())),
+                                    teamStandings.getOrDefault(
+                                            new LeagueTeamKey(match.getLeagueId(), match.getHomeId()),
+                                            List.of()),
+                                    teamStandings.getOrDefault(
+                                            new LeagueTeamKey(match.getLeagueId(), match.getAwayId()),
+                                            List.of()))
+                            )
                             .toList();
 
                     return MatchAppResponse.from(leagueMatches.get(0).getLeague(), appMatches);

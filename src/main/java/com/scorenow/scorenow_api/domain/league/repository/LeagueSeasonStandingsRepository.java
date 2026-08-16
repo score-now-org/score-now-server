@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,4 +83,11 @@ public interface LeagueSeasonStandingsRepository extends JpaRepository<LeagueSea
             """)
     List<Long> findCurrentLeagueSeasonIdsByStandingType(
             @Param("standingsType") LeagueSeasonStandingsType standingsType);
+
+    @Query("""
+            select lss
+            from LeagueSeasonStandings lss
+            where lss.leagueSeasonId in :leagueSeasonIds
+            """)
+    List<LeagueSeasonStandings> findAllByLeagueSeasonIds (Collection<Long> leagueSeasonIds);
 }

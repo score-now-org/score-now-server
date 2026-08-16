@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
@@ -92,13 +93,14 @@ public class MatchAppResponse {
                 Match match,
                 MatchDetailDocument matchDetail,
                 MatchStatusDisplayResponse matchStatusDisplayResponse,
-                Integer rank) {
+                List<TeamStandingSummary> homeTeamStandings,
+                List<TeamStandingSummary> awayTeamStandings) {
 
             return MatchItemResponse.builder()
                     .id(match.getId())
                     .date(match.getStartAt().toLocalDate())
-                    .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam(), rank))
-                    .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam(), rank))
+                    .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam(), homeTeamStandings))
+                    .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam(), awayTeamStandings))
                     .homeScore(match.getHomeScore())
                     .awayScore(match.getAwayScore())
                     .statusCode(match.getStatusCode().name())
@@ -140,15 +142,35 @@ public class MatchAppResponse {
         @Schema(description = "팀 이미지 URL", example = "https://assets.b365api.com/images/team/m/676363.png")
         private String imageUrl;
 
-        @Schema(description = "팀 순위", example = "1")
-        private Integer rank;
+        @Schema(description = "경기 목록에 노출할 순위 그룹별 팀 순위")
+        private List<TeamStandingResponse> standings;
 
-        public static TeamResponse from(Long teamId, Team team, Integer rank) {
+        public static TeamResponse from(Long teamId, Team team, List<TeamStandingSummary> teamStandingSummaries) {
             return TeamResponse.builder()
                     .id(teamId)
                     .name(team.resolveTeamName())
                     .imageUrl(team.getImageUrl())
-                    .rank(rank)
+                    .standings(teamStandingSummaries.stream()
+                            .map(TeamStandingResponse::from)
+                            .toList())
+                    .build();
+        }
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "경기 목록용 팀 순위 응답")
+    public static class TeamStandingResponse {
+        @Schema(description = "순위 그룹 표시 이름", example = "서부")
+        private String groupName;
+
+        @Schema(description = "팀 순위", example = "1")
+        private Integer rank;
+
+        private static TeamStandingResponse from(TeamStandingSummary summary) {
+            return TeamStandingResponse.builder()
+                    .groupName(summary.getGroupName())
+                    .rank(summary.getRank())
                     .build();
         }
     }

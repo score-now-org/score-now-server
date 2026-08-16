@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,4 +66,13 @@ public interface LeagueSeasonRepository extends JpaRepository<LeagueSeason, Long
             @Param("leagueId") Long leagueId,
             @Param("leagueName") String leagueName,
             Pageable pageable);
+
+    @Query("""
+            select ls
+            from LeagueSeason ls
+            where ls.leagueId in :leagueIds
+              and :date between ls.seasonStartAt and ls.seasonEndAt
+              and ls.isActive = true
+            """)
+    List<LeagueSeason> findAllByLeagueIdAndDate(Collection<Long> leagueIds, LocalDate date);
 }
