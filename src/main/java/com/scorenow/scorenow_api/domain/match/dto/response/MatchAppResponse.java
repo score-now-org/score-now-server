@@ -91,13 +91,14 @@ public class MatchAppResponse {
         public static MatchItemResponse from(
                 Match match,
                 MatchDetailDocument matchDetail,
-                MatchStatusDisplayResponse matchStatusDisplayResponse) {
+                MatchStatusDisplayResponse matchStatusDisplayResponse,
+                Integer rank) {
 
             return MatchItemResponse.builder()
                     .id(match.getId())
                     .date(match.getStartAt().toLocalDate())
-                    .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam()))
-                    .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam()))
+                    .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam(), rank))
+                    .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam(), rank))
                     .homeScore(match.getHomeScore())
                     .awayScore(match.getAwayScore())
                     .statusCode(match.getStatusCode().name())
@@ -139,11 +140,15 @@ public class MatchAppResponse {
         @Schema(description = "팀 이미지 URL", example = "https://assets.b365api.com/images/team/m/676363.png")
         private String imageUrl;
 
-        public static TeamResponse from(Long teamId, Team team) {
+        @Schema(description = "팀 순위", example = "1")
+        private Integer rank;
+
+        public static TeamResponse from(Long teamId, Team team, Integer rank) {
             return TeamResponse.builder()
                     .id(teamId)
                     .name(team.resolveTeamName())
                     .imageUrl(team.getImageUrl())
+                    .rank(rank)
                     .build();
         }
     }

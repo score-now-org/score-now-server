@@ -43,5 +43,8 @@ public class LeagueSeasonStandingsGroupMappingsUpdateRequest {
         @PositiveOrZero(message = "순위 그룹 표시 순서는 0 이상이어야 합니다.")
         @Schema(description = "순위 그룹 표시 순서. 0부터 시작합니다.", example = "0")
         private Integer displayOrder;
+
+        @Schema(description = "앱 경기 목록에서 해당 순위 그룹 노출 여부", example = "true")
+        private boolean visibleInMatchList;
     }
 }

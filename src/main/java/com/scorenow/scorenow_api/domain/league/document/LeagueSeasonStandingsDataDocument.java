@@ -59,6 +59,7 @@ public class LeagueSeasonStandingsDataDocument extends BaseDocument {
         private String groupKey;
         private String displayName;
         private Integer displayOrder;
+        private boolean visibleInMatchList;
     }
 
 }

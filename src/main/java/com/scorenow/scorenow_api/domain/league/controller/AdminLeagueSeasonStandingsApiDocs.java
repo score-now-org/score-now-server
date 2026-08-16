@@ -52,11 +52,11 @@ public interface AdminLeagueSeasonStandingsApiDocs {
     ApiResponse<Void> syncLeagueSeasonStandingsData(
             @Parameter(description = "동기화할 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId);
 
-    @Operation(summary = "리그 시즌 순위 그룹 표시 설정 조회", description = "외부 순위 그룹명과 관리자가 설정한 표시명 및 표시 순서를 조회합니다.")
+    @Operation(summary = "리그 시즌 순위 그룹 표시 설정 조회", description = "외부 순위 그룹명과 관리자가 설정한 표시명, 표시 순서 및 경기 목록 노출 여부를 조회합니다.")
     ApiResponse<AdminLeagueSeasonStandingsGroupMappingsResponse> getGroupMappings(
             @Parameter(description = "조회할 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId);
 
-    @Operation(summary = "리그 시즌 순위 그룹 표시 설정 수정", description = "그룹 key는 유지하고 앱에 노출할 표시명과 표시 순서를 일괄 수정합니다.")
+    @Operation(summary = "리그 시즌 순위 그룹 표시 설정 수정", description = "그룹 key는 유지하고 앱에 노출할 표시명, 표시 순서 및 경기 목록 노출 여부를 일괄 수정합니다.")
     ApiResponse<Void> updateGroupMappings(
             @Parameter(description = "수정할 리그 시즌 ID", required = true, example = "1") Long leagueSeasonId,
             @Parameter(description = "수정할 그룹 표시 설정", required = true) LeagueSeasonStandingsGroupMappingsUpdateRequest request);

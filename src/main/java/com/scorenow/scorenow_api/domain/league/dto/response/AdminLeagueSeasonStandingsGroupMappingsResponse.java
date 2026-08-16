@@ -34,5 +34,8 @@ public class AdminLeagueSeasonStandingsGroupMappingsResponse {
 
         @Schema(description = "순위 그룹 표시 순서", example = "0")
         private Integer displayOrder;
+
+        @Schema(description = "앱 경기 목록에서 해당 순위 그룹 노출 여부", example = "true")
+        private boolean visibleInMatchList;
     }
 }

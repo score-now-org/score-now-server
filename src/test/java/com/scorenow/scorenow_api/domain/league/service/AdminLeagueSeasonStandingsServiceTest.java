@@ -318,8 +318,8 @@ class AdminLeagueSeasonStandingsServiceTest {
     void 순위_그룹_표시_설정을_조회한다() {
         LeagueSeasonStandingsDataDocument document = standingDataDocument(
                 List.of(
-                        groupMapping("groupname:western conference", "서부", 1),
-                        groupMapping("groupname:eastern conference", "동부", 0)
+                        groupMapping("groupname:western conference", "서부", 1, true),
+                        groupMapping("groupname:eastern conference", "동부", 0, false)
                 ),
                 List.of(
                         standingsGroup("groupname:western conference", "MLS 2026, Western Conference", "Western Conference"),
@@ -336,11 +336,12 @@ class AdminLeagueSeasonStandingsServiceTest {
                 .extracting(
                         AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getGroupKey,
                         AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getDisplayName,
-                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getDisplayOrder
+                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getDisplayOrder,
+                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::isVisibleInMatchList
                 )
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("groupname:eastern conference", "동부", 0),
-                        org.assertj.core.groups.Tuple.tuple("groupname:western conference", "서부", 1)
+                        org.assertj.core.groups.Tuple.tuple("groupname:eastern conference", "동부", 0, false),
+                        org.assertj.core.groups.Tuple.tuple("groupname:western conference", "서부", 1, true)
                 );
     }
 
@@ -357,8 +358,8 @@ class AdminLeagueSeasonStandingsServiceTest {
                 )
         );
         LeagueSeasonStandingsGroupMappingsUpdateRequest request = groupMappingsRequest(List.of(
-                updateGroup("groupname:western conference", " 서부 ", 1),
-                updateGroup("groupname:eastern conference", "동부", 0)
+                updateGroup("groupname:western conference", " 서부 ", 1, true),
+                updateGroup("groupname:eastern conference", "동부", 0, false)
         ));
 
         given(leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(10L))
@@ -382,10 +383,15 @@ class AdminLeagueSeasonStandingsServiceTest {
         @SuppressWarnings("unchecked")
         List<GroupMapping> updatedMappings = (List<GroupMapping>) setValues.get("groupMappings");
         assertThat(updatedMappings)
-                .extracting(GroupMapping::getGroupKey, GroupMapping::getDisplayName, GroupMapping::getDisplayOrder)
+                .extracting(
+                        GroupMapping::getGroupKey,
+                        GroupMapping::getDisplayName,
+                        GroupMapping::getDisplayOrder,
+                        GroupMapping::isVisibleInMatchList
+                )
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("groupname:eastern conference", "동부", 0),
-                        org.assertj.core.groups.Tuple.tuple("groupname:western conference", "서부", 1)
+                        org.assertj.core.groups.Tuple.tuple("groupname:eastern conference", "동부", 0, false),
+                        org.assertj.core.groups.Tuple.tuple("groupname:western conference", "서부", 1, true)
                 );
     }
 
@@ -496,10 +502,20 @@ class AdminLeagueSeasonStandingsServiceTest {
     }
 
     private GroupMapping groupMapping(String groupKey, String displayName, Integer displayOrder) {
+        return groupMapping(groupKey, displayName, displayOrder, false);
+    }
+
+    private GroupMapping groupMapping(
+            String groupKey,
+            String displayName,
+            Integer displayOrder,
+            boolean visibleInMatchList
+    ) {
         return GroupMapping.builder()
                 .groupKey(groupKey)
                 .displayName(displayName)
                 .displayOrder(displayOrder)
+                .visibleInMatchList(visibleInMatchList)
                 .build();
     }
 
@@ -528,10 +544,20 @@ class AdminLeagueSeasonStandingsServiceTest {
             String displayName,
             Integer displayOrder
     ) {
+        return updateGroup(groupKey, displayName, displayOrder, false);
+    }
+
+    private LeagueSeasonStandingsGroupMappingsUpdateRequest.Group updateGroup(
+            String groupKey,
+            String displayName,
+            Integer displayOrder,
+            boolean visibleInMatchList
+    ) {
         return LeagueSeasonStandingsGroupMappingsUpdateRequest.Group.builder()
                 .groupKey(groupKey)
                 .displayName(displayName)
                 .displayOrder(displayOrder)
+                .visibleInMatchList(visibleInMatchList)
                 .build();
     }
 

@@ -237,6 +237,7 @@ public class AdminLeagueSeasonStandingsService {
                             .externalGroupName(group.getExternalGroupName())
                             .displayName(mapping.getDisplayName())
                             .displayOrder(mapping.getDisplayOrder())
+                            .visibleInMatchList(mapping.isVisibleInMatchList())
                             .build();
                 })
                 .sorted(Comparator.comparing(
@@ -253,7 +254,7 @@ public class AdminLeagueSeasonStandingsService {
 
     /**
      * 리그 시즌 순위 그룹 표시 설정 수정
-     * - groupKey는 외부 그룹 식별값이므로 변경하지 않고 표시명과 표시 순서만 수정한다.
+     * - groupKey는 외부 그룹 식별값이므로 변경하지 않고 표시명, 표시 순서, 경기 목록 노출 여부만 수정한다.
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void updateGroupMappings(Long leagueSeasonId, LeagueSeasonStandingsGroupMappingsUpdateRequest request) {
@@ -282,6 +283,7 @@ public class AdminLeagueSeasonStandingsService {
                         .groupKey(group.getGroupKey())
                         .displayName(group.getDisplayName().trim())
                         .displayOrder(group.getDisplayOrder())
+                        .visibleInMatchList(group.isVisibleInMatchList())
                         .build())
                 .toList();
 
