@@ -1,8 +1,13 @@
 package com.scorenow.scorenow_api.domain.league.service;
 
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
+import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDataDocument;
+import com.scorenow.scorenow_api.domain.league.document.LeagueSeasonStandingsDataDocument.GroupMapping;
+import com.scorenow.scorenow_api.domain.league.document.standings.football.FootballStandingsData;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsGroupMappingsUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsGroupMappingsResponse;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueSeason;
@@ -12,19 +17,25 @@ import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingR
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsMongoRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsRepository;
+import com.scorenow.scorenow_api.domain.league.service.standings.LeagueSeasonStandingsSyncService;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
+import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +60,9 @@ class AdminLeagueSeasonStandingsServiceTest {
 
     @Mock
     private LeagueSeasonStandingsMongoRepository leagueSeasonStandingsMongoRepository;
+
+    @Mock
+    private MongoTemplate mongoTemplate;
 
     @Mock
     private LeagueSeasonStandingsSyncService leagueSeasonStandingsSyncService;
@@ -300,6 +314,134 @@ class AdminLeagueSeasonStandingsServiceTest {
         then(leagueSeasonStandingsRepository).should().delete(standings);
     }
 
+    @Test
+    void 순위_그룹_표시_설정을_조회한다() {
+        LeagueSeasonStandingsDataDocument document = standingDataDocument(
+                List.of(
+                        groupMapping("groupname:western conference", "서부", 1, true),
+                        groupMapping("groupname:eastern conference", "동부", 0, false)
+                ),
+                List.of(
+                        standingsGroup("groupname:western conference", "MLS 2026, Western Conference", "Western Conference"),
+                        standingsGroup("groupname:eastern conference", "MLS 2026, Eastern Conference", "Eastern Conference")
+                )
+        );
+        given(leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(10L))
+                .willReturn(Optional.of(document));
+
+        AdminLeagueSeasonStandingsGroupMappingsResponse response = service.getGroupMappings(10L);
+
+        assertThat(response.getLeagueSeasonId()).isEqualTo(10L);
+        assertThat(response.getGroups())
+                .extracting(
+                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getGroupKey,
+                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getDisplayName,
+                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::getDisplayOrder,
+                        AdminLeagueSeasonStandingsGroupMappingsResponse.Group::isVisibleInMatchList
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("groupname:eastern conference", "동부", 0, false),
+                        org.assertj.core.groups.Tuple.tuple("groupname:western conference", "서부", 1, true)
+                );
+    }
+
+    @Test
+    void 순위_그룹_표시명과_표시순서를_수정한다() {
+        LeagueSeasonStandingsDataDocument document = standingDataDocument(
+                List.of(
+                        groupMapping("groupname:western conference", null, null),
+                        groupMapping("groupname:eastern conference", null, null)
+                ),
+                List.of(
+                        standingsGroup("groupname:western conference", "West", "Western Conference"),
+                        standingsGroup("groupname:eastern conference", "East", "Eastern Conference")
+                )
+        );
+        LeagueSeasonStandingsGroupMappingsUpdateRequest request = groupMappingsRequest(List.of(
+                updateGroup("groupname:western conference", " 서부 ", 1, true),
+                updateGroup("groupname:eastern conference", "동부", 0, false)
+        ));
+
+        given(leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(10L))
+                .willReturn(Optional.of(document));
+
+        service.updateGroupMappings(10L, request);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        ArgumentCaptor<Update> updateCaptor = ArgumentCaptor.forClass(Update.class);
+        then(mongoTemplate).should().updateFirst(
+                queryCaptor.capture(),
+                updateCaptor.capture(),
+                org.mockito.ArgumentMatchers.eq(LeagueSeasonStandingsDataDocument.class)
+        );
+
+        assertThat(queryCaptor.getValue().getQueryObject().get("leagueSeasonId")).isEqualTo(10L);
+
+        Document setValues = updateCaptor.getValue().getUpdateObject().get("$set", Document.class);
+        assertThat(setValues).containsOnlyKeys("groupMappings");
+
+        @SuppressWarnings("unchecked")
+        List<GroupMapping> updatedMappings = (List<GroupMapping>) setValues.get("groupMappings");
+        assertThat(updatedMappings)
+                .extracting(
+                        GroupMapping::getGroupKey,
+                        GroupMapping::getDisplayName,
+                        GroupMapping::getDisplayOrder,
+                        GroupMapping::isVisibleInMatchList
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("groupname:eastern conference", "동부", 0, false),
+                        org.assertj.core.groups.Tuple.tuple("groupname:western conference", "서부", 1, true)
+                );
+    }
+
+    @Test
+    void 요청한_그룹_key가_기존_구성과_다르면_수정에_실패한다() {
+        LeagueSeasonStandingsDataDocument document = standingDataDocument(
+                List.of(groupMapping("groupname:western conference", "서부", 0)),
+                List.of(standingsGroup("groupname:western conference", "West", "Western Conference"))
+        );
+        LeagueSeasonStandingsGroupMappingsUpdateRequest request = groupMappingsRequest(List.of(
+                updateGroup("groupname:west division", "서부", 0)
+        ));
+        given(leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(10L))
+                .willReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> service.updateGroupMappings(10L, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
+
+        then(mongoTemplate).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void 표시순서가_0부터_연속되지_않으면_수정에_실패한다() {
+        LeagueSeasonStandingsDataDocument document = standingDataDocument(
+                List.of(
+                        groupMapping("groupname:western conference", "서부", 0),
+                        groupMapping("groupname:eastern conference", "동부", 1)
+                ),
+                List.of(
+                        standingsGroup("groupname:western conference", "West", "Western Conference"),
+                        standingsGroup("groupname:eastern conference", "East", "Eastern Conference")
+                )
+        );
+        LeagueSeasonStandingsGroupMappingsUpdateRequest request = groupMappingsRequest(List.of(
+                updateGroup("groupname:western conference", "서부", 0),
+                updateGroup("groupname:eastern conference", "동부", 2)
+        ));
+        given(leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(10L))
+                .willReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> service.updateGroupMappings(10L, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
+
+        then(mongoTemplate).shouldHaveNoInteractions();
+    }
+
     private LeagueSeasonStandingsCreateRequest createRequest(
             Long leagueSeasonId,
             LeagueSeasonStandingsType standingsType
@@ -345,6 +487,77 @@ class AdminLeagueSeasonStandingsServiceTest {
                 .leagueSeasonId(leagueSeasonId)
                 .standingsType(type)
                 .leagueSeason(leagueSeason)
+                .build();
+    }
+
+    private LeagueSeasonStandingsDataDocument standingDataDocument(
+            List<GroupMapping> groupMappings,
+            List<FootballStandingsData.StandingsGroup> groups
+    ) {
+        return LeagueSeasonStandingsDataDocument.builder()
+                .leagueSeasonId(10L)
+                .data(FootballStandingsData.builder().groups(groups).build())
+                .groupMappings(groupMappings)
+                .build();
+    }
+
+    private GroupMapping groupMapping(String groupKey, String displayName, Integer displayOrder) {
+        return groupMapping(groupKey, displayName, displayOrder, false);
+    }
+
+    private GroupMapping groupMapping(
+            String groupKey,
+            String displayName,
+            Integer displayOrder,
+            boolean visibleInMatchList
+    ) {
+        return GroupMapping.builder()
+                .groupKey(groupKey)
+                .displayName(displayName)
+                .displayOrder(displayOrder)
+                .visibleInMatchList(visibleInMatchList)
+                .build();
+    }
+
+    private FootballStandingsData.StandingsGroup standingsGroup(
+            String groupKey,
+            String externalName,
+            String externalGroupName
+    ) {
+        return FootballStandingsData.StandingsGroup.builder()
+                .groupKey(groupKey)
+                .externalName(externalName)
+                .externalGroupName(externalGroupName)
+                .build();
+    }
+
+    private LeagueSeasonStandingsGroupMappingsUpdateRequest groupMappingsRequest(
+            List<LeagueSeasonStandingsGroupMappingsUpdateRequest.Group> groups
+    ) {
+        return LeagueSeasonStandingsGroupMappingsUpdateRequest.builder()
+                .groups(groups)
+                .build();
+    }
+
+    private LeagueSeasonStandingsGroupMappingsUpdateRequest.Group updateGroup(
+            String groupKey,
+            String displayName,
+            Integer displayOrder
+    ) {
+        return updateGroup(groupKey, displayName, displayOrder, false);
+    }
+
+    private LeagueSeasonStandingsGroupMappingsUpdateRequest.Group updateGroup(
+            String groupKey,
+            String displayName,
+            Integer displayOrder,
+            boolean visibleInMatchList
+    ) {
+        return LeagueSeasonStandingsGroupMappingsUpdateRequest.Group.builder()
+                .groupKey(groupKey)
+                .displayName(displayName)
+                .displayOrder(displayOrder)
+                .visibleInMatchList(visibleInMatchList)
                 .build();
     }
 

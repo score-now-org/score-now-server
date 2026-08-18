@@ -2,6 +2,9 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.league.service.standings.TeamStandingLookupService;
+import com.scorenow.scorenow_api.domain.league.service.standings.model.LeagueTeamKey;
+import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
@@ -26,6 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -41,6 +46,9 @@ class MatchAppQueryServiceTest {
 
     @Mock
     private MatchStatusDisplayResolver matchStatusDisplayResolver;
+
+    @Mock
+    private TeamStandingLookupService teamStandingLookupService;
 
     @InjectMocks
     private MatchAppQueryService matchAppQueryService;
@@ -177,7 +185,42 @@ class MatchAppQueryServiceTest {
                 .containsExactly(2L);
     }
 
+    @Test
+    void 경기_팀의_순위를_리그와_팀별로_조회하여_API_응답으로_변환한다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatch(1L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+
+        givenAppMatches(
+                date,
+                1L,
+                2L,
+                Map.of(
+                        new LeagueTeamKey(2L, 10L),
+                        List.of(new TeamStandingSummary("통합", 1, 3))),
+                match);
+        given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
+        given(matchStatusDisplayResolver.resolve(match, null)).willReturn(statusDisplay("20:00"));
+
+        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        assertThat(response.getHomeTeam().getStandings()).hasSize(1);
+        assertThat(response.getHomeTeam().getStandings().get(0).getGroupName()).isEqualTo("통합");
+        assertThat(response.getHomeTeam().getStandings().get(0).getRank()).isEqualTo(3);
+        assertThat(response.getAwayTeam().getStandings()).isEmpty();
+    }
+
     private void givenAppMatches(LocalDate date, Long sportId, Long leagueId, Match... matches) {
+        givenAppMatches(date, sportId, leagueId, Map.of(), matches);
+    }
+
+    private void givenAppMatches(
+            LocalDate date,
+            Long sportId,
+            Long leagueId,
+            Map<LeagueTeamKey, List<TeamStandingSummary>> teamStandings,
+            Match... matches) {
+
         given(matchRepository.findAppMatches(
                 date.atStartOfDay(),
                 date.plusDays(1).atStartOfDay(),
@@ -188,6 +231,13 @@ class MatchAppQueryServiceTest {
                 MatchAppStatusGroup.SCHEDULED.getStatuses(),
                 MatchAppStatusGroup.ENDED.getStatuses()
         )).willReturn(List.of(matches));
+
+        Map<Long, Set<Long>> teamIdsByLeague = new java.util.LinkedHashMap<>();
+        for (Match match : matches) {
+            teamIdsByLeague.computeIfAbsent(match.getLeagueId(), ignored -> new java.util.HashSet<>())
+                    .addAll(Set.of(match.getHomeId(), match.getAwayId()));
+        }
+        given(teamStandingLookupService.getTeamStandings(teamIdsByLeague, date)).willReturn(teamStandings);
     }
 
     private Match createMatch(Long id, MatchStatus status, LocalDateTime startAt, Integer homeScore, Integer awayScore) {

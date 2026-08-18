@@ -19,4 +19,6 @@ public interface LeagueExternalMappingRepository {
 	boolean existsByExternalInfo(DataOrigin dataOrigin, String apiLeagueId);
 
 	List<LeagueExternalMapping> findByDataOrigin(DataOrigin dataOrigin);
+
+	List<LeagueExternalMapping> findByInternalLeagueIdIn(List<Long> internalLeagueIds);
 }

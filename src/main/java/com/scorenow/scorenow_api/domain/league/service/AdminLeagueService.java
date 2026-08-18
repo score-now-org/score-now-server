@@ -1,8 +1,11 @@
 package com.scorenow.scorenow_api.domain.league.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
+import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueExternalMapping;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
@@ -10,12 +13,15 @@ import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueApiLeagueIdUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueResponse;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -36,21 +42,32 @@ public class AdminLeagueService {
     private final SportRepository sportRepository;
 
     /**
-     * 리그 조회 (리그 한글명, 영문명)
+     * 리그 등록 시 옵션 조회 (종목)
      */
-    public List<AdminLeagueResponse> searchLeagues(String keyword) {
-        return leagueRepository.searchByKeyword(keyword)
-                .stream()
-                .map(AdminLeagueResponse::from)
-                .toList();
+    public AdminLeagueSearchOptionsResponse getSearchOptions() {
+        return AdminLeagueSearchOptionsResponse.of(sportRepository.findAll());
     }
 
     /**
-     * 리그 조회 (리그 ID)
+     * 리그 검색 (리그 ID, 리그명)
+     */
+    public List<AdminLeagueResponse> searchLeagues(LeagueSearchCondition condition) {
+        LeagueSearchCondition safeCondition = condition != null ? condition : new LeagueSearchCondition();
+
+        List<League> leagues = leagueRepository.searchLeagues(
+                        safeCondition.getLeagueId(),
+                        normalize(safeCondition.getKeyword())
+                );
+
+        return toAdminLeagueResponses(leagues);
+    }
+
+    /**
+     * 리그 상세 조회 (리그 ID)
      */
     public AdminLeagueResponse searchLeagues(Long leagueId) {
-        return leagueRepository.findById(leagueId)
-                .map(AdminLeagueResponse::from)
+        return leagueRepository.findByIdWithSport(leagueId)
+                .map(league -> AdminLeagueResponse.from(league, findSyncEnabled(league)))
                 .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
     }
 
@@ -67,22 +84,24 @@ public class AdminLeagueService {
                 .eName(request.getEName())
                 .kName(request.getKName())
                 .sName(request.getSName())
-                .teamDisplayOrder(request.getTeamDisplayOrder())
+                .teamDisplayOrder(resolveTeamDisplayOrder(request.getTeamDisplayOrder()))
                 .dataOrigin(resolveLeagueDataOrigin(request))
                 .build();
 
         League savedLeague = leagueRepository.save(league);
 
+        Boolean syncEnabled = null;
         if (TRUE.equals(request.getExternalLinked())) {
+            syncEnabled = TRUE.equals(request.getSyncEnabled());
             leagueExternalMappingRepository.save(LeagueExternalMapping.of(
                     request.getDataOrigin(),
                     normalizeApiLeagueId(request.getApiLeagueId()),
                     savedLeague.getId(),
-                    TRUE.equals(request.getSyncEnabled())
+                    syncEnabled
             ));
         }
 
-        return AdminLeagueResponse.from(savedLeague);
+        return AdminLeagueResponse.from(savedLeague, sport.resolveSportName(), syncEnabled);
     }
 
     /**
@@ -215,6 +234,55 @@ public class AdminLeagueService {
         }
 
         return apiLeagueId.trim();
+    }
+
+    private String normalize(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private TeamDisplayOrder resolveTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
+        return teamDisplayOrder != null ? teamDisplayOrder : TeamDisplayOrder.HOME_AWAY;
+    }
+
+    private List<AdminLeagueResponse> toAdminLeagueResponses(List<League> leagues) {
+        Map<Long, Boolean> syncEnabledByLeagueId = findSyncEnabledByLeagueId(leagues);
+
+        return leagues.stream()
+                .map(league -> AdminLeagueResponse.from(league, syncEnabledByLeagueId.get(league.getId())))
+                .toList();
+    }
+
+    private Map<Long, Boolean> findSyncEnabledByLeagueId(List<League> leagues) {
+        List<Long> externalLeagueIds = leagues.stream()
+                .filter(this::isExternalLeague)
+                .map(League::getId)
+                .toList();
+
+        if (externalLeagueIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return leagueExternalMappingRepository.findByInternalLeagueIdIn(externalLeagueIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        LeagueExternalMapping::getInternalLeagueId,
+                        LeagueExternalMapping::getSyncEnabled,
+                        (first, ignored) -> first));
+    }
+
+    private Boolean findSyncEnabled(League league) {
+        if (!isExternalLeague(league)) {
+            return null;
+        }
+
+        return leagueExternalMappingRepository
+                .findByDataOriginAndInternalLeagueId(league.getDataOrigin(), league.getId())
+                .map(LeagueExternalMapping::getSyncEnabled)
+                .orElse(null);
+    }
+
+    private boolean isExternalLeague(League league) {
+        return league.getDataOrigin() != null && league.getDataOrigin() != DataOrigin.MANUAL;
     }
 
 }

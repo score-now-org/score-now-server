@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.sport.entity;
 
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -16,6 +17,10 @@ public class Sport extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, unique = true)
+    private SportCode sportCode;
 
     private String kName;
     private String eName;
