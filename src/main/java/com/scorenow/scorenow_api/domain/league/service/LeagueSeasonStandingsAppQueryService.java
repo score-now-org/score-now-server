@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.league.dto.response.standings.StandingsD
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueSeason;
 import com.scorenow.scorenow_api.domain.league.entity.LeagueSeasonStandings;
+import com.scorenow.scorenow_api.domain.league.entity.LeagueSeasonStandingsType;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsMongoRepository;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsRepository;
@@ -42,25 +43,21 @@ public class LeagueSeasonStandingsAppQueryService {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "해당 리그에 대한 현재 시즌 정보가 2개 이상 입니다.");
         }
 
-        // 리그 시즌 정보를 기반으로 해당 시즌의 순위 데이터 조회
-        LeagueSeason leagueSeason = leagueSeasons.get(0);
-        LeagueSeasonStandingsDataDocument document = leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(leagueSeason.getId())
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.INVALID_PARAMETER,
-                        "해당 리그에 대한 현재 시즌의 순위 정보가 존재하지 않습니다."));
+        LeagueSeason currentLeagueSeason = leagueSeasons.get(0);
 
-        // 응답 조립을 위한 부가적인 정보 조회 (리그, 리그 시즌 순위 관리, 순위 데이터)
-        League league = leagueSeason.getLeague();
-
-        LeagueSeasonStandings leagueSeasonStandings = leagueSeasonStandingsRepository.findByLeagueSeasonId(leagueSeason.getId())
+        // 리그 시즌 정보를 기반으로 순위 관리 정보와 관리 타입을 조회
+        LeagueSeasonStandings leagueSeasonStandings = leagueSeasonStandingsRepository.findByLeagueSeasonIdWithSeasonAndLeague(currentLeagueSeason.getId())
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.INVALID_PARAMETER,
                         "해당 리그에 대한 순위 관리 정보가 존재하지 않습니다."));
 
-        StandingsDataResponse resolvedStandingsDataResponse = standingsResolverRegistry.resolve(document);
+        LeagueSeason leagueSeason = leagueSeasonStandings.getLeagueSeason();
+        League league = leagueSeason.getLeague();
+
+        StandingsDataResponse resolvedStandingsDataResponse = resolveStandings(leagueSeasonStandings);
 
         return LeagueSeasonStandingsAppResponse.builder()
-                .sportCode(document.getSportCode())
+                .sportCode(league.getSport().getSportCode())
                 .leagueId(leagueId)
                 .leagueSeasonId(leagueSeason.getId())
                 .leagueImageUrl(league.getImageUrl())
@@ -68,9 +65,27 @@ public class LeagueSeasonStandingsAppQueryService {
                 .seasonName(leagueSeason.getSeasonName())
                 .startAt(leagueSeason.getSeasonStartAt())
                 .endAt(leagueSeason.getSeasonEndAt())
-                .standingsImageUrl(leagueSeasonStandings.getImageUrl())
+                .standingsImageUrl(leagueSeasonStandings.getStandingsType() == LeagueSeasonStandingsType.IMAGE
+                        ? leagueSeasonStandings.getImageUrl()
+                        : null)
                 .standings(resolvedStandingsDataResponse)
                 .build();
+    }
+
+    private StandingsDataResponse resolveStandings(LeagueSeasonStandings leagueSeasonStandings) {
+
+        if (leagueSeasonStandings.getStandingsType() == LeagueSeasonStandingsType.IMAGE) {
+            return null;
+        }
+
+        LeagueSeason currentLeagueSeason = leagueSeasonStandings.getLeagueSeason();
+
+        LeagueSeasonStandingsDataDocument document = leagueSeasonStandingsMongoRepository.findByLeagueSeasonId(currentLeagueSeason.getId())
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.INVALID_PARAMETER,
+                        "해당 리그에 대한 현재 시즌의 순위 정보가 존재하지 않습니다."));
+
+        return standingsResolverRegistry.resolve(document);
     }
 
 }

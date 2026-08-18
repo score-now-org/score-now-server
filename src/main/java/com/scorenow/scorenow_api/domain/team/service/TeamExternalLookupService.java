@@ -46,6 +46,7 @@ public class TeamExternalLookupService {
                         Function.identity()));
 
         return teamExternalMappings.stream()
+                .filter(teamExternalMapping -> teamsById.containsKey(teamExternalMapping.getInternalTeamId()))
                 .collect(Collectors.toUnmodifiableMap(
                         TeamExternalMapping::getApiTeamId,
                         teamExternalMapping -> teamsById.get(teamExternalMapping.getInternalTeamId())

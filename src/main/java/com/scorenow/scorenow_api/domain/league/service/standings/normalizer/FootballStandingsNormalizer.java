@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -112,16 +113,6 @@ public class FootballStandingsNormalizer implements StandingsNormalizer {
         return groups;
     }
 
-    private boolean isGroupNameDuplicated(List<BetsStandingsResponse.Table> tables) {
-        int groupCount = tables.size();
-
-        Set<String> uniqueGroupNames = tables.stream()
-                .map(BetsStandingsResponse.Table::getGroupName)
-                .collect(Collectors.toSet());
-
-        return groupCount != uniqueGroupNames.size();
-    }
-
     private String generateGroupKey(BetsStandingsResponse.Table table, int groupCount) {
 
         // 그룹의 수가 1개인 경우
@@ -143,10 +134,11 @@ public class FootballStandingsNormalizer implements StandingsNormalizer {
 
     private List<Standing> toStandings(List<BetsStandingsResponse.Row> rows) {
         if (rows == null || rows.isEmpty()) {
-            return null;
+            return List.of();
         }
 
         return rows.stream()
+                .filter(Objects::nonNull)
                 .map(row -> Standing.builder()
                         .externalTeamId(row.getTeam() != null ? row.getTeam().getId() : null)
                         .externalTeamName(row.getTeam() != null ? row.getTeam().getName() : null)
