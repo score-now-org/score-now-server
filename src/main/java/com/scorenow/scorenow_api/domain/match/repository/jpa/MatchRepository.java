@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository.jpa;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -119,11 +120,21 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
             select m
             from Match m
             join fetch m.league l
+            join fetch m.sport s
             join fetch m.homeTeam ht
             join fetch m.awayTeam at
             where m.startAt >= :start and m.startAt < :endExclusive
               and m.isActive = true
+            order by m.startAt asc, m.id asc
             """)
     List<Match> findMatchesByDateRange(LocalDateTime start, LocalDateTime endExclusive);
+
+    @Query("""
+            select m
+            from Match m
+            where m.id in :matchIds
+            order by m.startAt asc, m.id asc
+            """)
+    List<Match> findAllByIdsOrderByStartAt(@Param("matchIds") Collection<Long> matchIds);
 
 }

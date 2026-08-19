@@ -7,6 +7,8 @@ import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
@@ -46,9 +48,9 @@ class AdminFeaturedMatchServiceTest {
     @Test
     void 경기_시작일_기준_displayDate가_설정되고_해당_타입의_다음_displayOrder로_저장된다() {
 
-        Match match1 = generateMatch(1L, 2026, 7, 23, 15, 50);
-        Match match2 = generateMatch(2L, 2026, 7, 23, 16, 50);
-        Match match3 = generateMatch(3L, 2026, 7, 23, 17, 50);
+        Match match1 = generateFootballMatch(1L, 2026, 7, 23, 15, 50);
+        Match match2 = generateFootballMatch(2L, 2026, 7, 23, 16, 50);
+        Match match3 = generateFootballMatch(3L, 2026, 7, 23, 17, 50);
 
         List<Match> matches = List.of(match1, match2, match3);
         List<Long> matchIds = matches.stream().map(Match::getId).toList();
@@ -76,7 +78,7 @@ class AdminFeaturedMatchServiceTest {
 
     @Test
     void 이미_등록된_경기를_등록하면_FEATURED_MATCH_ALREADY_EXISTS_예외가_발생한다() {
-        Match match = generateMatch(1L, 2026, 7, 23, 15, 50);
+        Match match = generateFootballMatch(1L, 2026, 7, 23, 15, 50);
         List<Match> matches = List.of(match);
         List<Long> matchIds = matches.stream().map(Match::getId).toList();
 
@@ -89,9 +91,9 @@ class AdminFeaturedMatchServiceTest {
 
     @Test
     void 등록_후보_조회시_이미_등록된_경기는_registerable_false이고_시작시간은_HHmm으로_반환된다() {
-        Match m1 = generateMatch(1L, 2026, 7, 23, 15, 50);  // 상단고정,핫매치 이미 등록
-        Match m2 = generateMatch(2L, 2026, 7, 23, 20, 0);
-        Match m3 = generateMatch(3L, 2026, 7, 23, 18, 0);   // 상단고정,핫매치 이미 등록
+        Match m1 = generateFootballMatch(1L, 2026, 7, 23, 15, 50);  // 상단고정,핫매치 이미 등록
+        Match m2 = generateFootballMatch(2L, 2026, 7, 23, 20, 0);
+        Match m3 = generateFootballMatch(3L, 2026, 7, 23, 18, 0);   // 상단고정,핫매치 이미 등록
 
         given(matchRepository.findMatchesByDateRange(
                 LocalDate.of(2026, 7, 23).atStartOfDay(),
@@ -284,9 +286,11 @@ class AdminFeaturedMatchServiceTest {
         return featuredMatch;
     }
 
-    private Match generateMatch(Long id, int year, int month, int day, int hour, int minute) {
+    private Match generateFootballMatch(Long id, int year, int month, int day, int hour, int minute) {
         return Match.builder()
                 .id(id)
+                .sport(Sport.builder().id(1L).sportCode(SportCode.FOOTBALL).kName("축구").eName("football").build())
+                .sportId(1L)
                 .startAt(LocalDateTime.of(year, month, day, hour, minute))
                 .league(League.builder()
                         .kName("리그" + id)

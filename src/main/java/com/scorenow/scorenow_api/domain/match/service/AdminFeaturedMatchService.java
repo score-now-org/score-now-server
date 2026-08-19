@@ -98,6 +98,8 @@ public class AdminFeaturedMatchService {
         return candidateMatches.stream()
                 .map(match -> new FeaturedMatchCandidateResponse(
                         match.getId(),
+                        match.getSportId(),
+                        match.getSport().resolveSportName(),
                         match.getLeague().resolveLeagueName(),
                         match.getStartAt(),
                         match.getHomeTeam().resolveTeamName(),
@@ -223,15 +225,16 @@ public class AdminFeaturedMatchService {
         List<FeaturedMatchResponse> hotMatches = new ArrayList<>();
         List<FeaturedMatchResponse> pinnedMatches = new ArrayList<>();
 
-        List<FeaturedMatchResponse> featuredMatches = featuredMatchRepository.findByDisplayDateWithLeague(displayDate);
-        featuredMatches.forEach(featuredMatch -> {
-            if (FeaturedMatchType.HOT_MATCH.name().equals(featuredMatch.getType())) {
-                hotMatches.add(featuredMatch);
-            }
-            if (FeaturedMatchType.PINNED.name().equals(featuredMatch.getType())) {
-                pinnedMatches.add(featuredMatch);
-            }
-        });
+        featuredMatchRepository.findByDisplayDateWithMatch(displayDate)
+                .stream()
+                .map(FeaturedMatchResponse::from)
+                .forEach(response -> {
+                    if (FeaturedMatchType.HOT_MATCH.name().equals(response.getType())) {
+                        hotMatches.add(response);
+                    } else if (FeaturedMatchType.PINNED.name().equals(response.getType())) {
+                        pinnedMatches.add(response);
+                    }
+                });
 
         return new FeaturedMatchesResponse(displayDate.format(YYYYMMDD), hotMatches, pinnedMatches);
     }

@@ -1,6 +1,5 @@
 package com.scorenow.scorenow_api.domain.match.repository.jpa;
 
-import com.scorenow.scorenow_api.domain.match.dto.response.FeaturedMatchResponse;
 import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatch;
 import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,25 +26,17 @@ public interface FeaturedMatchRepository extends JpaRepository<FeaturedMatch, Lo
     List<FeaturedMatch> findByDisplayDateAndTypeOrderByDisplayOrderAsc(LocalDate displayDate, FeaturedMatchType type);
 
     @Query("""
-            select new com.scorenow.scorenow_api.domain.match.dto.response.FeaturedMatchResponse(
-                fm.id,
-                fm.matchId,
-                coalesce(l.kName, l.eName),
-                coalesce(ht.kName, ht.eName),
-                coalesce(at.kName, at.eName),
-                m.startAt,
-                fm.type,
-                fm.displayOrder
-            )
+            select fm
             from FeaturedMatch fm
-            join fm.match m
-            join m.league l
-            join m.homeTeam ht
-            join m.awayTeam at
+            join fetch fm.match m
+            join fetch m.sport
+            join fetch m.league
+            join fetch m.homeTeam
+            join fetch m.awayTeam
             where fm.displayDate = :displayDate
             order by fm.displayOrder asc
             """)
-    List<FeaturedMatchResponse> findByDisplayDateWithLeague(@Param("displayDate") LocalDate displayDate);
+    List<FeaturedMatch> findByDisplayDateWithMatch(@Param("displayDate") LocalDate displayDate);
 
     @Query("""
             select fm

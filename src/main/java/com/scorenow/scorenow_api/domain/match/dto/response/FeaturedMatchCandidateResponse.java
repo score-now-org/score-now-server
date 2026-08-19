@@ -12,6 +12,12 @@ public class FeaturedMatchCandidateResponse {
     @Schema(description = "경기 ID", example = "1001")
     private final Long matchId;
 
+    @Schema(description = "종목 ID", example = "1")
+    private final Long sportId;
+
+    @Schema(description = "종목명", example = "축구")
+    private final String sportName;
+
     @Schema(description = "리그명", example = "프리미어리그")
     private final String leagueName;
 
@@ -29,6 +35,8 @@ public class FeaturedMatchCandidateResponse {
 
     public FeaturedMatchCandidateResponse(
             Long matchId,
+            Long sportId,
+            String sportName,
             String leagueName,
             LocalDateTime startAt,
             String homeTeamName,
@@ -36,6 +44,8 @@ public class FeaturedMatchCandidateResponse {
             boolean registerable) {
 
         this.matchId = matchId;
+        this.sportId = sportId;
+        this.sportName = sportName;
         this.leagueName = leagueName;
         this.startTime = startAt.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
         this.homeTeamName = homeTeamName;
