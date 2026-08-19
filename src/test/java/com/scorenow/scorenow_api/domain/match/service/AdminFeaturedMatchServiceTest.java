@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.dto.response.FeaturedMatchCandidateResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.FeaturedMatchesResponse;
 import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatch;
 import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
@@ -90,7 +91,7 @@ class AdminFeaturedMatchServiceTest {
     }
 
     @Test
-    void 등록_후보_조회시_이미_등록된_경기는_registerable_false이고_시작시간은_HHmm으로_반환된다() {
+    void 등록_후보_조회시_이미_등록된_경기는_registerable_false이고_경기_예정_일시는_전체값으로_반환된다() {
         Match m1 = generateFootballMatch(1L, 2026, 7, 23, 15, 50);  // 상단고정,핫매치 이미 등록
         Match m2 = generateFootballMatch(2L, 2026, 7, 23, 20, 0);
         Match m3 = generateFootballMatch(3L, 2026, 7, 23, 18, 0);   // 상단고정,핫매치 이미 등록
@@ -108,12 +109,31 @@ class AdminFeaturedMatchServiceTest {
         assertThat(responseList)
                 .extracting(FeaturedMatchCandidateResponse::getMatchId,
                         FeaturedMatchCandidateResponse::isRegisterable,
-                        FeaturedMatchCandidateResponse::getStartTime)
+                        FeaturedMatchCandidateResponse::getStartAt)
                 .containsExactly(
-                        tuple(1L, false, "15:50"),
-                        tuple(2L, true, "20:00"),
-                        tuple(3L, false, "18:00")
+                        tuple(1L, false, LocalDateTime.of(2026, 7, 23, 15, 50)),
+                        tuple(2L, true, LocalDateTime.of(2026, 7, 23, 20, 0)),
+                        tuple(3L, false, LocalDateTime.of(2026, 7, 23, 18, 0))
                 );
+    }
+
+    @Test
+    void 등록_경기_조회시_최상위_조회날짜와_경기별_예정_일시_전체값을_반환한다() {
+        LocalDate displayDate = LocalDate.of(2026, 7, 23);
+        Match match = generateFootballMatch(1L, 2026, 7, 23, 20, 30);
+        FeaturedMatch featuredMatch = generateFeaturedMatch(1L, match.getId(), displayDate, PINNED, 1);
+        ReflectionTestUtils.setField(featuredMatch, "match", match);
+
+        given(featuredMatchRepository.findByDisplayDateWithMatch(displayDate))
+                .willReturn(List.of(featuredMatch));
+
+        FeaturedMatchesResponse response = service.searchFeaturedMatches(displayDate);
+
+        assertThat(response.getDate()).isEqualTo("20260723");
+        assertThat(response.getPinnedMatches())
+                .singleElement()
+                .extracting(item -> item.getStartAt())
+                .isEqualTo(LocalDateTime.of(2026, 7, 23, 20, 30));
     }
 
     @Test

@@ -1,10 +1,10 @@
 package com.scorenow.scorenow_api.domain.match.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Getter
 @Schema(description = "상단고정/핫매치 등록 후보 경기 응답")
@@ -21,8 +21,9 @@ public class FeaturedMatchCandidateResponse {
     @Schema(description = "리그명", example = "프리미어리그")
     private final String leagueName;
 
-    @Schema(description = "경기 시작 시간. KST 기준 HH:mm 형식입니다.", example = "20:30")
-    private final String startTime;
+    @Schema(description = "경기 예정 일시. KST 기준 yyyy-MM-dd'T'HH:mm:ss 형식입니다.", example = "2026-07-23T20:30:00")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private final LocalDateTime startAt;
 
     @Schema(description = "홈팀명", example = "토트넘")
     private final String homeTeamName;
@@ -47,7 +48,7 @@ public class FeaturedMatchCandidateResponse {
         this.sportId = sportId;
         this.sportName = sportName;
         this.leagueName = leagueName;
-        this.startTime = startAt.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        this.startAt = startAt;
         this.homeTeamName = homeTeamName;
         this.awayTeamName = awayTeamName;
         this.registerable = registerable;
