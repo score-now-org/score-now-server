@@ -59,7 +59,7 @@ public class AdminFeaturedMatchController implements AdminFeaturedMatchApiDocs {
             @Valid @RequestBody FeaturedMatchCreateRequest request) {
 
         FeaturedMatchesResponse result = adminFeaturedMatchService.createFeaturedMatch(
-                request.getMatchId(),
+                request.getMatchIds(),
                 request.getType());
         return ApiResponse.success(result);
     }

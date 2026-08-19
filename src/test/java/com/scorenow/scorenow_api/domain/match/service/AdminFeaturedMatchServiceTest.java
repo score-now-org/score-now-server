@@ -9,10 +9,10 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchReposi
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
-import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,37 +40,50 @@ class AdminFeaturedMatchServiceTest {
     @Mock
     private FeaturedMatchRepository featuredMatchRepository;
 
+    @Captor
+    private ArgumentCaptor<List<FeaturedMatch>> featuredMatchesCaptor;
+
     @Test
     void 경기_시작일_기준_displayDate가_설정되고_해당_타입의_다음_displayOrder로_저장된다() {
 
-        Match match = generateMatch(1L, 2026, 7, 23, 15, 50);
+        Match match1 = generateMatch(1L, 2026, 7, 23, 15, 50);
+        Match match2 = generateMatch(2L, 2026, 7, 23, 16, 50);
+        Match match3 = generateMatch(3L, 2026, 7, 23, 17, 50);
 
-        given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
-        given(featuredMatchRepository.existsByMatchId(match.getId())).willReturn(false);
+        List<Match> matches = List.of(match1, match2, match3);
+        List<Long> matchIds = matches.stream().map(Match::getId).toList();
+
+        given(matchRepository.findAllByIdsOrderByStartAt(matchIds)).willReturn(matches);
+        given(featuredMatchRepository.findRegisteredMatchIds(matchIds)).willReturn(List.of());
         given(featuredMatchRepository.findMaxDisplayOrder(
                 LocalDate.of(2026, 7, 23),
                 PINNED
         )).willReturn(Optional.of(3));
 
-        service.createFeaturedMatch(match.getId(), PINNED);
+        service.createFeaturedMatch(matchIds, PINNED);
 
-        ArgumentCaptor<FeaturedMatch> captor = ArgumentCaptor.forClass(FeaturedMatch.class);
-        then(featuredMatchRepository).should().save(captor.capture());
+        then(featuredMatchRepository).should().saveAll(featuredMatchesCaptor.capture());
 
-        FeaturedMatch saved = captor.getValue();
-        assertThat(saved.getMatchId()).isEqualTo(1L);
-        assertThat(saved.getDisplayDate()).isEqualTo(LocalDate.of(2026, 7, 23));
-        assertThat(saved.getDisplayOrder()).isEqualTo(4);
+        List<FeaturedMatch> featuredMatches = featuredMatchesCaptor.getValue();
+        assertThat(featuredMatches)
+                .extracting(FeaturedMatch::getMatchId, FeaturedMatch::getDisplayDate, FeaturedMatch::getDisplayOrder, FeaturedMatch::getType)
+                .containsExactly(
+                        tuple(1L, LocalDate.of(2026, 7, 23), 4, PINNED),
+                        tuple(2L, LocalDate.of(2026, 7, 23), 5, PINNED),
+                        tuple(3L, LocalDate.of(2026, 7, 23), 6, PINNED)
+                );
     }
 
     @Test
     void 이미_등록된_경기를_등록하면_FEATURED_MATCH_ALREADY_EXISTS_예외가_발생한다() {
         Match match = generateMatch(1L, 2026, 7, 23, 15, 50);
+        List<Match> matches = List.of(match);
+        List<Long> matchIds = matches.stream().map(Match::getId).toList();
 
-        given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
-        given(featuredMatchRepository.existsByMatchId(match.getId())).willReturn(true);
+        given(matchRepository.findAllByIdsOrderByStartAt(matchIds)).willReturn(matches);
+        given(featuredMatchRepository.findRegisteredMatchIds(matchIds)).willReturn(List.of(1L));
 
-        assertThatThrownBy(() -> service.createFeaturedMatch(match.getId(), HOT_MATCH))
+        assertThatThrownBy(() -> service.createFeaturedMatch(matchIds, HOT_MATCH))
                 .isInstanceOf(BusinessException.class);
     }
 
