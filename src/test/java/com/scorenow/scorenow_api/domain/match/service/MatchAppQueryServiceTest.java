@@ -9,14 +9,19 @@ import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppItemResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppLeagueGroupResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.EndedStatusDisplayDetailResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
+import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatch;
+import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
+import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
@@ -28,12 +33,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class MatchAppQueryServiceTest {
@@ -49,6 +57,9 @@ class MatchAppQueryServiceTest {
 
     @Mock
     private TeamStandingLookupService teamStandingLookupService;
+
+    @Mock
+    private FeaturedMatchRepository featuredMatchRepository;
 
     @InjectMocks
     private MatchAppQueryService matchAppQueryService;
@@ -69,14 +80,14 @@ class MatchAppQueryServiceTest {
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of(detail));
         given(matchStatusDisplayResolver.resolve(match, detail)).willReturn(statusDisplayResponse);
 
-        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
-        MatchAppResponse leagueGroup = result.get(0);
+        MatchAppLeagueGroupResponse leagueGroup = result.get(0);
         assertThat(leagueGroup.getLeagueId()).isEqualTo(2L);
         assertThat(leagueGroup.getLeagueName()).isEqualTo("Premier League");
 
-        MatchAppResponse.MatchItemResponse response = leagueGroup.getMatches().get(0);
+        MatchAppItemResponse response = leagueGroup.getMatches().get(0);
         assertThat(response.getCurrentCommentary()).isEqualTo("선제골 이후 홈팀이 흐름을 잡습니다.");
         assertThat(response.getHomeScore()).isEqualTo(1);
         assertThat(response.getAwayScore()).isEqualTo(0);
@@ -99,10 +110,10 @@ class MatchAppQueryServiceTest {
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
         given(matchStatusDisplayResolver.resolve(match, null)).willReturn(statusDisplayResponse);
 
-        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
-        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        MatchAppItemResponse response = result.get(0).getMatches().get(0);
         assertThat(response.getStatusDisplay().getDisplayText()).isEqualTo("홈팀 패");
         assertThat(response.getStatusDisplay().getDetail()).isSameAs(endedDetail);
     }
@@ -131,10 +142,10 @@ class MatchAppQueryServiceTest {
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of(detail));
         given(matchStatusDisplayResolver.resolve(match, detail)).willReturn(statusDisplayResponse);
 
-        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
-        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        MatchAppItemResponse response = result.get(0).getMatches().get(0);
         assertThat(response.getHomeScore()).isEqualTo(1);
         assertThat(response.getAwayScore()).isEqualTo(1);
         assertThat(response.getStatusDisplay()).isSameAs(statusDisplayResponse);
@@ -150,10 +161,10 @@ class MatchAppQueryServiceTest {
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
         given(matchStatusDisplayResolver.resolve(match, null)).willReturn(statusDisplayResponse);
 
-        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
         assertThat(result).hasSize(1);
-        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        MatchAppItemResponse response = result.get(0).getMatches().get(0);
         assertThat(response.getStatusDisplay()).isSameAs(statusDisplayResponse);
         assertThat(response.getStatusDisplay().getDisplayText()).isEqualTo("09:05");
     }
@@ -171,17 +182,17 @@ class MatchAppQueryServiceTest {
         given(matchStatusDisplayResolver.resolve(laLigaScheduled, null)).willReturn(statusDisplay("21:00"));
         given(matchStatusDisplayResolver.resolve(eplEnded, null)).willReturn(statusDisplay("홈팀 승"));
 
-        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, null);
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getLeagueId()).isEqualTo(2L);
         assertThat(result.get(0).getLeagueName()).isEqualTo("Premier League");
-        assertThat(result.get(0).getMatches()).extracting(MatchAppResponse.MatchItemResponse::getId)
+        assertThat(result.get(0).getMatches()).extracting(MatchAppItemResponse::getId)
                 .containsExactly(1L, 3L);
 
         assertThat(result.get(1).getLeagueId()).isEqualTo(3L);
         assertThat(result.get(1).getLeagueName()).isEqualTo("La Liga");
-        assertThat(result.get(1).getMatches()).extracting(MatchAppResponse.MatchItemResponse::getId)
+        assertThat(result.get(1).getMatches()).extracting(MatchAppItemResponse::getId)
                 .containsExactly(2L);
     }
 
@@ -201,13 +212,128 @@ class MatchAppQueryServiceTest {
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of());
         given(matchStatusDisplayResolver.resolve(match, null)).willReturn(statusDisplay("20:00"));
 
-        List<MatchAppResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
 
-        MatchAppResponse.MatchItemResponse response = result.get(0).getMatches().get(0);
+        MatchAppItemResponse response = result.get(0).getMatches().get(0);
         assertThat(response.getHomeTeam().getStandings()).hasSize(1);
         assertThat(response.getHomeTeam().getStandings().get(0).getGroupName()).isEqualTo("통합");
         assertThat(response.getHomeTeam().getStandings().get(0).getRank()).isEqualTo(3);
         assertThat(response.getAwayTeam().getStandings()).isEmpty();
+    }
+
+    @Test
+    void v2는_상단고정과_핫매치를_유형별로_분리하여_반환한다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match pinnedMatch = createMatch(11L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 19, 0), 0, 0);
+        Match hotMatch = createMatch(12L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+
+        givenAppMatches(date, 1L, 2L, pinnedMatch, hotMatch);
+        givenMatchResponseData(pinnedMatch, hotMatch);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(11L, 12L)))
+                .willReturn(List.of(
+                        featuredMatch(11L, date, FeaturedMatchType.PINNED, 1),
+                        featuredMatch(12L, date, FeaturedMatchType.HOT_MATCH, 1)
+                ));
+
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, 1L, 2L);
+
+        assertThat(result.getFeaturedMatches().getPinnedMatches())
+                .extracting(featured -> featured.getMatch().getId())
+                .containsExactly(11L);
+        assertThat(result.getFeaturedMatches().getHotMatches())
+                .extracting(featured -> featured.getMatch().getId())
+                .containsExactly(12L);
+    }
+
+    @Test
+    void v2는_Featured_저장소가_반환한_유형별_노출_순서를_유지한다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match pinnedSecond = createMatch(21L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 19, 0), 0, 0);
+        Match pinnedFirst = createMatch(22L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+        Match hotSecond = createMatch(23L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 21, 0), 0, 0);
+        Match hotFirst = createMatch(24L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 22, 0), 0, 0);
+
+        givenAppMatches(date, 1L, 2L, pinnedSecond, pinnedFirst, hotSecond, hotFirst);
+        givenMatchResponseData(pinnedSecond, pinnedFirst, hotSecond, hotFirst);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(21L, 22L, 23L, 24L)))
+                .willReturn(List.of(
+                        featuredMatch(24L, date, FeaturedMatchType.HOT_MATCH, 1),
+                        featuredMatch(23L, date, FeaturedMatchType.HOT_MATCH, 2),
+                        featuredMatch(22L, date, FeaturedMatchType.PINNED, 1),
+                        featuredMatch(21L, date, FeaturedMatchType.PINNED, 2)
+                ));
+
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, 1L, 2L);
+
+        assertThat(result.getFeaturedMatches().getPinnedMatches())
+                .extracting(featured -> featured.getMatch().getId())
+                .containsExactly(22L, 21L);
+        assertThat(result.getFeaturedMatches().getHotMatches())
+                .extracting(featured -> featured.getMatch().getId())
+                .containsExactly(24L, 23L);
+    }
+
+    @Test
+    void v2의_Featured_경기는_기존_리그별_경기_목록에도_유지된다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatch(31L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+
+        givenAppMatches(date, 1L, 2L, match);
+        givenMatchResponseData(match);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(31L)))
+                .willReturn(List.of(featuredMatch(31L, date, FeaturedMatchType.PINNED, 1)));
+
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, 1L, 2L);
+
+        MatchAppItemResponse leagueMatch = result.getLeagueMatches().get(0).getMatches().get(0);
+        MatchAppItemResponse featuredMatch = result.getFeaturedMatches().getPinnedMatches().get(0).getMatch();
+
+        assertThat(result.getLeagueMatches()).hasSize(1);
+        assertThat(leagueMatch.getId()).isEqualTo(31L);
+        assertThat(featuredMatch.getId()).isEqualTo(31L);
+        assertThat(featuredMatch).isSameAs(leagueMatch);
+    }
+
+    @Test
+    void v2는_기존_조회_조건으로_조회된_경기_ID만_Featured_조회에_사용한다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match filteredMatch = createMatch(41L, 2L, "Premier League", MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+
+        givenAppMatches(date, 1L, 2L, filteredMatch);
+        givenMatchResponseData(filteredMatch);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(41L)))
+                .willReturn(List.of(featuredMatch(41L, date, FeaturedMatchType.HOT_MATCH, 1)));
+
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, 1L, 2L);
+
+        verify(featuredMatchRepository).findAllByDisplayDateAndMatchIds(date, Set.of(41L));
+        assertThat(result.getFeaturedMatches().getPinnedMatches()).isEmpty();
+        assertThat(result.getFeaturedMatches().getHotMatches())
+                .extracting(featured -> featured.getMatch().getId())
+                .containsExactly(41L);
+    }
+
+    @Test
+    void v2는_기존_경기_목록이_비어있으면_Featured_저장소를_호출하지_않고_빈_목록을_반환한다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        given(matchRepository.findAppMatches(
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay(),
+                1L,
+                2L,
+                MatchAppStatusGroup.allStatuses(),
+                MatchAppStatusGroup.IN_PLAY.getStatuses(),
+                MatchAppStatusGroup.SCHEDULED.getStatuses(),
+                MatchAppStatusGroup.ENDED.getStatuses()
+        )).willReturn(List.of());
+
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, 1L, 2L);
+
+        verifyNoInteractions(featuredMatchRepository);
+        assertThat(result.getLeagueMatches()).isEmpty();
+        assertThat(result.getFeaturedMatches().getPinnedMatches()).isEmpty();
+        assertThat(result.getFeaturedMatches().getHotMatches()).isEmpty();
     }
 
     private void givenAppMatches(LocalDate date, Long sportId, Long leagueId, Match... matches) {
@@ -238,6 +364,26 @@ class MatchAppQueryServiceTest {
                     .addAll(Set.of(match.getHomeId(), match.getAwayId()));
         }
         given(teamStandingLookupService.getTeamStandings(teamIdsByLeague, date)).willReturn(teamStandings);
+    }
+
+    private void givenMatchResponseData(Match... matches) {
+        List<Long> matchIds = Arrays.stream(matches)
+                .map(Match::getId)
+                .toList();
+        given(matchDetailRepository.findAllById(matchIds)).willReturn(List.of());
+
+        for (Match match : matches) {
+            given(matchStatusDisplayResolver.resolve(match, null)).willReturn(statusDisplay("경기 예정"));
+        }
+    }
+
+    private FeaturedMatch featuredMatch(
+            Long matchId,
+            LocalDate displayDate,
+            FeaturedMatchType type,
+            Integer displayOrder
+    ) {
+        return new FeaturedMatch(matchId, displayDate, type, displayOrder);
     }
 
     private Match createMatch(Long id, MatchStatus status, LocalDateTime startAt, Integer homeScore, Integer awayScore) {

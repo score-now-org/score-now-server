@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface FeaturedMatchRepository extends JpaRepository<FeaturedMatch, Long> {
     boolean existsByMatchId(Long matchId);
@@ -59,4 +60,13 @@ public interface FeaturedMatchRepository extends JpaRepository<FeaturedMatch, Lo
     List<Long> findRegisteredMatchIds(@Param("matchIds") List<Long> matchIds);
 
     Optional<FeaturedMatch> findByMatchId(Long matchId);
+
+    @Query("""
+            select fm
+              from FeaturedMatch fm
+             where fm.displayDate = :targetDate
+               and fm.matchId in :matchIds
+             order by fm.type asc, fm.displayOrder asc
+            """)
+    List<FeaturedMatch> findAllByDisplayDateAndMatchIds(LocalDate targetDate, Set<Long> matchIds);
 }

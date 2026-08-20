@@ -4,10 +4,13 @@ import com.scorenow.scorenow_api.domain.league.service.standings.TeamStandingLoo
 import com.scorenow.scorenow_api.domain.league.service.standings.model.LeagueTeamKey;
 import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.*;
+import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatch;
+import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
+import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.scorenow.scorenow_api.domain.match.constant.MatchConstants.SEOUL_TIME_ZONE;
 import static java.util.stream.Collectors.toMap;
@@ -36,9 +40,10 @@ public class MatchAppQueryService {
 
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
+    private final FeaturedMatchRepository featuredMatchRepository;
 
-    public List<MatchAppResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
-        LocalDate targetDate = date != null ? date : LocalDate.now(ZoneId.of(SEOUL_TIME_ZONE));
+    public List<MatchAppLeagueGroupResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
+        LocalDate targetDate = resolveDate(date);
         LocalDateTime startAt = targetDate.atStartOfDay();
         LocalDateTime endAt = targetDate.plusDays(1).atStartOfDay();
 
@@ -90,8 +95,8 @@ public class MatchAppQueryService {
         // 리그 정보를 최상위로 두고, 각 리그 하위에 경기 목록을 반환
         return matchesByLeague.values().stream()
                 .map(leagueMatches -> {
-                    List<MatchAppResponse.MatchItemResponse> appMatches = leagueMatches.stream()
-                            .map(match -> MatchAppResponse.MatchItemResponse.from(
+                    List<MatchAppItemResponse> appMatches = leagueMatches.stream()
+                            .map(match -> MatchAppItemResponse.from(
                                     match,
                                     matchDetailById.get(match.getId()),
                                     matchStatusDisplayResolver.resolve(match, matchDetailById.get(match.getId())),
@@ -104,9 +109,83 @@ public class MatchAppQueryService {
                             )
                             .toList();
 
-                    return MatchAppResponse.from(leagueMatches.get(0).getLeague(), appMatches);
+                    return MatchAppLeagueGroupResponse.from(leagueMatches.get(0).getLeague(), appMatches);
                 })
                 .toList();
+    }
+
+    public MatchAppResponse getMatchesWithFeatured(LocalDate date, Long sportId, Long leagueId) {
+
+        LocalDate targetDate = resolveDate(date);
+
+        List<MatchAppLeagueGroupResponse> leagueGroupResponses = getMatches(targetDate, sportId, leagueId);
+
+        // Map<matchId, MatchAppLeagueGroupResponse> 생성 : matchId 로 해당 경기가 속한 리그 정보를 쉽게 찾기 위해
+        Map<Long, MatchAppLeagueGroupResponse> leagueGroupByMatchId = new HashMap<>();
+        for (MatchAppLeagueGroupResponse leagueGroupResponse : leagueGroupResponses) {
+            List<MatchAppItemResponse> matches = leagueGroupResponse.getMatches();
+
+            matches.forEach(match -> {
+                Long matchId = match.getId();
+                leagueGroupByMatchId.put(matchId, leagueGroupResponse);
+            });
+        }
+
+        // Map<matchId, MatchAppItemResponse> 생성 : matchId 로 기존 응답 DTO 를 쉽게 찾기 위해
+        Map<Long, MatchAppItemResponse> matchItemByMatchId = leagueGroupResponses.stream()
+                .flatMap(leagueGroup -> leagueGroup.getMatches().stream())
+                .collect(Collectors.toUnmodifiableMap(
+                        MatchAppItemResponse::getId,
+                        Function.identity()
+                ));
+
+        // 상단고정/핫매치 추출 (기존 조회한 Match 기반으로)
+        Set<Long> matchIds = matchItemByMatchId.keySet();
+        List<FeaturedMatch> featuredMatches = matchIds.isEmpty()
+                ? List.of()
+                : featuredMatchRepository.findAllByDisplayDateAndMatchIds(targetDate, matchIds);
+
+        List<MatchAppFeaturedItemResponse> pinnedMatches = new ArrayList<>();
+        List<MatchAppFeaturedItemResponse> hotMatches = new ArrayList<>();
+
+        for (FeaturedMatch featuredMatch : featuredMatches) {
+            Long matchId = featuredMatch.getMatchId();
+
+            if (!matchItemByMatchId.containsKey(matchId)) {
+                continue;
+            }
+
+            MatchAppItemResponse matchItem = matchItemByMatchId.get(matchId);
+            MatchAppLeagueGroupResponse leagueGroup = leagueGroupByMatchId.get(matchId);
+
+            MatchAppFeaturedItemResponse featuredItem = MatchAppFeaturedItemResponse.builder()
+                    .leagueId(leagueGroup.getLeagueId())
+                    .leagueName(leagueGroup.getLeagueName())
+                    .match(matchItem)
+                    .build();
+
+            if (featuredMatch.getType() == FeaturedMatchType.PINNED) {
+                pinnedMatches.add(featuredItem);
+            } else if (featuredMatch.getType() == FeaturedMatchType.HOT_MATCH) {
+                hotMatches.add(featuredItem);
+            }
+        }
+
+        // 응답 조립
+        MatchAppFeaturedSectionResponse featuredSectionResponse = MatchAppFeaturedSectionResponse.builder()
+                .pinnedMatches(pinnedMatches)
+                .hotMatches(hotMatches)
+                .build();
+
+        return MatchAppResponse.builder()
+                .date(targetDate)
+                .featuredMatches(featuredSectionResponse)
+                .leagueMatches(leagueGroupResponses)
+                .build();
+    }
+
+    private LocalDate resolveDate(LocalDate date) {
+        return date != null ? date : LocalDate.now(ZoneId.of(SEOUL_TIME_ZONE));
     }
 
 }
