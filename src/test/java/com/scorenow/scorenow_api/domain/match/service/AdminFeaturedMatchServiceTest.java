@@ -30,6 +30,8 @@ import static com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -66,6 +68,7 @@ class AdminFeaturedMatchServiceTest {
         service.createFeaturedMatch(matchIds, PINNED);
 
         then(featuredMatchRepository).should().saveAll(featuredMatchesCaptor.capture());
+        then(featuredMatchRepository).should(never()).findByDisplayDateWithMatch(any());
 
         List<FeaturedMatch> featuredMatches = featuredMatchesCaptor.getValue();
         assertThat(featuredMatches)

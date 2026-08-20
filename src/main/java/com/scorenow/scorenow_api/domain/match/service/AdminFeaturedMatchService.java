@@ -41,7 +41,7 @@ public class AdminFeaturedMatchService {
      * 상단고정/핫매치 등록
      */
     @Transactional
-    public FeaturedMatchesResponse createFeaturedMatch(List<Long> matchIds, FeaturedMatchType type) {
+    public void createFeaturedMatch(List<Long> matchIds, FeaturedMatchType type) {
 
         // matchIds 유효성 검증 (빈값 여부, 중복값 여부)
         validateMatchIds(matchIds);
@@ -71,8 +71,6 @@ public class AdminFeaturedMatchService {
         }
 
         featuredMatchRepository.saveAll(saveTargets);
-
-        return getFeaturedMatches(displayDate);
     }
 
     /**
