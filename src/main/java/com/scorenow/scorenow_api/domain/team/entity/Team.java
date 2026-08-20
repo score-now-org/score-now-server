@@ -42,6 +42,7 @@ public class Team extends BaseEntity {
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "data_origin", nullable = false, updatable = false)
     private DataOrigin dataOrigin;    // 데이터 원천 (외부 API, 수동등록)
 
     @Builder.Default

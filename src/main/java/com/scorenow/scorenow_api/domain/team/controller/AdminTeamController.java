@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamCreateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
 import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
+import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.team.service.AdminTeamService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
@@ -32,6 +33,11 @@ public class AdminTeamController implements AdminTeamApiDocs {
             @ModelAttribute TeamSearchCondition condition,
             @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         return ApiResponse.success(adminTeamService.searchTeams(condition, pageable));
+    }
+
+    @GetMapping("/search-options")
+    public ApiResponse<AdminTeamSearchOptionsResponse> getSearchOptions() {
+        return ApiResponse.success(adminTeamService.getSearchOptions());
     }
 
     @PatchMapping("/{teamId}")

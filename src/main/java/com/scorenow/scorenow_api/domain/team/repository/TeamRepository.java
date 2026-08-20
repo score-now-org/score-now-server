@@ -16,8 +16,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Modifying
     @Query(value = """
-            INSERT IGNORE INTO teams (id, sport_id, type, k_name, e_name, s_name, cc, image_url, is_active, created_at, updated_at)
-            VALUES (:id, :sportId, :type, :kName, :eName, :sName, :cc, :imageUrl, true, NOW(), NOW())
+            INSERT IGNORE INTO teams (id, sport_id, type, k_name, e_name, s_name, cc, image_url, data_origin, is_active, created_at, updated_at)
+            VALUES (:id, :sportId, :type, :kName, :eName, :sName, :cc, :imageUrl, :dataOrigin, true, NOW(), NOW())
             """, nativeQuery = true)
     void insertIgnore(
             @Param("id") Long id,
@@ -27,7 +27,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             @Param("eName") String eName,
             @Param("sName") String sName,
             @Param("cc") String cc,
-            @Param("imageUrl") String imageUrl
+            @Param("imageUrl") String imageUrl,
+            @Param("dataOrigin") String dataOrigin
     );
 
     @Query(value = """
@@ -36,21 +37,24 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             left join fetch t.sport
             where (:teamId is null or t.id = :teamId)
               and t.isActive = true
-              and (:kName is null or t.kName like concat('%', :kName, '%'))
-              and (:eName is null or lower(t.eName) like lower(concat('%', :eName, '%')))
+              and (:keyword is null
+                   or lower(t.kName) like lower(concat('%', :keyword, '%'))
+                   or lower(t.eName) like lower(concat('%', :keyword, '%'))
+                   or lower(t.sName) like lower(concat('%', :keyword, '%')))
             """,
             countQuery = """
             select count(t)
             from Team t
             where (:teamId is null or t.id = :teamId)
               and t.isActive = true
-              and (:kName is null or t.kName like concat('%', :kName, '%'))
-              and (:eName is null or lower(t.eName) like lower(concat('%', :eName, '%')))
+              and (:keyword is null
+                   or lower(t.kName) like lower(concat('%', :keyword, '%'))
+                   or lower(t.eName) like lower(concat('%', :keyword, '%'))
+                   or lower(t.sName) like lower(concat('%', :keyword, '%')))
             """)
     Page<Team> searchTeams(
             @Param("teamId") Long teamId,
-            @Param("kName") String kName,
-            @Param("eName") String eName,
+            @Param("keyword") String keyword,
             Pageable pageable
     );
 

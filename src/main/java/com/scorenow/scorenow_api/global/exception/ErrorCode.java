@@ -40,6 +40,7 @@ public enum ErrorCode {
 
     // Team
     TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "팀을 찾을 수 없습니다."),
+    TEAM_DELETE_NOT_ALLOWED(HttpStatus.CONFLICT, "T002", "수동 등록된 팀만 삭제할 수 있습니다."),
 
     // Sport
     SPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "스포츠를 찾을 수 없습니다."),
