@@ -107,7 +107,7 @@ public class MatchDetailService {
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
         StadiumData stadiumData = viewResult.getExtra().getStadiumData();
         if (stadiumData != null) {
-            Stadium stadium = stadiumCacheService.getOrCreateStadium(
+            Long stadiumId = stadiumCacheService.getOrCreateStadiumId(
                     dataOrigin,
                     viewResult.getSportId(),
                     stadiumData.getId(),
@@ -116,7 +116,7 @@ public class MatchDetailService {
 
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
             if (match.isStadiumEmpty()) {
-                match.updateStadiumId(stadium.getId());
+                match.updateStadiumId(stadiumId);
             }
         }
 
@@ -423,4 +423,3 @@ public class MatchDetailService {
         return incomingValue != null ? incomingValue : currentValue;
     }
 }
-

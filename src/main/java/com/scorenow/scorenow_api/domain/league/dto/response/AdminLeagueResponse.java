@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -19,6 +21,9 @@ public class AdminLeagueResponse {
 
     @Schema(description = "종목 ID", example = "1")
     private Long sportId;
+
+    @Schema(description = "종목 코드", example = "FOOTBALL")
+    private SportCode sportCode;
 
     @Schema(description = "종목명", example = "축구")
     private String sportName;
@@ -57,9 +62,25 @@ public class AdminLeagueResponse {
     }
 
     public static AdminLeagueResponse from(League league, String sportName, Boolean syncEnabled) {
+        SportCode sportCode = league.getSport() != null ? league.getSport().getSportCode() : null;
+        return from(league, sportName, sportCode, syncEnabled);
+    }
+
+    public static AdminLeagueResponse from(League league, Sport sport, Boolean syncEnabled) {
+        String sportName = sport != null ? sport.resolveSportName() : null;
+        SportCode sportCode = sport != null ? sport.getSportCode() : null;
+        return from(league, sportName, sportCode, syncEnabled);
+    }
+
+    private static AdminLeagueResponse from(
+            League league,
+            String sportName,
+            SportCode sportCode,
+            Boolean syncEnabled) {
         return AdminLeagueResponse.builder()
                 .id(league.getId())
                 .sportId(league.getSportId())
+                .sportCode(sportCode)
                 .sportName(sportName)
                 .kName(league.getKName())
                 .eName(league.getEName())

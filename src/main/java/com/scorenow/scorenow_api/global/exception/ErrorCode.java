@@ -19,6 +19,7 @@ public enum ErrorCode {
     MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "경기를 찾을 수 없습니다."),
     MATCH_ALREADY_EXIST(HttpStatus.CONFLICT, "M002", "이미 존재하는 경기입니다."),
     MATCH_INVALID_STATUS(HttpStatus.BAD_REQUEST, "M003", "잘못된 경기 상태입니다."),
+    MATCH_STADIUM_MAPPING_INVALID_STATE(HttpStatus.CONFLICT, "M004", "임시 경기장이 할당된 경기에서만 매핑을 해제할 수 있습니다."),
 
     // Match Detail
     MATCH_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MD001", "경기 중계 정보를 찾을 수 없습니다."),
@@ -47,6 +48,7 @@ public enum ErrorCode {
 
     // Stadium
     STADIUM_NOT_FOUND(HttpStatus.NOT_FOUND, "STA001", "경기장을 찾을 수 없습니다."),
+    STADIUM_DELETE_NOT_ALLOWED(HttpStatus.CONFLICT, "STA002", "수동 등록된 경기장만 삭제할 수 있습니다."),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),

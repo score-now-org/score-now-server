@@ -30,6 +30,10 @@ public class StadiumService {
      */
     @Transactional
     public Stadium getOrCreateStadium(final DataOrigin dataOrigin, final String apiSportId, final String apiStadiumId, final String name, final String city) {
+        if (dataOrigin == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기장 데이터 원천은 필수입니다.");
+        }
+
         // 1. 전달받은 외부 정보를 기반으로 Stadium External Mapping 테이블에 데이터가 있는지 확인
         Optional<StadiumExternalMapping> stadiumMappingInfo = stadiumExternalMappingRepository.findByExternalInfo(dataOrigin, apiSportId, apiStadiumId);
 

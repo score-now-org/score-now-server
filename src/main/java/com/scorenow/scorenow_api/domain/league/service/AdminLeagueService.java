@@ -101,7 +101,7 @@ public class AdminLeagueService {
             ));
         }
 
-        return AdminLeagueResponse.from(savedLeague, sport.resolveSportName(), syncEnabled);
+        return AdminLeagueResponse.from(savedLeague, sport, syncEnabled);
     }
 
     /**
