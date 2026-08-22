@@ -1,7 +1,6 @@
 package com.scorenow.scorenow_api.domain.stadium.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.entity.StadiumCacheKey;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.RequiredArgsConstructor;
@@ -13,18 +12,18 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class StadiumCacheService {
 
-    private final Cache<StadiumCacheKey, Stadium> stadiumCache;
+    private final Cache<StadiumCacheKey, Long> stadiumIdCache;
     private final StadiumService stadiumService;
 
     /**
      * 경기장 생성 (캐시 + DB 활용)
      */
-    public Stadium getOrCreateStadium(final DataOrigin dataOrigin, final String apiSportId, final String apiStadiumId, final String name, final String city) {
+    public Long getOrCreateStadiumId(final DataOrigin dataOrigin, final String apiSportId, final String apiStadiumId, final String name, final String city) {
         StadiumCacheKey cacheKey = new StadiumCacheKey(dataOrigin, apiSportId, apiStadiumId);
 
-        return stadiumCache.get(cacheKey, key -> {
+        return stadiumIdCache.get(cacheKey, key -> {
                     log.info("[Cache Miss ❌] dataOrigin={}, apiSportId={}, apiStadiumId={}", dataOrigin, apiSportId, apiStadiumId);
-                    return stadiumService.getOrCreateStadium(dataOrigin, apiSportId, apiStadiumId, name, city);
+                    return stadiumService.getOrCreateStadium(dataOrigin, apiSportId, apiStadiumId, name, city).getId();
                 }
         );
     }

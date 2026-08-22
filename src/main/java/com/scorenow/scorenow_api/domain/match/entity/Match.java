@@ -138,6 +138,10 @@ public class Match extends BaseEntity {
         this.temporaryStadium = new TemporaryStadium(stadiumName, city);
     }
 
+    public void clearTemporaryStadium() {
+        this.temporaryStadium = null;
+    }
+
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder;
     }

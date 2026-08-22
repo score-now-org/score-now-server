@@ -14,4 +14,7 @@ public class StadiumSearchCondition {
 
     @Schema(description = "경기장명 검색어", example = "Neo Quimica")
     private String name;
+
+    @Schema(description = "종목 ID 필터", example = "1")
+    private Long sportId;
 }

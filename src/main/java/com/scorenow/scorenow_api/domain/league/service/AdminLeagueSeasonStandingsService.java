@@ -201,6 +201,7 @@ public class AdminLeagueSeasonStandingsService {
 
     /**
      * 리그 시즌 순위 그룹 표시 설정 조회
+     * TODO: 축구에 강결합되어있음.
      */
     public AdminLeagueSeasonStandingsGroupMappingsResponse getGroupMappings(Long leagueSeasonId) {
 

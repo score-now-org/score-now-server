@@ -11,6 +11,8 @@ import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +40,10 @@ public class TeamService {
     @Transactional
     public Team getOrCreateTeam(final DataOrigin dataOrigin, final Long internalSportId, final String apiTeamId,
                                 final String name, final String cc, final String imageUrl) {
+        if (dataOrigin == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "팀 데이터 원천은 필수입니다.");
+        }
+
         // 1. 전달받은 외부 정보를 기반으로 Team External Mapping 테이블에 데이터가 있는지 확인
         Optional<TeamExternalMapping> teamMappingInfo = teamExternalMappingRepository.findByProviderAndApiTeamId(
                 dataOrigin, apiTeamId);

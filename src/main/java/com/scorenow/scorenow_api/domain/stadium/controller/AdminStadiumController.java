@@ -1,12 +1,14 @@
 package com.scorenow.scorenow_api.domain.stadium.controller;
 
-import java.util.List;
-
 import com.scorenow.scorenow_api.domain.stadium.dto.request.AdminStadiumCreateRequest;
 import com.scorenow.scorenow_api.domain.stadium.dto.request.AdminStadiumUpdateRequest;
 import com.scorenow.scorenow_api.domain.stadium.dto.request.StadiumSearchCondition;
+import com.scorenow.scorenow_api.domain.stadium.dto.response.AdminStadiumSearchOptionsResponse;
 import com.scorenow.scorenow_api.domain.stadium.service.AdminStadiumService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 import com.scorenow.scorenow_api.domain.stadium.dto.response.AdminStadiumResponse;
@@ -25,8 +27,15 @@ public class AdminStadiumController implements AdminStadiumApiDocs {
      * 경기장 검색 (경기장ID, 경기장명)
      */
     @GetMapping
-    public ApiResponse<List<AdminStadiumResponse>> searchStadiums(@ModelAttribute StadiumSearchCondition condition) {
-        return ApiResponse.success(adminStadiumService.searchStadiums(condition));
+    public ApiResponse<Page<AdminStadiumResponse>> searchStadiums(
+            @ModelAttribute StadiumSearchCondition condition,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return ApiResponse.success(adminStadiumService.searchStadiums(condition, pageable));
+    }
+
+    @GetMapping("/search-options")
+    public ApiResponse<AdminStadiumSearchOptionsResponse> getSearchOptions() {
+        return ApiResponse.success(adminStadiumService.getSearchOptions());
     }
 
     /**
@@ -46,5 +55,12 @@ public class AdminStadiumController implements AdminStadiumApiDocs {
         return ApiResponse.success();
     }
 
-
+    /**
+     * 경기장 삭제 (soft-delete)
+     */
+    @DeleteMapping("/{stadiumId}")
+    public ApiResponse<Void> deleteStadium(@PathVariable Long stadiumId) {
+        adminStadiumService.deleteStadium(stadiumId);
+        return ApiResponse.success();
+    }
 }

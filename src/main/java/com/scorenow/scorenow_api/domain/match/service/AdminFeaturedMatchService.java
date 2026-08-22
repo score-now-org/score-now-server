@@ -41,29 +41,36 @@ public class AdminFeaturedMatchService {
      * 상단고정/핫매치 등록
      */
     @Transactional
-    public FeaturedMatchesResponse createFeaturedMatch(Long matchId, FeaturedMatchType type) {
+    public void createFeaturedMatch(List<Long> matchIds, FeaturedMatchType type) {
+
+        // matchIds 유효성 검증 (빈값 여부, 중복값 여부)
+        validateMatchIds(matchIds);
 
         // 경기 존재 여부 확인
-        Match match = matchRepository.findById(matchId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+        List<Match> matches = matchRepository.findAllByIdsOrderByStartAt(matchIds);
 
-        // 상단고정/핫매치 설정 여부 확인
-        if (featuredMatchRepository.existsByMatchId(matchId)) {
+        if (matches.size() != matchIds.size()) {
+            throw new BusinessException(ErrorCode.MATCH_NOT_FOUND);
+        }
+
+        // 상단고정/핫매치 기등록 여부 확인
+        if (!featuredMatchRepository.findRegisteredMatchIds(matchIds).isEmpty()) {
             throw new BusinessException(ErrorCode.FEATURED_MATCH_ALREADY_EXISTS);
         }
 
-        if (match.getStartAt() == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 시작 일자가 존재하지 않습니다.");
-        }
-
-        LocalDate displayDate = match.getStartAt().toLocalDate();
-        Integer displayOrder = getNextDisplayOrder(displayDate, type);
+        // 경기 시작 일자 세팅 및 전체 동일 여부 확인
+        LocalDate displayDate = getDisplayDate(matches);
 
         // 상단고정/핫매치 설정 등록
-        FeaturedMatch featuredMatch = new FeaturedMatch(matchId, displayDate, type, displayOrder);
-        featuredMatchRepository.save(featuredMatch);
+        List<FeaturedMatch> saveTargets = new ArrayList<>();
+        int displayOrder = getNextDisplayOrder(displayDate, type);
 
-        return getFeaturedMatches(displayDate);
+        for (Match match : matches) {
+            FeaturedMatch featuredMatch = new FeaturedMatch(match.getId(), displayDate, type, displayOrder++);
+            saveTargets.add(featuredMatch);
+        }
+
+        featuredMatchRepository.saveAll(saveTargets);
     }
 
     /**
@@ -89,6 +96,8 @@ public class AdminFeaturedMatchService {
         return candidateMatches.stream()
                 .map(match -> new FeaturedMatchCandidateResponse(
                         match.getId(),
+                        match.getSportId(),
+                        match.getSport().resolveSportName(),
                         match.getLeague().resolveLeagueName(),
                         match.getStartAt(),
                         match.getHomeTeam().resolveTeamName(),
@@ -214,15 +223,16 @@ public class AdminFeaturedMatchService {
         List<FeaturedMatchResponse> hotMatches = new ArrayList<>();
         List<FeaturedMatchResponse> pinnedMatches = new ArrayList<>();
 
-        List<FeaturedMatchResponse> featuredMatches = featuredMatchRepository.findByDisplayDateWithLeague(displayDate);
-        featuredMatches.forEach(featuredMatch -> {
-            if (FeaturedMatchType.HOT_MATCH.name().equals(featuredMatch.getType())) {
-                hotMatches.add(featuredMatch);
-            }
-            if (FeaturedMatchType.PINNED.name().equals(featuredMatch.getType())) {
-                pinnedMatches.add(featuredMatch);
-            }
-        });
+        featuredMatchRepository.findByDisplayDateWithMatch(displayDate)
+                .stream()
+                .map(FeaturedMatchResponse::from)
+                .forEach(response -> {
+                    if (FeaturedMatchType.HOT_MATCH.name().equals(response.getType())) {
+                        hotMatches.add(response);
+                    } else if (FeaturedMatchType.PINNED.name().equals(response.getType())) {
+                        pinnedMatches.add(response);
+                    }
+                });
 
         return new FeaturedMatchesResponse(displayDate.format(YYYYMMDD), hotMatches, pinnedMatches);
     }
@@ -244,5 +254,43 @@ public class AdminFeaturedMatchService {
                 .findMatchesAfterDisplayOrder(displayDate, type, deletedDisplayOrder);
 
         featuredMatches.forEach(FeaturedMatch::moveUpDisplayOrder);
+    }
+
+    /**
+     * 조회 기준 일자 반환
+     * - 경기 시작 일자 세팅 여부 검증
+     * - 조회 기준 일자 동일 여부 검증
+     */
+    private LocalDate getDisplayDate(List<Match> matches) {
+
+        LocalDate displayDate = null;
+
+        for (Match match : matches) {
+            if (match.getStartAt() == null) {
+                throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 시작 일자가 존재하지 않습니다.");
+            }
+
+            if (displayDate == null) {
+                displayDate = match.getStartAt().toLocalDate();
+            }
+
+            if (!displayDate.equals(match.getStartAt().toLocalDate())) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_PARAMETER,
+                        "경기 시작 일자가 서로 다릅니다. 기준날짜:" + displayDate + ", 조회경기날짜:" + match.getStartAt().toLocalDate());
+            }
+        }
+
+        return displayDate;
+    }
+
+    private void validateMatchIds(List<Long> matchIds) {
+        if (matchIds == null || matchIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "등록할 경기 ID는 필수입니다.");
+        }
+
+        if (new HashSet<>(matchIds).size() != matchIds.size()) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "중복된 경기 ID가 존재합니다.");
+        }
     }
 }

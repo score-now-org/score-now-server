@@ -12,9 +12,6 @@ public class TeamSearchCondition {
     @Schema(description = "팀 ID", example = "1")
     private Long teamId;
 
-    @Schema(description = "한글 팀명 검색어", example = "맨체스터")
-    private String kName;
-
-    @Schema(description = "영문 팀명 검색어", example = "manchester")
-    private String eName;
+    @Schema(description = "팀명 통합 검색어. 한글명, 영문명, 숏네임을 함께 검색합니다.", example = "맨체스터")
+    private String keyword;
 }

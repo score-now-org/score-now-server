@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -18,6 +19,9 @@ public class MatchListResponse {
 
     @Schema(description = "종목 ID", example = "1")
     private Long sportId;
+
+    @Schema(description = "종목 코드", example = "FOOTBALL")
+    private SportCode sportCode;
 
     @Schema(description = "종목명", example = "축구")
     private String sportName;

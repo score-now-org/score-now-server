@@ -2,6 +2,8 @@ package com.scorenow.scorenow_api.domain.team.service;
 
 import static com.scorenow.scorenow_api.domain.team.entity.TeamType.CLUB;
 import static com.scorenow.scorenow_api.domain.team.entity.TeamType.NATIONAL;
+import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.BETS;
+import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.MANUAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
@@ -12,6 +14,9 @@ import static org.mockito.BDDMockito.then;
 import java.util.List;
 import java.util.Optional;
 
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
+import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.dto.request.TeamSearchCondition;
 import com.scorenow.scorenow_api.domain.team.dto.request.AdminTeamUpdateRequest;
 import com.scorenow.scorenow_api.domain.team.dto.response.AdminTeamResponse;
@@ -24,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,6 +39,9 @@ class AdminTeamServiceTest {
 
     @Mock
     private TeamRepository teamRepository;
+
+    @Mock
+    private SportRepository sportRepository;
 
     @InjectMocks
     private AdminTeamService adminTeamService;
@@ -66,8 +75,21 @@ class AdminTeamServiceTest {
         assertThat(team.getKName()).isEqualTo("변경팀");
         assertThat(team.getEName()).isEqualTo("New Team");
         assertThat(team.getSName()).isEqualTo("NEW");
-        assertThat(team.getCc()).isEqualTo("new cc");
+        assertThat(team.getCc()).isEqualTo("NEW CC");
         assertThat(team.getImageUrl()).isEqualTo("old.png");
+    }
+
+    @Test
+    void 수정할_팀명은_공백일_수_없다() {
+        Long teamId = 1L;
+        Team team = Team.builder().id(teamId).kName("기존팀").build();
+        AdminTeamUpdateRequest request = new AdminTeamUpdateRequest();
+        request.setKName("   ");
+        given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
+
+        assertThatThrownBy(() -> adminTeamService.updateTeam(teamId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("한글 팀명은(는) 비워둘 수 없습니다.");
     }
 
     @Test
@@ -77,6 +99,7 @@ class AdminTeamServiceTest {
                 .id(teamId)
                 .type(CLUB)
                 .kName("서울")
+                .dataOrigin(MANUAL)
                 .build();
 
         given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
@@ -84,6 +107,25 @@ class AdminTeamServiceTest {
         adminTeamService.deleteTeam(teamId);
 
         assertThat(team.isActive()).isFalse();
+    }
+
+    @Test
+    void 외부_연동_팀은_삭제할_수_없다() {
+        Long teamId = 1L;
+        Team team = Team.builder()
+                .id(teamId)
+                .type(CLUB)
+                .kName("서울")
+                .dataOrigin(BETS)
+                .build();
+
+        given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
+
+        assertThatThrownBy(() -> adminTeamService.deleteTeam(teamId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("수동 등록된 팀만 삭제할 수 있습니다.");
+
+        assertThat(team.isActive()).isTrue();
     }
 
     @Test
@@ -103,9 +145,10 @@ class AdminTeamServiceTest {
                 .type(CLUB)
                 .kName("서울")
                 .eName("Seoul")
+                .dataOrigin(BETS)
                 .build();
 
-        given(teamRepository.searchTeams(null, null, null, pageable))
+        given(teamRepository.searchTeams(null, null, pageable))
                 .willReturn(new PageImpl<>(List.of(team), pageable, 1));
 
         Page<AdminTeamResponse> result = adminTeamService.searchTeams(new TeamSearchCondition(), pageable);
@@ -114,7 +157,25 @@ class AdminTeamServiceTest {
         assertThat(result.getContent().get(0).getId()).isEqualTo(1L);
         assertThat(result.getContent().get(0).getKName()).isEqualTo("서울");
         assertThat(result.getContent().get(0).getEName()).isEqualTo("Seoul");
-        then(teamRepository).should().searchTeams(isNull(), isNull(), isNull(), eq(pageable));
+        assertThat(result.getContent().get(0).getDataOrigin()).isEqualTo(BETS);
+        then(teamRepository).should().searchTeams(isNull(), isNull(), eq(pageable));
+    }
+
+    @Test
+    void 팀_관리_화면의_팀_타입과_종목_옵션을_조회한다() {
+        Sport football = Sport.builder()
+                .id(1L)
+                .sportCode(SportCode.FOOTBALL)
+                .kName("축구")
+                .build();
+        given(sportRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))).willReturn(List.of(football));
+
+        var result = adminTeamService.getSearchOptions();
+
+        assertThat(result.getTeamTypes()).extracting("code").containsExactly("CLUB", "NATIONAL");
+        assertThat(result.getSports()).hasSize(1);
+        assertThat(result.getSports().get(0).getCode()).isEqualTo("FOOTBALL");
+        assertThat(result.getSports().get(0).getName()).isEqualTo("축구");
     }
 
     @Test
@@ -135,29 +196,17 @@ class AdminTeamServiceTest {
                 .eName("Manchester City")
                 .build();
 
-        // 한국어로 "맨체스터" 라고 검색하는 경우
-        given(teamRepository.searchTeams(null, "맨체스터", null, pageable))
+        given(teamRepository.searchTeams(null, "manchester", pageable))
                 .willReturn(new PageImpl<>(List.of(manchesterUnited, manchesterCity), pageable, 2));
 
-        // 영어로 "manchester" 라고 검색하는 경우
-        given(teamRepository.searchTeams(null, null, "manchester", pageable))
-                .willReturn(new PageImpl<>(List.of(manchesterUnited, manchesterCity), pageable, 2));
+        TeamSearchCondition condition = new TeamSearchCondition();
+        condition.setKeyword("  manchester  ");
 
+        Page<AdminTeamResponse> result = adminTeamService.searchTeams(condition, pageable);
 
-        TeamSearchCondition koreanSearchCondition = new TeamSearchCondition();
-        koreanSearchCondition.setKName("맨체스터");
-
-        TeamSearchCondition englishSearchCondition = new TeamSearchCondition();
-        englishSearchCondition.setEName("manchester");
-
-        Page<AdminTeamResponse> koreanSearchResult = adminTeamService.searchTeams(koreanSearchCondition, pageable);
-        Page<AdminTeamResponse> englishSearchResult = adminTeamService.searchTeams(englishSearchCondition, pageable);
-
-        assertThat(koreanSearchResult.getTotalElements()).isEqualTo(2);
-        assertThat(koreanSearchResult.stream().allMatch(res -> res.getKName().contains("맨체스터"))).isTrue();
-
-        assertThat(englishSearchResult.getTotalElements()).isEqualTo(2);
-        assertThat(englishSearchResult.stream().allMatch(res -> res.getKName().contains("맨체스터"))).isTrue();
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.stream().allMatch(res -> res.getKName().contains("맨체스터"))).isTrue();
+        then(teamRepository).should().searchTeams(null, "manchester", pageable);
     }
 
 }

@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.team.entity.TeamType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,22 +26,24 @@ public class AdminTeamCreateRequest {
 
     @Schema(description = "한글 팀명", example = "맨체스터 유나이티드", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "한글 팀명은 필수입니다.")
+    @Size(max = 255, message = "한글 팀명은 255자를 초과할 수 없습니다.")
     @JsonProperty("kName")
     private String kName;
 
-    @Schema(description = "영문 팀명", example = "Manchester United")
+    @Schema(description = "영문 팀명", example = "Manchester United", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "영문 팀명은 필수입니다.")
+    @Size(max = 255, message = "영문 팀명은 255자를 초과할 수 없습니다.")
     @JsonProperty("eName")
     private String eName;
 
-    @Schema(description = "축약 팀명", example = "MU")
+    @Schema(description = "축약 팀명", example = "MU", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "축약 팀명은 필수입니다.")
+    @Size(max = 12, message = "축약 팀명은 12자를 초과할 수 없습니다.")
     @JsonProperty("sName")
     private String sName;
 
-    @Schema(description = "팀 이미지 URL", example = "https://assets.b365api.com/images/team/m/12345.png")
+    @Schema(description = "팀 이미지 URL. 이미지 업로드 기능 도입 전까지 선택값입니다.", example = "https://assets.example.com/teams/12345.png")
+    @Size(max = 255, message = "팀 이미지 URL은 255자를 초과할 수 없습니다.")
     @JsonProperty("imageUrl")
     private String imageUrl;
-
-    @Schema(description = "국가 코드", example = "KR")
-    @JsonProperty("cc")
-    private String cc;
 }
