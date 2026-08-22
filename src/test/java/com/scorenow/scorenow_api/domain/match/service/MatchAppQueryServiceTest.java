@@ -24,6 +24,9 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
+import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
+import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +63,9 @@ class MatchAppQueryServiceTest {
 
     @Mock
     private FeaturedMatchRepository featuredMatchRepository;
+
+    @Mock
+    private StadiumRepository stadiumRepository;
 
     @InjectMocks
     private MatchAppQueryService matchAppQueryService;
@@ -219,6 +225,125 @@ class MatchAppQueryServiceTest {
         assertThat(response.getHomeTeam().getStandings().get(0).getGroupName()).isEqualTo("통합");
         assertThat(response.getHomeTeam().getStandings().get(0).getRank()).isEqualTo(3);
         assertThat(response.getAwayTeam().getStandings()).isEmpty();
+    }
+
+    @Test
+    void 등록_경기장이_매핑되어_있으면_경기장명과_도시명을_내려준다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatchBuilder(
+                51L,
+                2L,
+                "Premier League",
+                MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0),
+                0,
+                0)
+                .stadiumId(101L)
+                .build();
+        Stadium stadium = stadium(101L, "서울월드컵경기장", "서울", true);
+
+        givenAppMatches(date, 1L, 2L, match);
+        givenMatchResponseData(match);
+        given(stadiumRepository.findAllByIds(Set.of(101L))).willReturn(List.of(stadium));
+
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        MatchAppItemResponse.StadiumResponse response = result.get(0).getMatches().get(0).getStadium();
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo("서울월드컵경기장");
+        assertThat(response.getCity()).isEqualTo("서울");
+    }
+
+    @Test
+    void 임시_경기장과_등록_경기장이_모두_있으면_임시_경기장을_우선하여_내려준다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatchBuilder(
+                52L,
+                2L,
+                "Premier League",
+                MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0),
+                0,
+                0)
+                .stadiumId(101L)
+                .temporaryStadium(new TemporaryStadium("임시 축구장", "부산"))
+                .build();
+
+        givenAppMatches(date, 1L, 2L, match);
+        givenMatchResponseData(match);
+
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        MatchAppItemResponse.StadiumResponse response = result.get(0).getMatches().get(0).getStadium();
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo("임시 축구장");
+        assertThat(response.getCity()).isEqualTo("부산");
+        verifyNoInteractions(stadiumRepository);
+    }
+
+    @Test
+    void 경기장이_매핑되어_있지_않으면_stadium을_null로_내려준다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatch(53L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+
+        givenAppMatches(date, 1L, 2L, match);
+        givenMatchResponseData(match);
+
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        assertThat(result.get(0).getMatches().get(0).getStadium()).isNull();
+        verifyNoInteractions(stadiumRepository);
+    }
+
+    @Test
+    void 매핑된_경기장_ID에_해당하는_경기장이_없어도_목록_조회에_성공하고_stadium을_null로_내려준다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatchBuilder(
+                54L,
+                2L,
+                "Premier League",
+                MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0),
+                0,
+                0)
+                .stadiumId(999L)
+                .build();
+
+        givenAppMatches(date, 1L, 2L, match);
+        givenMatchResponseData(match);
+        given(stadiumRepository.findAllByIds(Set.of(999L))).willReturn(List.of());
+
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getMatches().get(0).getStadium()).isNull();
+    }
+
+    @Test
+    void 비활성_경기장도_기존_경기에_매핑되어_있으면_경기장명과_도시명을_내려준다() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match match = createMatchBuilder(
+                55L,
+                2L,
+                "Premier League",
+                MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0),
+                0,
+                0)
+                .stadiumId(102L)
+                .build();
+        Stadium inactiveStadium = stadium(102L, "폐쇄된 경기장", "인천", false);
+
+        givenAppMatches(date, 1L, 2L, match);
+        givenMatchResponseData(match);
+        given(stadiumRepository.findAllByIds(Set.of(102L))).willReturn(List.of(inactiveStadium));
+
+        List<MatchAppLeagueGroupResponse> result = matchAppQueryService.getMatches(date, 1L, 2L);
+
+        MatchAppItemResponse.StadiumResponse response = result.get(0).getMatches().get(0).getStadium();
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo("폐쇄된 경기장");
+        assertThat(response.getCity()).isEqualTo("인천");
     }
 
     @Test
@@ -391,6 +516,18 @@ class MatchAppQueryServiceTest {
     }
 
     private Match createMatch(Long id, Long leagueId, String leagueName, MatchStatus status, LocalDateTime startAt, Integer homeScore, Integer awayScore) {
+        return createMatchBuilder(id, leagueId, leagueName, status, startAt, homeScore, awayScore)
+                .build();
+    }
+
+    private Match.MatchBuilder createMatchBuilder(
+            Long id,
+            Long leagueId,
+            String leagueName,
+            MatchStatus status,
+            LocalDateTime startAt,
+            Integer homeScore,
+            Integer awayScore) {
         return Match.builder()
                 .id(id)
                 .sportId(1L)
@@ -417,7 +554,16 @@ class MatchAppQueryServiceTest {
                 .homeScore(homeScore)
                 .awayScore(awayScore)
                 .isActive(true)
-                .teamDisplayOrder(TeamDisplayOrder.HOME_AWAY)
+                .teamDisplayOrder(TeamDisplayOrder.HOME_AWAY);
+    }
+
+    private Stadium stadium(Long id, String name, String city, boolean isActive) {
+        return Stadium.builder()
+                .id(id)
+                .sportId(1L)
+                .name(name)
+                .city(city)
+                .isActive(isActive)
                 .build();
     }
 

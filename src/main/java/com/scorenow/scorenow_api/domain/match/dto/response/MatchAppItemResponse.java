@@ -5,6 +5,8 @@ import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStand
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
+import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -23,6 +25,9 @@ public class MatchAppItemResponse {
     @Schema(description = "경기 날짜", example = "2026-06-05")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
+
+    @Schema(description = "경기장 정보")
+    private StadiumResponse stadium;
 
     @Schema(description = "홈팀 정보")
     private TeamResponse homeTeam;
@@ -66,6 +71,36 @@ public class MatchAppItemResponse {
 
     @Schema(description = "팀 표시 순서", example = "[\"HOME\", \"AWAY\"]")
     private List<String> teamDisplayOrder;
+
+    @Getter
+    @Builder
+    @Schema(description = "앱 경기 경기장 응답")
+    public static class StadiumResponse {
+        @Schema(description = "경기장명", example = "서울월드컵경기장")
+        private String name;
+
+        @Schema(description = "도시명", example = "서울")
+        private String city;
+
+        public static StadiumResponse from(Match match, Stadium registeredStadium) {
+            TemporaryStadium temporaryStadium = match.getTemporaryStadium();
+            if (temporaryStadium != null) {
+                return StadiumResponse.builder()
+                        .name(temporaryStadium.getTemporaryStadiumName())
+                        .city(temporaryStadium.getTemporaryStadiumCity())
+                        .build();
+            }
+
+            if (registeredStadium == null) {
+                return null;
+            }
+
+            return StadiumResponse.builder()
+                    .name(registeredStadium.getName())
+                    .city(registeredStadium.getCity())
+                    .build();
+        }
+    }
 
     @Getter
     @Builder
@@ -115,6 +150,7 @@ public class MatchAppItemResponse {
 
     public static MatchAppItemResponse from(
             Match match,
+            Stadium registeredStadium,
             MatchDetailDocument matchDetail,
             MatchStatusDisplayResponse matchStatusDisplayResponse,
             List<TeamStandingSummary> homeTeamStandings,
@@ -123,6 +159,7 @@ public class MatchAppItemResponse {
         return MatchAppItemResponse.builder()
                 .id(match.getId())
                 .date(match.getStartAt().toLocalDate())
+                .stadium(StadiumResponse.from(match, registeredStadium))
                 .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam(), homeTeamStandings))
                 .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam(), awayTeamStandings))
                 .homeScore(match.getHomeScore())

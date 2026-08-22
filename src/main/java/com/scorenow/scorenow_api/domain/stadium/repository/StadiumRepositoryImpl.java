@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +40,11 @@ public class StadiumRepositoryImpl implements StadiumRepository {
     @Override
     public Optional<Stadium> findById(Long stadiumId) {
         return stadiumJpaRepository.findById(stadiumId);
+    }
+
+    @Override
+    public List<Stadium> findAllByIds(Collection<Long> stadiumIds) {
+        return stadiumJpaRepository.findAllById(stadiumIds);
     }
 
     @Override

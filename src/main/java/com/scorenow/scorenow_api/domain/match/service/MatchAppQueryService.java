@@ -13,6 +13,8 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
+import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,8 +43,9 @@ public class MatchAppQueryService {
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
     private final FeaturedMatchRepository featuredMatchRepository;
+    private final StadiumRepository stadiumRepository;
 
-    public List<MatchAppLeagueGroupResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
+    List<MatchAppLeagueGroupResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
         LocalDate targetDate = resolveDate(date);
         LocalDateTime startAt = targetDate.atStartOfDay();
         LocalDateTime endAt = targetDate.plusDays(1).atStartOfDay();
@@ -63,6 +66,8 @@ public class MatchAppQueryService {
             log.info("해당 날짜 {} 에 대하여 조회되는 경기가 없습니다. sportId={}, leagueId={}", date, sportId, leagueId);
             return List.of();
         }
+
+        Map<Long, Stadium> stadiumById = loadStadiumsById(matches);
 
         // 경기 목록 조회 결과 기반으로 경기 상세 정보를 조회
         List<Long> matchIds = matches.stream()
@@ -98,6 +103,7 @@ public class MatchAppQueryService {
                     List<MatchAppItemResponse> appMatches = leagueMatches.stream()
                             .map(match -> MatchAppItemResponse.from(
                                     match,
+                                    findStadium(stadiumById, match.getStadiumId()),
                                     matchDetailById.get(match.getId()),
                                     matchStatusDisplayResolver.resolve(match, matchDetailById.get(match.getId())),
                                     teamStandings.getOrDefault(
@@ -186,6 +192,28 @@ public class MatchAppQueryService {
 
     private LocalDate resolveDate(LocalDate date) {
         return date != null ? date : LocalDate.now(ZoneId.of(SEOUL_TIME_ZONE));
+    }
+
+    private Stadium findStadium(Map<Long, Stadium> stadiumById, Long stadiumId) {
+        return stadiumId == null ? null : stadiumById.get(stadiumId);
+    }
+
+    private Map<Long, Stadium> loadStadiumsById(List<Match> matches) {
+        Set<Long> stadiumIds = matches.stream()
+                .filter(match -> match.getTemporaryStadium() == null)
+                .map(Match::getStadiumId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (stadiumIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return stadiumRepository.findAllByIds(stadiumIds).stream()
+                .collect(toMap(
+                        Stadium::getId,
+                        Function.identity(),
+                        (first, second) -> first));
     }
 
 }
