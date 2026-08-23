@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -33,6 +34,15 @@ public class SecurityConfig {
 			.sessionManagement(session ->
 				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
+				.requestMatchers(HttpMethod.POST, "/api/v1/community/images").authenticated()
+				.requestMatchers(HttpMethod.POST, "/api/v1/community/posts").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/v1/community/posts/me").authenticated()
+				.requestMatchers(HttpMethod.PATCH, "/api/v1/community/posts/*").authenticated()
+				.requestMatchers(HttpMethod.DELETE, "/api/v1/community/posts/*").authenticated()
+				.requestMatchers(HttpMethod.POST, "/api/v1/community/posts/*/comments").authenticated()
+				.requestMatchers(HttpMethod.DELETE, "/api/v1/community/comments/*").authenticated()
+				.requestMatchers(HttpMethod.PUT, "/api/v1/community/posts/*/reaction").authenticated()
+				.requestMatchers(HttpMethod.POST, "/api/v1/community/posts/*/reports").authenticated()
 				// Swagger 관련 리소스 전체 접근 허용
 				.requestMatchers(
 					"/v3/api-docs/**",
