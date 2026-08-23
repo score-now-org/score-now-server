@@ -8,5 +8,6 @@ import lombok.Getter;
 public class MatchCommentaryChangedPayload {
     private String commentaryId;
     private String content;
+    private boolean highlighted;
     private String imageUrl;
 }

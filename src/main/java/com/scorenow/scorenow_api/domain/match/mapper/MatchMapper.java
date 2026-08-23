@@ -20,6 +20,7 @@ public class MatchMapper {
         return MatchListResponse.builder()
                 .id(match.getId())
                 .sportId(match.getSportId())
+                .sportCode(match.getSport() != null ? match.getSport().getSportCode() : null)
                 .sportName(getSportName(match.getSport()))
                 .leagueId(match.getLeagueId())
                 .leagueName(getLeagueName(match.getLeague()))
@@ -51,20 +52,20 @@ public class MatchMapper {
                 .statusCode(MatchStatus.NOT_STARTED)
                 .matchType("A")
                 .isManual(true)
-                .isActive(false)
+                .isActive(true)
                 .build();
     }
 
     private String getSportName(Sport sport) {
-        return sport != null ? sport.getEName() : "";
+        return sport != null ? sport.resolveSportName() : "";
     }
 
     private String getLeagueName(League league) {
-        return league != null ? league.getEName() : "";
+        return league != null ? league.resolveLeagueName() : "";
     }
 
     private String getTeamName(Team team) {
-        return team != null ? team.getEName() : "";
+        return team != null ? team.resolveTeamName() : "";
     }
 
     private String getTeamImageUrl(Team team) {

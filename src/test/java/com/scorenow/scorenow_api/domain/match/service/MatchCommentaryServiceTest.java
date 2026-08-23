@@ -1,11 +1,14 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchCommentaryResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.FakeFileStorage;
 import com.scorenow.scorenow_api.domain.match.repository.FakeMatchCommentaryRepository;
 import com.scorenow.scorenow_api.domain.match.repository.FakeMatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +19,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatRuntimeException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,13 +50,10 @@ class MatchCommentaryServiceTest {
         Long matchId = matchDetailDocument.getId();
         given(matchRepository.existsById(matchId)).willReturn(true);
 
-        boolean recordEnabled = true;
-        matchCommentaryService.saveCommentary(matchId, "18", "손흥민 오늘 최고네요.", recordEnabled, null);
+        matchCommentaryService.saveCommentary(matchId, "손흥민 오늘 최고네요.", true, true, null);
+        matchCommentaryService.saveCommentary(matchId, "이니에스타 오늘 좋네요.", true, false, null);
 
-        recordEnabled = false;
-        String recentSavedCommentaryId = matchCommentaryService.saveCommentary(matchId, "52", "이니에스타 오늘 좋네요.", recordEnabled, null);
-
-        assertThat(matchDetailDocument.getCurrentCommentaryId()).isEqualTo(recentSavedCommentaryId);
+        assertThat(matchDetailDocument.getCurrentCommentary()).isEqualTo("이니에스타 오늘 좋네요.");
     }
 
     @Test
@@ -62,18 +64,25 @@ class MatchCommentaryServiceTest {
 
         // 중계 멘트 저장 ON (3건)
         boolean recordEnabled = true;
-        matchCommentaryService.saveCommentary(matchId, "3", "메시 오늘 좋네요.", recordEnabled, null);
-        matchCommentaryService.saveCommentary(matchId, "15", "호날두 오늘 별로네요.", recordEnabled, null);
-        matchCommentaryService.saveCommentary(matchId, "18", "손흥민 오늘 최고네요.", recordEnabled, null);
+        matchCommentaryService.saveCommentary(matchId, "메시 오늘 좋네요.", true, recordEnabled, null);
+        matchCommentaryService.saveCommentary(matchId, "호날두 오늘 별로네요.", false, recordEnabled, null);
+        matchCommentaryService.saveCommentary(matchId, "손흥민 오늘 최고네요.", false, recordEnabled, null);
 
         // 중계 멘트 저장 OFF (2건)
         recordEnabled = false;
-        matchCommentaryService.saveCommentary(matchId, "38", "모드리치 오늘 좋네요.", recordEnabled, null);
-        matchCommentaryService.saveCommentary(matchId, "52", "이니에스타 오늘 좋네요.", recordEnabled, null);
+        matchCommentaryService.saveCommentary(matchId, "모드리치 오늘 좋네요.", false, recordEnabled, null);
+        matchCommentaryService.saveCommentary(matchId, "이니에스타 오늘 좋네요.", false, recordEnabled, null);
 
-        List<String> commentaries = matchCommentaryService.getCommentariesByMatchId(matchId);
+        List<AdminMatchCommentaryResponse> commentaries = matchCommentaryService.getCommentariesByMatchId(matchId);
 
         assertThat(commentaries.size()).isEqualTo(3);
+        assertThat(commentaries)
+                .extracting(AdminMatchCommentaryResponse::getContent, AdminMatchCommentaryResponse::isHighlighted)
+                .containsExactlyInAnyOrder(
+                        tuple("메시 오늘 좋네요.", true),
+                        tuple("호날두 오늘 별로네요.", false),
+                        tuple("손흥민 오늘 최고네요.", false)
+                );
     }
 
     @Test
@@ -82,21 +91,17 @@ class MatchCommentaryServiceTest {
         given(matchRepository.existsById(invalidMatchId)).willReturn(false);
 
         assertThatRuntimeException()
-                .isThrownBy(() -> matchCommentaryService.saveCommentary(invalidMatchId, "3", "메시 오늘 좋네요.", true, null));
+                .isThrownBy(() -> matchCommentaryService.saveCommentary(invalidMatchId, "메시 오늘 좋네요.", false, true, null));
     }
 
     @Test
-    void 중계_멘트를_저장하는데_MatchDetailDocument가_없으면_현재_중계_멘트를_가진_새로운_문서를_생성한다() {
+    void 중계_멘트를_저장하는데_MatchDetailDocument가_없으면_예외가_발생한다() {
         Long matchId = 10L;
-        String elapsedMinutes = "3";
-        String content = "중계 멘트 입니다.";
         given(matchRepository.existsById(matchId)).willReturn(true);
 
-        String commentaryId = matchCommentaryService.saveCommentary(matchId, elapsedMinutes, content, true, null);
-
-        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId).get();
-        assertThat(matchDetailDocument.getCurrentCommentary()).isEqualTo(content);
-        assertThat(matchDetailDocument.getCurrentCommentaryId()).isEqualTo(commentaryId);
+        assertThatThrownBy(() -> matchCommentaryService.saveCommentary(matchId, "중계 멘트 입니다.", false, true, null))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.MATCH_DETAIL_NOT_FOUND.getMessage());
     }
 
     private MatchDetailDocument createMatchDetailDocument() {

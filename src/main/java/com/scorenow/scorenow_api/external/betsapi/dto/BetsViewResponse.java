@@ -1,17 +1,11 @@
 package com.scorenow.scorenow_api.external.betsapi.dto;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.entity.MatchPeriod;
-import com.scorenow.scorenow_api.domain.match.model.MatchStats;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 
-import com.scorenow.scorenow_api.domain.match.service.MatchEventResolver;
 import lombok.Data;
 
 @Data
@@ -57,138 +51,29 @@ public class BetsViewResponse {
         @JsonProperty("inplay_updated_at")
         private String inplayUpdatedAt;
 
-        public MatchDetailDocument toDocument(Long matchId, LocalDateTime startAt, MatchEventResolver matchEventResolver) {
-            MatchDetailDocument.MatchDetailDocumentBuilder builder = MatchDetailDocument.builder()
-                    .id(matchId)
-                    .homeScore(getHomeScore())
-                    .homeStats(toMatchStats(0))
-                    .awayScore(getAwayScore())
-                    .awayStats(toMatchStats(1))
-                    .matchClock(toMatchClock(startAt))
-                    .additionalTime(toAdditionalTime());
-
-            // 승부차기의 경우 이벤트 기반으로 점수 계산을 진행해야 함.
-            if (timer != null && MatchPeriod.fromCode(timer.md) == MatchPeriod.PENALTY_SHOOTOUT) {
-                builder.homeShootOutScore(matchEventResolver.resolveShootOutScore(getEventTexts(), homeTeam.getName()))
-                        .awayShootOutScore(matchEventResolver.resolveShootOutScore(getEventTexts(), awayTeam.getName()));
-            }
-
-            return builder.build();
-        }
-
-        public MatchStats toMatchStats(int idx) {
-            if (this.stats == null)
-                return MatchStats.builder().build();
-
-            return MatchStats.builder()
-                    .yellowCards(parse(stats.yellowCards, idx))
-                    .redCards(parse(stats.redCards, idx))
-                    .shots(parse(stats.offTarget, idx))
-                    .shotsOnTarget(parse(stats.onTarget, idx))
-                    .possession(parse(stats.possession, idx))
-                    .offsides(parse(stats.offsides, idx))
-                    .fouls(parse(stats.fouls, idx))
-                    .corners(parse(stats.corners, idx))
-                    .freeKicks(parse(stats.freeKicks, idx))
-                    .build();
-        }
-
-        public MatchDetailDocument.MatchClock toMatchClock(LocalDateTime startAt) {
-            // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료)
-            if (this.timer == null) {
-                return null;
-            }
-
-            return MatchDetailDocument.MatchClock.builder()
-                    .startAt(startAt != null ? startAt.toString() : null)
-                    .elapsedMinutes(timer.tm)
-                    .elapsedSeconds(timer.ts)
-                    .period(MatchPeriod.fromCode(timer.md))
-                    .running(Timer.RUNNING.equals(timer.tt))
-                    .providerUpdatedAt(toProviderUpdatedAt())
-                    .additionalMinutes(timer.ta)
-                    .build();
-        }
-
-        private Instant toProviderUpdatedAt() {
-            if (inplayUpdatedAt == null || inplayUpdatedAt.isBlank()) {
-                return null;
-            }
-
-            try {
-                return Instant.ofEpochSecond(Long.parseLong(inplayUpdatedAt));
-            } catch (Exception e) {
-                return null;
-            }
-        }
-
-        public MatchDetailDocument.AdditionalTime toAdditionalTime() {
-            // timer 값이 아예 안내려오는 경우 (경기 시작 전, 경기 종료) || 추가시간 정보가 없는 경우
-            if (timer == null || timer.ta == null || timer.ta <= 0) {
-                return null;
-            }
-
-            // running 여부가 false 인 경우 (예: 전반 종료 + 후반 시작 전)
-            if (!Timer.RUNNING.equals(timer.tt)) {
-                return null;
-            }
-
-            MatchPeriod period = MatchPeriod.fromCode(timer.md);
-            if (period == null) {
-                return null;
-            }
-
-            return switch (period) {
-                case FIRST_HALF -> MatchDetailDocument.AdditionalTime.builder()
-                        .firstHalf(timer.ta)
-                        .build();
-
-                case SECOND_HALF -> MatchDetailDocument.AdditionalTime.builder()
-                        .secondHalf(timer.ta)
-                        .build();
-
-                case EXTRA_FIRST_HALF -> MatchDetailDocument.AdditionalTime.builder()
-                        .extraFirstHalf(timer.ta)
-                        .build();
-
-                case EXTRA_SECOND_HALF -> MatchDetailDocument.AdditionalTime.builder()
-                        .extraSecondHalf(timer.ta)
-                        .build();
-
-                case PENALTY_SHOOTOUT -> null;
-            };
-        }
-
-        private Integer parse(List<String> list, int i) {
-            try {
-                return (list != null && list.size() > i) ? Integer.parseInt(list.get(i)) : 0;
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-
         public Integer getHomeScore() {
-            try {
-                if (ss != null) {
-                    String[] parts = ss.split("-");
-                    if (parts.length >= 1 && !parts[0].isEmpty())
-                        return Integer.parseInt(parts[0]);
-                }
-            } catch (Exception e) {
-            }
-            return 0;
+            return getScorePart(0);
         }
 
         public Integer getAwayScore() {
-            try {
-                if (ss != null) {
-                    String[] parts = ss.split("-");
-                    if (parts.length >= 2 && !parts[1].isEmpty())
-                        return Integer.parseInt(parts[1]);
-                }
-            } catch (Exception e) {
+            return getScorePart(1);
+        }
+
+        private Integer getScorePart(int index) {
+            if (ss == null || ss.isBlank()) {
+                return 0;
             }
-            return 0;
+
+            String[] parts = ss.split("-");
+            if (parts.length <= index || parts[index].isBlank()) {
+                return 0;
+            }
+
+            try {
+                return Integer.parseInt(parts[index].trim());
+            } catch (NumberFormatException e) {
+                return 0;
+            }
         }
 
         public boolean hasLineup() {
@@ -205,10 +90,29 @@ public class BetsViewResponse {
                     .filter(Objects::nonNull)
                     .toList();
         }
+
+        public String resolveHomeTeamName() {
+            return teamName(homeTeam);
+        }
+
+        public String resolveAwayTeamName() {
+            return teamName(awayTeam);
+        }
+
+        private String teamName(Team team) {
+            if (team == null || team.getName() == null || team.getName().isBlank()) {
+                return null;
+            }
+
+            return team.getName().trim();
+        }
     }
 
     @Data
     public static class Stats {
+        private static final int HOME = 0;
+        private static final int AWAY = 1;
+
         @JsonProperty("yellowcards")
         private List<String> yellowCards;
         @JsonProperty("redcards")
@@ -227,6 +131,90 @@ public class BetsViewResponse {
         private List<String> corners;
         @JsonProperty("freekicks")
         private List<String> freeKicks;
+
+        public Integer homeYellowCards() {
+            return parseDetailStats(getYellowCards(), HOME);
+        }
+
+        public Integer homeRedCards() {
+            return parseDetailStats(getRedCards(), HOME);
+        }
+
+        public Integer homeOffTarget() {
+            return parseDetailStats(getOffTarget(), HOME);
+        }
+
+        public Integer homeOnTarget() {
+            return parseDetailStats(getOnTarget(), HOME);
+        }
+
+        public Integer homePossession() {
+            return parseDetailStats(getPossession(), HOME);
+        }
+
+        public Integer homeOffsides() {
+            return parseDetailStats(getOffsides(), HOME);
+        }
+
+        public Integer homeFouls() {
+            return parseDetailStats(getFouls(), HOME);
+        }
+
+        public Integer homeCorners() {
+            return parseDetailStats(getCorners(), HOME);
+        }
+
+        public Integer homeFreeKicks() {
+            return parseDetailStats(getFreeKicks(), HOME);
+        }
+
+        public Integer awayYellowCards() {
+            return parseDetailStats(getYellowCards(), AWAY);
+        }
+
+        public Integer awayRedCards() {
+            return parseDetailStats(getRedCards(), AWAY);
+        }
+
+        public Integer awayOffTarget() {
+            return parseDetailStats(getOffTarget(), AWAY);
+        }
+
+        public Integer awayOnTarget() {
+            return parseDetailStats(getOnTarget(), AWAY);
+        }
+
+        public Integer awayPossession() {
+            return parseDetailStats(getPossession(), AWAY);
+        }
+
+        public Integer awayOffsides() {
+            return parseDetailStats(getOffsides(), AWAY);
+        }
+
+        public Integer awayFouls() {
+            return parseDetailStats(getFouls(), AWAY);
+        }
+
+        public Integer awayCorners() {
+            return parseDetailStats(getCorners(), AWAY);
+        }
+
+        public Integer awayFreeKicks() {
+            return parseDetailStats(getFreeKicks(), AWAY);
+        }
+
+        private Integer parseDetailStats(List<String> detailStats, int teamIndex) {
+            if (detailStats == null || detailStats.isEmpty() || detailStats.size() < 2) {
+                return 0;
+            }
+
+            try {
+                return Integer.parseInt(detailStats.get(teamIndex));
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
     }
 
     @Data
@@ -237,6 +225,10 @@ public class BetsViewResponse {
         private String tt;      // 타이머 상태 (0:정지,1:진행)
         private Integer ta;     // 추가시간
         private Integer md;     // 전후반 구분 (0:전반,1:후반)
+
+        public boolean isRunning() {
+            return RUNNING.equals(tt);
+        }
     }
 
     @Data

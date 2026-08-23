@@ -3,10 +3,7 @@ package com.scorenow.scorenow_api.domain.match.repository;
 import com.scorenow.scorenow_api.domain.match.document.MatchCommentaryDocument;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class FakeMatchCommentaryRepository implements MatchCommentaryRepository {
 
@@ -19,6 +16,11 @@ public class FakeMatchCommentaryRepository implements MatchCommentaryRepository 
 
         ReflectionTestUtils.setField(commentary, "id", id);
         return database.get(id);
+    }
+
+    @Override
+    public Optional<MatchCommentaryDocument> findById(String id) {
+        return Optional.of(database.get(id));
     }
 
     @Override

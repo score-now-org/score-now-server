@@ -1,12 +1,18 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.Objects;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
-import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
+import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchLineupSearchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -18,183 +24,233 @@ import lombok.RequiredArgsConstructor;
 public class MatchLineupCommandService {
 
 	private final MatchLineupRepository matchLineupRepo;
+	private final MatchLineupSearchRepository matchLineupSearchRepository;
 
-	/** 라인업에 선수 반영 */
+	/**
+	 * 라인업에 선수 반영
+	 */
 	@Transactional
-	public String addPlayerToLineup(Long matchId, Long teamId, LineupPlayer player) {
-		if (matchId == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
-		}
-		if (teamId == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "teamId가 비어있습니다.");
-		}
-		if (player == null || player.getPlayerId() == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "player가 올바르지 않습니다.");
-		}
-		if (player.getEName() == null || player.getEName().isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "eName이 필요합니다.");
-		}
-		if (player.getShirtNumber() == null || player.getShirtNumber().isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "shirtNumber가 필요합니다.");
-		}
+	public String addPlayerToLineup(
+		Long matchId,
+		Long teamId,
+		MatchLineupPlayerAddRequest request
+	) {
+		validateRequiredId(matchId, "matchId");
+		validateRequiredId(teamId, "teamId");
 
-		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
-			.orElseThrow(() -> new BusinessException(
-				ErrorCode.MATCH_LINEUP_NOT_FOUND,
-				"라인업이 존재하지 않습니다.",
-				"matchId=" + matchId
-			));
-
-		LineupSide side = findSide(doc, teamId);
-
-		if (side == null) {
+		if (request == null) {
 			throw new BusinessException(
 				ErrorCode.INVALID_PARAMETER,
-				"팀 라인업을 찾을 수 없습니다."
+				"request가 비어있습니다."
 			);
 		}
 
-		boolean exists = isPlayerAlreadyInLineup(side, player.getPlayerId());
-		if (exists) {
+		if (request.playerId() == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"playerId가 비어있습니다."
+			);
+		}
+
+		if (request.role() == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"role이 비어있습니다."
+			);
+		}
+
+		MatchLineupDocument document = getLineupDocument(matchId);
+		LineupSide side = getLineupSide(document, teamId);
+
+		Long playerId = request.playerId();
+
+		if (isPlayerAlreadyInLineup(side, playerId)) {
 			throw new BusinessException(
 				ErrorCode.MATCH_LINEUP_PLAYER_ALREADY_EXISTS,
-				"이미 라인업에 존재하는 선수입니다."
+				"이미 라인업에 존재하는 선수입니다.",
+				"matchId=" + matchId
+					+ ", teamId=" + teamId
+					+ ", playerId=" + playerId
 			);
 		}
 
-		if (player.isSubstitute()) {
-			side.getSubstitutes().add(player);
-		} else {
-			side.getStartingLineup().add(player);
+		MatchLineupPlayerResponse playerInfo =
+			matchLineupSearchRepository
+				.findPlayerByIdAndTeamId(playerId, teamId)
+				.orElseThrow(() -> new BusinessException(
+					ErrorCode.INVALID_PARAMETER,
+					"해당 팀의 선수 정보를 찾을 수 없습니다.",
+					"teamId=" + teamId + ", playerId=" + playerId
+				));
+
+		LineupPlayer player = LineupPlayer.builder()
+			.playerId(playerInfo.getPlayerId())
+			.eName(playerInfo.getEName())
+			.kName(playerInfo.getKName())
+			.shirtNumber(playerInfo.getShirtNumber())
+			.position(playerInfo.getPosition())
+			.goals(0)
+			.temp(false)
+			.build();
+
+		switch (request.role()) {
+			case STARTER -> side.getStartingLineup().add(player);
+			case SUBSTITUTE -> side.getSubstitutes().add(player);
 		}
 
-		matchLineupRepo.save(doc);
+		matchLineupRepo.save(document);
 
-		return matchId + ":" + player.getPlayerId();
+		return matchId + ":" + playerId;
 	}
 
-	/** 라인업에 선수 해제 */
+	/**
+	 * 라인업에서 선수 해제
+	 */
 	@Transactional
-	public String removePlayerFromLineup(Long matchId, Long playerId) {
-		if (matchId == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
-		}
-		if (playerId == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "playerId가 비어있습니다.");
-		}
+	public String removePlayerFromLineup(
+		Long matchId,
+		Long teamId,
+		Long playerId
+	) {
+		validateRequiredId(matchId, "matchId");
+		validateRequiredId(teamId, "teamId");
+		validateRequiredId(playerId, "playerId");
 
-		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
-			.orElseThrow(() -> new BusinessException(
-				ErrorCode.MATCH_LINEUP_NOT_FOUND,
-				"라인업이 존재하지 않습니다.",
-				"matchId=" + matchId
-			));
+		MatchLineupDocument document = getLineupDocument(matchId);
+		LineupSide side = getLineupSide(document, teamId);
 
-		boolean removed = false;
-
-		if (doc.getHome() != null) {
-			removed = removePlayerOnSide(doc.getHome(), playerId);
-		}
-		if (!removed && doc.getAway() != null) {
-			removed = removePlayerOnSide(doc.getAway(), playerId);
-		}
+		boolean removed = removePlayerOnSide(side, playerId);
 
 		if (!removed) {
 			throw new BusinessException(
 				ErrorCode.MATCH_LINEUP_PLAYER_NOT_FOUND,
-				"라인업에서 선수를 찾지 못했습니다.",
-				"matchId=" + matchId + ", playerId=" + playerId
+				"해당 팀의 라인업에서 선수를 찾지 못했습니다.",
+				"matchId=" + matchId
+					+ ", teamId=" + teamId
+					+ ", playerId=" + playerId
 			);
 		}
 
-		matchLineupRepo.save(doc);
+		matchLineupRepo.save(document);
+
 		return matchId + ":" + playerId;
 	}
 
-	private LineupSide findSide(MatchLineupDocument doc, Long teamId) {
-		if (doc.getHome() != null && teamId.equals(doc.getHome().getTeamId())) {
-			return doc.getHome();
-		}
-		if (doc.getAway() != null && teamId.equals(doc.getAway().getTeamId())) {
-			return doc.getAway();
-		}
-		return null;
-	}
-
-	private boolean isPlayerAlreadyInLineup(LineupSide side, Long playerId) {
-		if (side.getStartingLineup() != null) {
-			for (LineupPlayer p : side.getStartingLineup()) {
-				if (playerId.equals(p.getPlayerId())) {
-					return true;
-				}
-			}
-		}
-
-		if (side.getSubstitutes() != null) {
-			for (LineupPlayer p : side.getSubstitutes()) {
-				if (playerId.equals(p.getPlayerId())) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	private boolean removePlayerOnSide(LineupSide side, Long playerId) {
-		if (side == null) {
-			return false;
-		}
-
-		if (side.getStartingLineup() != null) {
-			boolean removed = side.getStartingLineup()
-				.removeIf(p -> playerId.equals(p.getPlayerId()));
-			if (removed) {
-				return true;
-			}
-		}
-
-		if (side.getSubstitutes() != null) {
-			return side.getSubstitutes()
-				.removeIf(p -> playerId.equals(p.getPlayerId()));
-		}
-
-		return false;
-	}
-
+	/**
+	 * 라인업 팀 설정 수정
+	 * - 포메이션, 유니폼 컬러 변경
+	 */
 	@Transactional
-	public String updateLineupManual(Long matchId, String apiPlayerId, MatchLineupUpdateRequest request) {
-		if (matchId == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "matchId가 비어있습니다.");
-		}
-		if (apiPlayerId == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "playerId가 비어있습니다.");
-		}
+	public String updateLineupSide(
+		Long matchId,
+		Long teamId,
+		MatchLineupSideUpdateRequest request
+	) {
+		validateRequiredId(matchId, "matchId");
+		validateRequiredId(teamId, "teamId");
+
 		if (request == null) {
-			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "request가 null입니다.");
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"request가 비어있습니다."
+			);
 		}
 
-		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
-			.orElseThrow(() -> new BusinessException(
-				ErrorCode.MATCH_LINEUP_NOT_FOUND,
-				"라인업이 존재하지 않습니다.",
-				"matchId=" + matchId
-			));
-
-		UpdateResult result = UpdateResult.notFound();
-
-		if (doc.getHome() != null) {
-			result = updatePlayerOnSide(doc.getHome(), apiPlayerId, request);
+		if (request.getFormation() == null
+			&& request.getUniformColor() == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"수정할 포메이션 또는 유니폼 컬러가 없습니다."
+			);
 		}
-		if (!result.found && doc.getAway() != null) {
-			result = updatePlayerOnSide(doc.getAway(), apiPlayerId, request);
+
+		MatchLineupDocument document = getLineupDocument(matchId);
+		LineupSide side = getLineupSide(document, teamId);
+
+		boolean changed = false;
+
+		if (request.getFormation() != null) {
+			String formation = request.getFormation().trim();
+
+			if (formation.isBlank()) {
+				throw new BusinessException(
+					ErrorCode.INVALID_PARAMETER,
+					"포메이션이 비어있습니다."
+				);
+			}
+
+			if (!Objects.equals(side.getFormation(), formation)) {
+				side.setFormation(formation);
+				changed = true;
+			}
 		}
+
+		if (request.getUniformColor() != null) {
+			String uniformColor = request.getUniformColor().trim();
+
+			if (uniformColor.isBlank()) {
+				throw new BusinessException(
+					ErrorCode.INVALID_PARAMETER,
+					"유니폼 컬러가 비어있습니다."
+				);
+			}
+
+			if (!Objects.equals(
+				side.getUniformColor(),
+				uniformColor
+			)) {
+				side.setUniformColor(uniformColor);
+				changed = true;
+			}
+		}
+
+		if (!changed) {
+			return "NO_CHANGES";
+		}
+
+		matchLineupRepo.save(document);
+
+		return matchId + ":" + teamId;
+	}
+
+	/**
+	 * 라인업 선수 수정
+	 * - 포지션, 등번호, 득점 수 변경
+	 */
+	@Transactional
+	public String updateLineupManual(
+		Long matchId,
+		Long teamId,
+		Long playerId,
+		MatchLineupPlayerUpdateRequest request
+	) {
+		validateRequiredId(matchId, "matchId");
+		validateRequiredId(teamId, "teamId");
+		validateRequiredId(playerId, "playerId");
+
+		if (request == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"request가 비어있습니다."
+			);
+		}
+
+		MatchLineupDocument document = getLineupDocument(matchId);
+		LineupSide side = getLineupSide(document, teamId);
+
+		UpdateResult result = updatePlayerOnSide(
+			side,
+			playerId,
+			request
+		);
 
 		if (!result.found) {
 			throw new BusinessException(
 				ErrorCode.MATCH_LINEUP_PLAYER_NOT_FOUND,
-				"라인업에서 선수를 찾지 못했습니다.",
-				"matchId=" + matchId + ", apiPlayerId=" + apiPlayerId
+				"해당 팀의 라인업에서 선수를 찾지 못했습니다.",
+				"matchId=" + matchId
+					+ ", teamId=" + teamId
+					+ ", playerId=" + playerId
 			);
 		}
 
@@ -202,87 +258,256 @@ public class MatchLineupCommandService {
 			return "NO_CHANGES";
 		}
 
-		matchLineupRepo.save(doc);
-		return matchId + ":" + apiPlayerId;
+		matchLineupRepo.save(document);
+
+		return matchId + ":" + playerId;
 	}
 
-	private static class UpdateResult {
-		final boolean found;
-		final boolean changed;
-
-		UpdateResult(boolean found, boolean changed) {
-			this.found = found;
-			this.changed = changed;
-		}
-
-		static UpdateResult notFound() {
-			return new UpdateResult(false, false);
-		}
-
-		static UpdateResult foundNoChange() {
-			return new UpdateResult(true, false);
-		}
-
-		static UpdateResult foundChanged() {
-			return new UpdateResult(true, true);
-		}
+	private MatchLineupDocument getLineupDocument(Long matchId) {
+		return matchLineupRepo.findById(matchId)
+			.orElseThrow(() -> new BusinessException(
+				ErrorCode.MATCH_LINEUP_NOT_FOUND,
+				"라인업이 존재하지 않습니다.",
+				"matchId=" + matchId
+			));
 	}
 
-	private UpdateResult updatePlayerOnSide(LineupSide side, String apiPlayerId, MatchLineupUpdateRequest req) {
+	private LineupSide getLineupSide(
+		MatchLineupDocument document,
+		Long teamId
+	) {
+		LineupSide side = findSide(document, teamId);
+
 		if (side == null) {
-			return UpdateResult.notFound();
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"팀 라인업을 찾을 수 없습니다.",
+				"matchId=" + document.getId()
+					+ ", teamId=" + teamId
+			);
 		}
 
-		LineupPlayer p = findPlayer(side, apiPlayerId);
-		if (p == null) {
+		return side;
+	}
+
+	private LineupSide findSide(
+		MatchLineupDocument document,
+		Long teamId
+	) {
+		if (document.getHome() != null
+			&& Objects.equals(
+			teamId,
+			document.getHome().getTeamId()
+		)) {
+			return document.getHome();
+		}
+
+		if (document.getAway() != null
+			&& Objects.equals(
+			teamId,
+			document.getAway().getTeamId()
+		)) {
+			return document.getAway();
+		}
+
+		return null;
+	}
+
+	private boolean isPlayerAlreadyInLineup(
+		LineupSide side,
+		Long playerId
+	) {
+		return containsPlayer(
+			side.getStartingLineup(),
+			playerId
+		) || containsPlayer(
+			side.getSubstitutes(),
+			playerId
+		);
+	}
+
+	private boolean containsPlayer(
+		Iterable<LineupPlayer> players,
+		Long playerId
+	) {
+		if (players == null) {
+			return false;
+		}
+
+		for (LineupPlayer player : players) {
+			if (Objects.equals(
+				playerId,
+				player.getPlayerId()
+			)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean removePlayerOnSide(
+		LineupSide side,
+		Long playerId
+	) {
+		if (side.getStartingLineup() != null) {
+			boolean removed = side.getStartingLineup()
+				.removeIf(player ->
+					Objects.equals(
+						playerId,
+						player.getPlayerId()
+					)
+				);
+
+			if (removed) {
+				return true;
+			}
+		}
+
+		if (side.getSubstitutes() != null) {
+			return side.getSubstitutes()
+				.removeIf(player ->
+					Objects.equals(
+						playerId,
+						player.getPlayerId()
+					)
+				);
+		}
+
+		return false;
+	}
+
+	private UpdateResult updatePlayerOnSide(
+		LineupSide side,
+		Long playerId,
+		MatchLineupPlayerUpdateRequest request
+	) {
+		LineupPlayer player = findPlayer(side, playerId);
+
+		if (player == null) {
 			return UpdateResult.notFound();
 		}
 
 		boolean changed = false;
 
-		if (req.getPosition() != null && !req.getPosition().isBlank()) {
-			String newPos = req.getPosition().trim();
-			if (p.getPosition() == null || !p.getPosition().equals(newPos)) {
-				p.setPosition(newPos);
+		if (request.getPosition() != null
+			&& !request.getPosition().isBlank()) {
+			String newPosition = request.getPosition().trim();
+
+			if (!Objects.equals(
+				player.getPosition(),
+				newPosition
+			)) {
+				player.setPosition(newPosition);
 				changed = true;
 			}
 		}
 
-		if (req.getShirtNumber() != null && !req.getShirtNumber().isBlank()) {
-			String newNo = req.getShirtNumber().trim();
-			if (p.getShirtNumber() == null || !p.getShirtNumber().equals(newNo)) {
-				p.setShirtNumber(newNo);
+		if (request.getShirtNumber() != null
+			&& !request.getShirtNumber().isBlank()) {
+			String newShirtNumber =
+				request.getShirtNumber().trim();
+
+			if (!Objects.equals(
+				player.getShirtNumber(),
+				newShirtNumber
+			)) {
+				player.setShirtNumber(newShirtNumber);
 				changed = true;
 			}
 		}
 
-		if (req.getGoals() != null) {
-			int newGoals = Math.max(0, req.getGoals());
-			Integer cur = (p.getGoals() == null ? 0 : p.getGoals());
-			if (!cur.equals(newGoals)) {
-				p.setGoals(newGoals);
+		if (request.getGoals() != null) {
+			int newGoals = Math.max(0, request.getGoals());
+			int currentGoals = player.getGoals() == null
+				? 0
+				: player.getGoals();
+
+			if (currentGoals != newGoals) {
+				player.setGoals(newGoals);
 				changed = true;
 			}
 		}
 
-		return changed ? UpdateResult.foundChanged() : UpdateResult.foundNoChange();
+		return changed
+			? UpdateResult.foundChanged()
+			: UpdateResult.foundNoChange();
 	}
 
-	private LineupPlayer findPlayer(LineupSide side, String apiPlayerId) {
-		if (side.getStartingLineup() != null) {
-			for (LineupPlayer p : side.getStartingLineup()) {
-				if (apiPlayerId.equals(p.getApiPlayerId())) {
-					return p;
-				}
+	private LineupPlayer findPlayer(
+		LineupSide side,
+		Long playerId
+	) {
+		LineupPlayer player = findPlayer(
+			side.getStartingLineup(),
+			playerId
+		);
+
+		if (player != null) {
+			return player;
+		}
+
+		return findPlayer(
+			side.getSubstitutes(),
+			playerId
+		);
+	}
+
+	private LineupPlayer findPlayer(
+		Iterable<LineupPlayer> players,
+		Long playerId
+	) {
+		if (players == null) {
+			return null;
+		}
+
+		for (LineupPlayer player : players) {
+			if (Objects.equals(
+				playerId,
+				player.getPlayerId()
+			)) {
+				return player;
 			}
 		}
-		if (side.getSubstitutes() != null) {
-			for (LineupPlayer p : side.getSubstitutes()) {
-				if (apiPlayerId.equals(p.getApiPlayerId())) {
-					return p;
-				}
-			}
-		}
+
 		return null;
+	}
+
+	private void validateRequiredId(
+		Long value,
+		String fieldName
+	) {
+		if (value == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				fieldName + "가 비어있습니다."
+			);
+		}
+	}
+
+	private static class UpdateResult {
+
+		private final boolean found;
+		private final boolean changed;
+
+		private UpdateResult(
+			boolean found,
+			boolean changed
+		) {
+			this.found = found;
+			this.changed = changed;
+		}
+
+		private static UpdateResult notFound() {
+			return new UpdateResult(false, false);
+		}
+
+		private static UpdateResult foundNoChange() {
+			return new UpdateResult(true, false);
+		}
+
+		private static UpdateResult foundChanged() {
+			return new UpdateResult(true, true);
+		}
 	}
 }

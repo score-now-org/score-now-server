@@ -20,4 +20,6 @@ public interface LeagueExternalMappingJpaRepository extends JpaRepository<League
 	boolean existsByDataOriginAndApiLeagueId(DataOrigin dataOrigin, String apiLeagueId);
 
 	List<LeagueExternalMapping> findByDataOrigin(DataOrigin dataOrigin);
+
+	List<LeagueExternalMapping> findByInternalLeagueIdIn(List<Long> internalLeagueIds);
 }

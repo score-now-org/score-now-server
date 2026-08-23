@@ -1,9 +1,11 @@
 package com.scorenow.scorenow_api.domain.sport.entity;
 
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 @Entity
 @Table(name = "sports")
@@ -16,6 +18,20 @@ public class Sport extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, unique = true)
+    private SportCode sportCode;
+
     private String kName;
     private String eName;
+
+    public String resolveSportName() {
+        if (StringUtils.hasText(kName)) {
+            return kName;
+        }
+        if (StringUtils.hasText(eName)) {
+            return eName;
+        }
+        return "";
+    }
 }

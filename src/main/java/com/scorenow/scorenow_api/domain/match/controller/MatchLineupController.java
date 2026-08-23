@@ -13,13 +13,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
-import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
-import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.service.MatchLineupCommandService;
 import com.scorenow.scorenow_api.domain.match.service.MatchLineupQueryService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,21 +33,46 @@ public class MatchLineupController {
 	private final MatchLineupQueryService lineupQuerySvc;
 
 	/**
-	 * 라인업 수정
-	 * - 선수의 포지션, 등번호, 득점 수 변경 가능
+	 * 라인업 팀 설정 수정
+	 * - 포메이션, 유니폼 컬러 변경
 	 */
-	@PatchMapping("/{matchId}/lineup/players/{apiPlayerId}")
-	public ApiResponse<String> updateLineupPlayer(
+	@PatchMapping("/{matchId}/lineup/teams/{teamId}")
+	public ApiResponse<String> updateLineupSide(
 		@PathVariable Long matchId,
-		@PathVariable String apiPlayerId,
-		@RequestBody MatchLineupUpdateRequest request
+		@PathVariable Long teamId,
+		@RequestBody MatchLineupSideUpdateRequest request
 	) {
-		String updateId = lineupCommandSvc.updateLineupManual(matchId, apiPlayerId, request);
-		return ApiResponse.success(updateId);
+		return ApiResponse.success(
+			lineupCommandSvc.updateLineupSide(
+				matchId,
+				teamId,
+				request)
+		);
 	}
 
 	/**
-	 * 라인업 조회
+	 * 라인업 수정
+	 * - 선수의 포지션, 등번호, 득점 수 변경 가능
+	 */
+	@PatchMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}")
+	public ApiResponse<String> updateLineupPlayer(
+		@PathVariable Long matchId,
+		@PathVariable Long teamId,
+		@PathVariable Long playerId,
+		@RequestBody MatchLineupPlayerUpdateRequest request
+	) {
+		return ApiResponse.success(
+			lineupCommandSvc.updateLineupManual(
+				matchId,
+				teamId,
+				playerId,
+				request
+			)
+		);
+	}
+
+	/**
+	 * 라인업 전체 조회
 	 */
 	@GetMapping("/{matchId}/lineup")
 	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable Long matchId) {
@@ -54,7 +81,8 @@ public class MatchLineupController {
 
 	/**
 	 * 라인업 > 선수추가
-	 * - 디플트로 팀 선수 리스트 조회
+	 * - 모달 최초 진입 시 해당 팀 선수 목록 조회
+	 * - 해당 팀 라인업 반영 여부(selected) 포함
 	 */
 	@GetMapping("/{matchId}/lineup/teams/{teamId}/players")
 	public ApiResponse<List<MatchLineupPlayerResponse>> getSelectablePlayers(
@@ -68,15 +96,17 @@ public class MatchLineupController {
 
 	/**
 	 * 라인업 > 선수추가
-	 * - 선수명/팀명으로 검색 시 전체 선수 풀에서 조회
+	 * - 검색 시 전체 선수 풀에서 선수명으로 검색
+	 * - 해당 팀 라인업 반영 여부(selected) 포함
 	 */
-	@GetMapping("/{matchId}/lineup/players/search")
+	@GetMapping("/{matchId}/lineup/teams/{teamId}/players/search")
 	public ApiResponse<List<MatchLineupPlayerResponse>> searchSelectablePlayers(
 		@PathVariable Long matchId,
+		@PathVariable Long teamId,
 		@RequestParam String keyword
 	) {
 		return ApiResponse.success(
-			lineupQuerySvc.searchSelectablePlayers(matchId, keyword)
+			lineupQuerySvc.searchSelectablePlayers(matchId, teamId, keyword)
 		);
 	}
 
@@ -88,7 +118,7 @@ public class MatchLineupController {
 	public ApiResponse<String> addLineupPlayer(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
-		@RequestBody LineupPlayer request
+		@Valid @RequestBody MatchLineupPlayerAddRequest request
 	) {
 		return ApiResponse.success(
 			lineupCommandSvc.addPlayerToLineup(matchId, teamId, request)
@@ -99,13 +129,18 @@ public class MatchLineupController {
 	 * 라인업 > 선수추가
 	 * - 선수 해제
 	 */
-	@DeleteMapping("/{matchId}/lineup/players/{playerId}")
+	@DeleteMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}")
 	public ApiResponse<String> deleteLineupPlayer(
 		@PathVariable Long matchId,
+		@PathVariable Long teamId,
 		@PathVariable Long playerId
 	) {
 		return ApiResponse.success(
-			lineupCommandSvc.removePlayerFromLineup(matchId, playerId)
+			lineupCommandSvc.removePlayerFromLineup(
+				matchId,
+				teamId,
+				playerId
+			)
 		);
 	}
 }

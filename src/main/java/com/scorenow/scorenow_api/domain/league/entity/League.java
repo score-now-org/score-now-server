@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.league.entity;
 
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -41,11 +42,22 @@ public class League extends BaseEntity {
 
     private String cc;
 
+    private String imageUrl;
+
+    @Builder.Default
     @Enumerated(EnumType.STRING)
-    private TeamDisplayOrder teamDisplayOrder;
+    private TeamDisplayOrder teamDisplayOrder = TeamDisplayOrder.HOME_AWAY;
 
     @Enumerated(EnumType.STRING)
     private DataOrigin dataOrigin;  // 데이터 원천 (외부 API, 수동등록)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "sport_id",
+            insertable = false,
+            updatable = false,
+            foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private Sport sport;
 
     public void updateSportId(Long sportId) {
         this.sportId = sportId;
@@ -64,7 +76,7 @@ public class League extends BaseEntity {
     }
 
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
-        this.teamDisplayOrder = teamDisplayOrder;
+        this.teamDisplayOrder = teamDisplayOrder != null ? teamDisplayOrder : TeamDisplayOrder.HOME_AWAY;
     }
 
     public void updateDataOrigin(DataOrigin dataOrigin) {
@@ -73,6 +85,10 @@ public class League extends BaseEntity {
 
     public boolean hasTeamDisplayOrder() {
         return teamDisplayOrder != null;
+    }
+
+    public TeamDisplayOrder resolveTeamDisplayOrder() {
+        return teamDisplayOrder != null ? teamDisplayOrder : TeamDisplayOrder.HOME_AWAY;
     }
 
     public String resolveLeagueName() {

@@ -28,7 +28,7 @@ class StadiumCacheServiceTest {
     private FakeStadiumExternalMappingRepository stadiumExternalMappingRepository;
     private FakeSportExternalMappingRepository sportExternalMappingRepository;
 
-    private Cache<StadiumCacheKey, Stadium> stadiumCache;
+    private Cache<StadiumCacheKey, Long> stadiumCache;
 
     // 테스트용 공통 상수 추출
     private static final DataOrigin PROVIDER = DataOrigin.BETS;
@@ -53,10 +53,10 @@ class StadiumCacheServiceTest {
     }
 
     @Test
-    void 캐시와_DB에_존재하지_않는_경기장인_경우_DB에_저장_후_캐시에도_저장() {
+    void 캐시와_DB에_존재하지_않는_경기장은_DB에_저장하고_내부_경기장_ID를_캐싱한다() {
 
         // 캐시에 존재하지 않는다.
-        Stadium beforeCached = stadiumCache.getIfPresent(new StadiumCacheKey(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID));
+        Long beforeCached = stadiumCache.getIfPresent(new StadiumCacheKey(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID));
         assertThat(beforeCached).isNull();
 
         // Mapping Table에 존재하지 않는다.
@@ -64,14 +64,14 @@ class StadiumCacheServiceTest {
         assertThat(stadiumMappingInfo.isEmpty()).isTrue();
 
         // DB 및 캐시에 저장
-        Stadium savedStadium = stadiumCacheService.getOrCreateStadium(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, EXT_NAME, EXT_CITY);
+        Long savedStadiumId = stadiumCacheService.getOrCreateStadiumId(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, EXT_NAME, EXT_CITY);
 
         // 캐싱 되었는지 검증
         assertThat(stadiumCache.getIfPresent(new StadiumCacheKey(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID)))
-                .isNotNull();
+                .isEqualTo(savedStadiumId);
 
         // DB에 저장되었는지 검증 (StadiumExternalMapping, Stadium)
-        assertThat(stadiumRepository.findById(savedStadium.getId()))
+        assertThat(stadiumRepository.findById(savedStadiumId))
                 .isPresent();
 
     }
@@ -80,7 +80,7 @@ class StadiumCacheServiceTest {
     void 캐시에는_없지만_DB에_존재하는_경기장인_경우_DB에서_조회_후_캐시에_저장() {
 
         // 캐시에 존재하지 않는다.
-        Stadium beforeCached = stadiumCache.getIfPresent(new StadiumCacheKey(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID));
+        Long beforeCached = stadiumCache.getIfPresent(new StadiumCacheKey(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID));
         assertThat(beforeCached).isNull();
 
         // DB 에 미리 저장한다. (StadiumExternalMapping, Stadium)
@@ -88,7 +88,7 @@ class StadiumCacheServiceTest {
         stadiumExternalMappingRepository.save(StadiumExternalMapping.of(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, savedStadium.getId()));
 
         // 검증 대상 메서드 호출
-        stadiumCacheService.getOrCreateStadium(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, EXT_NAME, EXT_CITY);
+        stadiumCacheService.getOrCreateStadiumId(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, EXT_NAME, EXT_CITY);
 
         // DB 저장하는 메서드 미수행 검증 → 이미 저장된 데이터이기 때문에 추가 삽입이 발생하지 않음을 검증한다.
         assertThat(stadiumRepository.getSize()).isEqualTo(1);
@@ -105,20 +105,20 @@ class StadiumCacheServiceTest {
         StadiumRepository mockStadiumRepository = mock(StadiumRepository.class);
         StadiumExternalMappingRepository mockStadiumExternalMappingRepository = mock(StadiumExternalMappingRepository.class);
         SportExternalMappingRepository mockSportExternalMappingRepository = mock(SportExternalMappingRepository.class);
-        Cache mockStadiumCache = mock(Cache.class);
+        Cache<StadiumCacheKey, Long> mockStadiumCache = mock(Cache.class);
 
         // 의존성 주입
         stadiumService = new StadiumService(mockStadiumRepository, mockStadiumExternalMappingRepository, mockSportExternalMappingRepository);
         stadiumCacheService = new StadiumCacheService(mockStadiumCache, stadiumService);
 
-        Long internalSportId = 17L;
+        Long internalStadiumId = 17L;
 
-        Stadium stadium = Stadium.of(EXT_NAME, internalSportId, EXT_CITY);
-        StadiumExternalMapping stadiumExternalMapping = StadiumExternalMapping.of(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, internalSportId);
+        Stadium stadium = Stadium.of(EXT_NAME, 1L, EXT_CITY);
+        StadiumExternalMapping stadiumExternalMapping = StadiumExternalMapping.of(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, internalStadiumId);
 
         // 캐싱이 되어있는 경기장임을 가정
         when(mockStadiumCache.get(any(), any()))
-                .thenReturn(stadium);
+                .thenReturn(internalStadiumId);
 
         // DB에 이미 저장되어있는 경기장임을 가정
         when(mockStadiumRepository.findById(any()))
@@ -128,7 +128,7 @@ class StadiumCacheServiceTest {
                 .thenReturn(Optional.of(stadiumExternalMapping));
 
         // 검증 대상 메서드 호출
-        stadiumCacheService.getOrCreateStadium(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, EXT_NAME, EXT_CITY);
+        stadiumCacheService.getOrCreateStadiumId(DataOrigin.BETS, EXT_SPORT_ID, EXT_STADIUM_ID, EXT_NAME, EXT_CITY);
 
         // 캐시 1회 조회 검증
         verify(mockStadiumCache, times(1)).get(any(), any());

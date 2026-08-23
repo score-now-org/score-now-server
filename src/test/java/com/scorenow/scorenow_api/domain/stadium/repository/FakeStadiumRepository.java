@@ -18,6 +18,7 @@ public class FakeStadiumRepository implements StadiumRepository {
     public List<Stadium> searchStadiums(Long stadiumId, String name) {
         return database.values().stream()
                 .filter(stadium -> stadiumId == null || stadiumId.equals(stadium.getId()))
+                .filter(Stadium::isActive)
                 .filter(stadium -> name == null || stadium.getName() != null && stadium.getName().toLowerCase().contains(name.toLowerCase()))
                 .toList();
     }

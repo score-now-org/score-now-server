@@ -11,21 +11,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/app/matches")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class MatchAppController implements MatchAppApiDocs {
 
     private final MatchAppQueryService matchAppQueryService;
 
-    @GetMapping
-    public ApiResponse<List<MatchAppResponse>> getMatches(
+    @GetMapping("/v1/app/matches")
+    public ApiResponse<MatchAppResponse> getMatches(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate date,
             @RequestParam(required = false) Long sportId,
-            @RequestParam(required = false) Long leagueId
-    ) {
-        return ApiResponse.success(matchAppQueryService.getMatches(date, sportId, leagueId));
+            @RequestParam(required = false) Long leagueId) {
+
+        return ApiResponse.success(matchAppQueryService.getMatchesWithFeatured(date, sportId, leagueId));
     }
 }

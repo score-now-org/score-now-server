@@ -49,7 +49,8 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/swagger-ui.html",
 					"/api/test/betsapi/**",
-					"/api/v1/**"
+					"/api/v1/**",
+					"/api/v2/**"
 
 				).permitAll()
 				// Admin API 접근 허용 (개발 환경)

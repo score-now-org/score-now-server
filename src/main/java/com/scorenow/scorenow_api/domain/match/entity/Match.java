@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
@@ -45,10 +46,8 @@ public class Match extends BaseEntity {
     private MatchStatus statusCode;
 
     private Integer homeScore;
-    private Integer homeShootOutScore;
 
     private Integer awayScore;
-    private Integer awayShootOutScore;
 
     private LocalDateTime startAt;
 
@@ -117,16 +116,12 @@ public class Match extends BaseEntity {
         this.homeScore = homeScore;
     }
 
-    public void updateHomeShootOutScore(Integer homeShootOutScore) {
-        this.homeShootOutScore = homeShootOutScore;
-    }
-
     public void updateAwayScore(Integer awayScore) {
         this.awayScore = awayScore;
     }
 
-    public void updateAwayShootOutScore(Integer awayShootOutScore) {
-        this.awayShootOutScore = awayShootOutScore;
+    public void updateIsManual(Boolean isManual) {
+        this.isManual = isManual;
     }
 
     public void updateIsActive(boolean isActive) {
@@ -143,6 +138,10 @@ public class Match extends BaseEntity {
         this.temporaryStadium = new TemporaryStadium(stadiumName, city);
     }
 
+    public void clearTemporaryStadium() {
+        this.temporaryStadium = null;
+    }
+
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder;
     }
@@ -155,20 +154,6 @@ public class Match extends BaseEntity {
         return stadiumId == null && temporaryStadium == null;
     }
 
-    public MatchResult getResultByScore() {
-        if (hasShootOutScore()) {
-            return MatchResult.fromScore(homeShootOutScore, awayShootOutScore);
-        }
-
-        return MatchResult.fromScore(homeScore, awayScore);
-    }
-
-    private boolean hasShootOutScore() {
-        return homeShootOutScore != null
-                && awayShootOutScore != null
-                && !homeShootOutScore.equals(awayShootOutScore);
-    }
-
     /**
      * 경기 시작 일자 변경 여부 (시간이 아닌 일자 변경 기준)
      */
@@ -179,4 +164,12 @@ public class Match extends BaseEntity {
         return !this.startAt.toLocalDate().equals(newStartAt.toLocalDate());
     }
 
+    /**
+     * 팀 표시 순서 반환
+     */
+    public List<String> resolveTeamDisplayOrder() {
+        return teamDisplayOrder != null
+                ? teamDisplayOrder.toDisplaySides()
+                : TeamDisplayOrder.HOME_AWAY.toDisplaySides();
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ public interface LeagueSeasonStandingsRepository extends JpaRepository<LeagueSea
             from LeagueSeasonStandings lss
             join fetch lss.leagueSeason ls
             join fetch ls.league l
+            join fetch l.sport s
             where lss.leagueSeasonId = :leagueSeasonId
               and ls.isActive = true
             """)
@@ -39,6 +41,18 @@ public interface LeagueSeasonStandingsRepository extends JpaRepository<LeagueSea
                    or lower(l.eName) like lower(concat('%', :leagueName, '%'))
               )
               and ls.isActive = true
+            order by
+              case
+                when ls.isCurrent = true then 0
+                else 1
+              end asc,
+              case
+                when l.kName is not null and l.kName <> '' then l.kName
+                when l.eName is not null and l.eName <> '' then l.eName
+                when l.sName is not null and l.sName <> '' then l.sName
+                else ''
+              end asc,
+              ls.seasonStartAt desc
             """,
             countQuery = """
             select count(s)
@@ -69,4 +83,11 @@ public interface LeagueSeasonStandingsRepository extends JpaRepository<LeagueSea
             """)
     List<Long> findCurrentLeagueSeasonIdsByStandingType(
             @Param("standingsType") LeagueSeasonStandingsType standingsType);
+
+    @Query("""
+            select lss
+            from LeagueSeasonStandings lss
+            where lss.leagueSeasonId in :leagueSeasonIds
+            """)
+    List<LeagueSeasonStandings> findAllByLeagueSeasonIds (Collection<Long> leagueSeasonIds);
 }
