@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-@Schema(description = "관리자 경기 상세 응답")
-public class AdminMatchDetailResponse {
+@Schema(description = "관리자 축구 경기 상세 응답")
+public class FootballAdminMatchDetailResponse {
 
     @Schema(description = "경기 시작 시간", example = "2026-06-05T20:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
