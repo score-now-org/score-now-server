@@ -29,6 +29,11 @@ public class FootballDetailEventProcessor implements SportDetailEventProcessor {
         return SportDetailType.FOOTBALL;
     }
 
+    /**
+     * 축구 경기에 대해 이벤트 발행 처리를 담당하는 메서드
+     *  - 승부차기 스코어 변화
+     *  - 경기 시간 정보 변화 (phase 변화, 경기 running 여부 변화)
+     */
     @Override
     public void process(MatchDetailDocument currentMatchDetailDocument, MatchDetailDocument newMatchDetailDocument) {
 
