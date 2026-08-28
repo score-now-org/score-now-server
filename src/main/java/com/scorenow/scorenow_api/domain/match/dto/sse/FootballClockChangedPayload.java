@@ -10,24 +10,20 @@ import java.time.Instant;
 @Builder
 public class FootballClockChangedPayload {
     private String displayText;
-    private Integer elapsedMinutes;
     private Integer displayElapsedMinutes;
-    private Integer elapsedSeconds;
+    private Integer phaseElapsedSeconds;
     private String phase;
     private Boolean running;
-    private Instant providerUpdatedAt;
+    private Instant syncedAt;
 
-    public static FootballClockChangedPayload from(FootballClock footballClock, String displayText) {
+    public static FootballClockChangedPayload from(FootballClock clock, String displayText) {
         return FootballClockChangedPayload.builder()
                 .displayText(displayText)
-                .elapsedMinutes(footballClock.getElapsedMinutes())
-                .displayElapsedMinutes(footballClock.resolvePhaseElapsedMinutes())
-                .elapsedSeconds(footballClock.getElapsedSeconds())
-                .phase(footballClock.getPhase() != null
-                        ? footballClock.getPhase().getDescription()
-                        : null)
-                .running(footballClock.getRunning())
-                .providerUpdatedAt(footballClock.getProviderUpdatedAt())
+                .displayElapsedMinutes(clock.resolvePhaseElapsedMinutes())
+                .phaseElapsedSeconds(clock.getPhaseElapsedSeconds())
+                .phase(clock.getPhase() != null ? clock.getPhase().getDescription() : null)
+                .running(clock.getRunning())
+                .syncedAt(clock.getClockSyncedAt())
                 .build();
     }
 

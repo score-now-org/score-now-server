@@ -29,4 +29,15 @@ public class MatchDetailDocument extends BaseDocument {
         this.currentCommentaryHighlighted = highlighted;
     }
 
+    public MatchDetailDocument withSportDetail(SportDetail sportDetail) {
+        return MatchDetailDocument.builder()
+                .id(id)
+                .type(type)
+                .currentCommentaryId(currentCommentaryId)
+                .currentCommentary(currentCommentary)
+                .currentCommentaryHighlighted(currentCommentaryHighlighted)
+                .sportDetail(sportDetail)
+                .build();
+    }
+
 }

@@ -20,8 +20,8 @@ public class FootballShootOutScore {
             return false;
         }
 
-        Integer newHomeScore = newShootOutScore.getHomeScore() == null ? homeScore : newShootOutScore.getHomeScore();
-        Integer newAwayScore = newShootOutScore.getAwayScore() == null ? awayScore : newShootOutScore.getAwayScore();
+        Integer newHomeScore = newShootOutScore.getHomeScore();
+        Integer newAwayScore = newShootOutScore.getAwayScore();
 
         return !Objects.equals(homeScore, newHomeScore) || !Objects.equals(awayScore, newAwayScore);
     }

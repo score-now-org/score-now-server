@@ -27,6 +27,7 @@ public enum ErrorCode {
 
 	// Match Detail
 	MATCH_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MD001", "경기 중계 정보를 찾을 수 없습니다."),
+	MATCH_CLOCK_NOT_INITIALIZED(HttpStatus.CONFLICT, "MD002", "경기 시간 정보가 아직 생성되지 않았습니다."),
 
 	// FeaturedMatch
 	FEATURED_MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "FM001", "상단고정/핫매치 설정을 찾을 수 없습니다."),
