@@ -111,7 +111,7 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
         int elapsedSeconds = timer.getTs() != null ? timer.getTs() : 0;
 
         return FootballClock.builder()
-                .clockSyncedAt(toProviderUpdatedAt(externalData.getInplayUpdatedAt()))  // TODO: 외부 동기화의 경우에는 비워둘까?
+                .clockSyncedAt(toProviderUpdatedAt(externalData.getInplayUpdatedAt()))
                 .phaseElapsedSeconds(FootballClock.resolvePhaseElapsedSeconds(
                         elapsedMinutes * 60 + elapsedSeconds,
                         phase)
