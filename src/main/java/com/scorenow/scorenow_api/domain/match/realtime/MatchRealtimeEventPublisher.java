@@ -74,12 +74,12 @@ public class MatchRealtimeEventPublisher {
      * 1. 축구 경기 시간 정보가 새로 생길 때
      * 2. Phase 가 바뀔 때
      * 3. running 상태가 바뀔 때
+     * 4. 관리자 수동 시간 보정
      */
     public void publishFootballClockChanged(Long matchId, FootballClock newFootballClock, String displayText) {
         if (newFootballClock == null) {
             return;
         }
-
 
         FootballClockChangedPayload payload = FootballClockChangedPayload.from(newFootballClock, displayText);
 

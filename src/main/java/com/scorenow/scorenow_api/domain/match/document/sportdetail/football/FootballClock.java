@@ -66,18 +66,7 @@ public class FootballClock {
     }
 
     public static FootballClock startPhase(FootballPhase phase) {
-        return switch (phase) {
-            case FIRST_HALF,
-                 SECOND_HALF,
-                 EXTRA_FIRST_HALF,
-                 EXTRA_SECOND_HALF -> startPhase(phase, true);
-
-            case HALF_TIME,
-                 EXTRA_TIME_WAITING,
-                 EXTRA_TIME_ENDED,
-                 PENALTY_SHOOTOUT,
-                 FULL_TIME -> startPhase(phase, false);
-        };
+        return startPhase(phase, phase.isClockRunningPhase());
     }
 
     private static FootballClock startPhase(FootballPhase phase, boolean running) {

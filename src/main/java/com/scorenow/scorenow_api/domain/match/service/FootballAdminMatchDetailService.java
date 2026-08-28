@@ -13,6 +13,7 @@ import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublish
 import com.scorenow.scorenow_api.domain.match.repository.FootballMatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.match.service.displaytext.football.FootballClockDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -34,6 +35,7 @@ public class FootballAdminMatchDetailService {
     private final MatchRealtimeEventPublisher eventPublisher;
     private final SportDetailEventProcessorRegistry eventProcessorRegistry;
 
+    private final FootballClockDisplayTextResolver footballClockDisplayTextResolver;
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
     private final MatchScheduledStartAtUpdater matchScheduledStartAtUpdater;
 
@@ -215,6 +217,10 @@ public class FootballAdminMatchDetailService {
         );
 
         footballMatchDetailRepository.updateClock(matchId, correctedClock);
+
+        // 시간 보정 이벤트 발행
+        String clockDisplayText = footballClockDisplayTextResolver.resolve(correctedClock);
+        eventPublisher.publishFootballClockChanged(matchId, correctedClock, clockDisplayText);
     }
 
     /**
@@ -228,6 +234,7 @@ public class FootballAdminMatchDetailService {
         FootballDetail footballDetail = resolveFootballDetail(matchDetailDocument.getSportDetail());
         FootballClock clock = resolveRequiredClock(footballDetail);
 
+        // 이미 clock 이 멈춘 상태인 경우는 무시
         if (Boolean.FALSE.equals(clock.getRunning())) {
             return;
         }
@@ -247,13 +254,24 @@ public class FootballAdminMatchDetailService {
     @Transactional
     public void resumeClock(Long matchId) {
 
+        Match match = findMatchByMatchId(matchId);
         MatchDetailDocument matchDetailDocument = findFootballMatchDetailDocumentByMatchId(matchId);
 
         FootballDetail footballDetail = resolveFootballDetail(matchDetailDocument.getSportDetail());
         FootballClock clock = resolveRequiredClock(footballDetail);
 
+        // 이미 clock 이 동작중인 상태인 경우는 무시
         if (Boolean.TRUE.equals(clock.getRunning())) {
             return;
+        }
+
+        // clock 이 멈춰야 하는 phase 인 경우에는 예외 발생
+        if (!clock.getPhase().isClockRunningPhase()) {
+            throw new BusinessException(ErrorCode.MATCH_CLOCK_NOT_RESUMABLE);
+        }
+
+        if (match.getStatusCode() != MatchStatus.IN_PLAY) {
+            throw new BusinessException(ErrorCode.MATCH_CLOCK_NOT_RESUMABLE, "진행중인 경기에서만 타이머를 재개할 수 있습니다.");
         }
 
         FootballClock newClock = clock.resume();

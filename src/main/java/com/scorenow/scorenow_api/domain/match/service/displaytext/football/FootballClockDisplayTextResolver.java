@@ -19,7 +19,6 @@ public class FootballClockDisplayTextResolver {
             return phase.getDescription();
         }
 
-        // TODO: 수동 경기의 경우 elapsedMinutes 가 없음. 그래서 후반 15 분여도, 후반으로만 내려감 (SSE 기준)
         Integer phaseElapsedMinutes = clock.resolvePhaseElapsedMinutes();
         if (phaseElapsedMinutes == null) {
             return phase.getDescription();
