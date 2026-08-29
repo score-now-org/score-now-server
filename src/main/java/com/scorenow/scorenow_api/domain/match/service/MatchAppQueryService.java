@@ -1,7 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.league.service.standings.TeamStandingLookupService;
-import com.scorenow.scorenow_api.domain.league.service.standings.model.ExternalTeamStandingKey;
 import com.scorenow.scorenow_api.domain.league.service.standings.model.LeagueTeamKey;
 import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
@@ -16,9 +15,6 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
-import com.scorenow.scorenow_api.domain.team.entity.Team;
-import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
-import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
