@@ -4,6 +4,9 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.Foot
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballPhase;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.Instant;
+
 @Component
 public class FootballClockDisplayTextResolver {
 
@@ -15,29 +18,22 @@ public class FootballClockDisplayTextResolver {
 
         FootballPhase phase = clock.getPhase();
 
-        if (!hasMinuteDisplay(phase)) {
+        // 타이머가 흐르는 Phase 가 아닌 경우에는 description 만 보여준다. (예: 하프타임, 연장대기)
+        if (!phase.isClockRunningPhase()) {
             return phase.getDescription();
         }
 
-        Integer phaseElapsedMinutes = clock.resolvePhaseElapsedMinutes();
-        if (phaseElapsedMinutes == null) {
+        Instant now = Instant.now();
+        Instant clockSyncedAt = clock.getClockSyncedAt();
+        Integer phaseElapsedSeconds = clock.getPhaseElapsedSeconds();
+
+        if (clockSyncedAt == null || phaseElapsedSeconds == null) {
             return phase.getDescription();
         }
 
-        return phase.getDescription() + " " + phaseElapsedMinutes;
+        int calculatedPhaseElapsedSeconds = (int) Duration.between(clockSyncedAt, now).getSeconds() + phaseElapsedSeconds;
+
+        return phase.getDescription() + " " + (calculatedPhaseElapsedSeconds / 60);
     }
 
-    private boolean hasMinuteDisplay(FootballPhase phase) {
-        return switch (phase) {
-            case FIRST_HALF,
-                 SECOND_HALF,
-                 EXTRA_FIRST_HALF,
-                 EXTRA_SECOND_HALF -> true;
-            case HALF_TIME,
-                 EXTRA_TIME_WAITING,
-                 EXTRA_TIME_ENDED,
-                 PENALTY_SHOOTOUT,
-                 FULL_TIME -> false;
-        };
-    }
 }
