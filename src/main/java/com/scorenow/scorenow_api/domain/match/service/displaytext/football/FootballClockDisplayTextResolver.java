@@ -31,7 +31,9 @@ public class FootballClockDisplayTextResolver {
             return phase.getDescription();
         }
 
-        int calculatedPhaseElapsedSeconds = (int) Duration.between(clockSyncedAt, now).getSeconds() + phaseElapsedSeconds;
+        int calculatedPhaseElapsedSeconds = Boolean.TRUE.equals(clock.getRunning())
+                ? (int) Duration.between(clockSyncedAt, now).getSeconds() + phaseElapsedSeconds // 타이머가 running 중인 경우
+                : phaseElapsedSeconds;  // 타이머가 멈춘 경우
 
         return phase.getDescription() + " " + (calculatedPhaseElapsedSeconds / 60);
     }

@@ -55,8 +55,9 @@ public class MatchAppQueryService {
         MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
 
-        Stadium stadium = stadiumRepository.findById(match.getStadiumId())
-                .orElse(null);
+        Stadium stadium = match.getStadiumId() != null
+                ? stadiumRepository.findById(match.getStadiumId()).orElse(null)
+                : null;
 
         Long leagueId = match.getLeagueId();
 
