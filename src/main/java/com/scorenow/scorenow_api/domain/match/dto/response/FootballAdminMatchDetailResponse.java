@@ -6,12 +6,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
-@Schema(description = "관리자 경기 상세 응답")
-public class MatchDetailResponse {
+@Schema(description = "관리자 축구 경기 상세 응답")
+public class FootballAdminMatchDetailResponse {
 
     @Schema(description = "경기 시작 시간", example = "2026-06-05T20:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -48,6 +49,15 @@ public class MatchDetailResponse {
         @Schema(description = "축구 경기 구간명", example = "후반")
         private String phaseName;
 
+        @Schema(description = "경과시간 계산 기준 시각", example = "2026-08-28T05:30:00Z")
+        private Instant clockSyncedAt;
+
+        @Schema(description = "기준 시각 당시 현재 Phase의 경과시간(초)", example = "750")
+        private Integer phaseElapsedSeconds;
+
+        @Schema(description = "경기 타이머 진행 여부", example = "true")
+        private Boolean running;
+
         @Schema(description = "승부차기 점수")
         private FootballShootOutScoreResponse shootOutScore;
 
@@ -72,6 +82,15 @@ public class MatchDetailResponse {
             return FootballDetailResponse.builder()
                     .phaseCode(phase != null ? phase.name() : null)
                     .phaseName(phase != null ? phase.getDescription() : null)
+                    .clockSyncedAt(footballDetail.getClock() != null
+                            ? footballDetail.getClock().getClockSyncedAt()
+                            : null)
+                    .phaseElapsedSeconds(footballDetail.getClock() != null
+                            ? footballDetail.getClock().getPhaseElapsedSeconds()
+                            : null)
+                    .running(footballDetail.getClock() != null
+                            ? footballDetail.getClock().getRunning()
+                            : null)
                     .shootOutScore(FootballShootOutScoreResponse.from(footballDetail.getShootOutScore()))
                     .additionalTime(FootballAdditionalTimeResponse.from(footballDetail.getAdditionalTime()))
                     .homeStats(FootballStatsResponse.from(footballDetail.getHomeStats()))

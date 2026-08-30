@@ -1,31 +1,120 @@
 package com.scorenow.scorenow_api.domain.match.controller;
 
-import com.scorenow.scorenow_api.domain.match.dto.request.FootballMatchDetailUpdateRequest;
-import com.scorenow.scorenow_api.domain.match.dto.response.MatchDetailResponse;
-import com.scorenow.scorenow_api.domain.match.service.MatchDetailService;
+import com.scorenow.scorenow_api.domain.match.dto.request.FootballAdditionalTimeUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.FootballClockCorrectionRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.FootballPhaseTransitionRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.FootballShootOutScoreUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.FootballStatsUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchScheduledStartAtUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchScoreUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchStatusUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.response.FootballAdminMatchDetailResponse;
+import com.scorenow.scorenow_api.domain.match.service.FootballAdminMatchDetailService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/matches/{matchId}/detail")
 public class AdminMatchDetailController implements AdminMatchDetailApiDocs {
 
-    private final MatchDetailService matchDetailService;
+    private final FootballAdminMatchDetailService footballAdminMatchDetailService;
 
-    //TODO: 추후 야구 추가시 엔드포인트를 구분지을지, 아니면 다형성을 활용해서 확장된 응답을 내려줄지 고민 필요
     @GetMapping
-    public ApiResponse<MatchDetailResponse> getMatchDetail(@PathVariable Long matchId) {
-        return ApiResponse.success(matchDetailService.getMatchDetail(matchId));
+    public ApiResponse<FootballAdminMatchDetailResponse> getMatchDetail(@PathVariable Long matchId) {
+        return ApiResponse.success(footballAdminMatchDetailService.getFootballMatchDetail(matchId));
     }
 
-    @PatchMapping
-    public ApiResponse<Void> updateMatchDetail(
+    @PutMapping("/scheduled-start-at")
+    public ApiResponse<Void> updateScheduledStartAt(
             @PathVariable Long matchId,
-            @RequestBody FootballMatchDetailUpdateRequest request) {
+            @Valid @RequestBody MatchScheduledStartAtUpdateRequest request) {
 
-        matchDetailService.updateMatchDetailManual(matchId, request);
+        footballAdminMatchDetailService.updateMatchScheduledStartAt(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PutMapping("/status")
+    public ApiResponse<Void> updateStatus(
+            @PathVariable Long matchId,
+            @Valid @RequestBody MatchStatusUpdateRequest request) {
+
+        footballAdminMatchDetailService.updateMatchStatus(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PutMapping("/score")
+    public ApiResponse<Void> updateScore(
+            @PathVariable Long matchId,
+            @Valid @RequestBody MatchScoreUpdateRequest request) {
+
+        footballAdminMatchDetailService.updateMatchScore(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PutMapping("/football/additional-time")
+    public ApiResponse<Void> updateAdditionalTime(
+            @PathVariable Long matchId,
+            @Valid @RequestBody FootballAdditionalTimeUpdateRequest request) {
+
+        footballAdminMatchDetailService.updateAdditionalTime(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PutMapping("/football/statistics")
+    public ApiResponse<Void> updateFootballStats(
+            @PathVariable Long matchId,
+            @Valid @RequestBody FootballStatsUpdateRequest request) {
+
+        footballAdminMatchDetailService.updateFootballStats(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PutMapping("/football/shoot-out-score")
+    public ApiResponse<Void> updateShootOutScore(
+            @PathVariable Long matchId,
+            @Valid @RequestBody FootballShootOutScoreUpdateRequest request) {
+
+        footballAdminMatchDetailService.updateShootOutScore(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/football/clock/phase-transitions")
+    public ApiResponse<Void> transitionPhase(
+            @PathVariable Long matchId,
+            @Valid @RequestBody FootballPhaseTransitionRequest request) {
+
+        footballAdminMatchDetailService.updatePhase(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/football/clock/corrections")
+    public ApiResponse<Void> correctClock(
+            @PathVariable Long matchId,
+            @Valid @RequestBody FootballClockCorrectionRequest request) {
+
+        footballAdminMatchDetailService.correctClock(matchId, request);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/football/clock/pause")
+    public ApiResponse<Void> pauseClock(@PathVariable Long matchId) {
+        footballAdminMatchDetailService.pauseClock(matchId);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/football/clock/resume")
+    public ApiResponse<Void> resumeClock(@PathVariable Long matchId) {
+
+        footballAdminMatchDetailService.resumeClock(matchId);
         return ApiResponse.success();
     }
 }

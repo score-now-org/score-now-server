@@ -53,7 +53,7 @@ public class AdminMatchService {
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
 
-    private final AdminFeaturedMatchService adminFeaturedMatchService;
+    private final MatchScheduledStartAtUpdater matchScheduledStartAtUpdater;
 
     private final MatchMapper matchMapper;
 
@@ -178,13 +178,7 @@ public class AdminMatchService {
 
     private void applyUpdates(Match match, MatchUpdateRequest request) {
         if (request.getStartAt() != null) {
-
-            // 일자 기준 변경이 발생했을 때, 상단고정/핫매치 설정 해제 처리
-            if (match.isStartDateChanged(request.getStartAt())) {
-                adminFeaturedMatchService.deleteFeaturedMatchByMatchId(match.getId());
-            }
-
-            match.updateStartAt(request.getStartAt());
+            matchScheduledStartAtUpdater.update(match, request.getStartAt());
         }
 
         /* TODO: 점수 수정 없어질 수 있음. 참고*/

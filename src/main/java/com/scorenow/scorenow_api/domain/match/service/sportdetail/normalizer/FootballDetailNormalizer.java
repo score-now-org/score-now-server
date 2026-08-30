@@ -107,12 +107,21 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
             return null;
         }
 
+        int elapsedMinutes = timer.getTm() != null ? timer.getTm() : 0;
+        int elapsedSeconds = timer.getTs() != null ? timer.getTs() : 0;
+
+        Instant providerUpdatedAt = toProviderUpdatedAt(externalData.getInplayUpdatedAt());
+        Instant clockSyncedAt = providerUpdatedAt == null ? Instant.now() : providerUpdatedAt;
+
         return FootballClock.builder()
-                .elapsedMinutes(timer.getTm())
-                .elapsedSeconds(timer.getTs())
+                .clockSyncedAt(clockSyncedAt)
+                .phaseElapsedSeconds(FootballClock.resolvePhaseElapsedSeconds(
+                        elapsedMinutes * 60 + elapsedSeconds,
+                        phase)
+                )
                 .phase(phase)
                 .running(timer.isRunning())
-                .providerUpdatedAt(toProviderUpdatedAt(externalData.getInplayUpdatedAt()))
+                .providerUpdatedAt(providerUpdatedAt)
                 .build();
     }
 

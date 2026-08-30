@@ -15,6 +15,8 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,36 @@ public class MatchAppQueryService {
     private final MatchDetailRepository matchDetailRepository;
     private final FeaturedMatchRepository featuredMatchRepository;
     private final StadiumRepository stadiumRepository;
+
+    public MatchAppItemResponse getMatch(Long matchId) {
+
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
+
+        Stadium stadium = match.getStadiumId() != null
+                ? stadiumRepository.findById(match.getStadiumId()).orElse(null)
+                : null;
+
+        Long leagueId = match.getLeagueId();
+
+        Map<Long, Set<Long>> teamIdsByLeagueId = new HashMap<>();
+        teamIdsByLeagueId.put(leagueId, Set.of(match.getHomeId(), match.getAwayId()));
+
+        Map<LeagueTeamKey, List<TeamStandingSummary>> teamStandings = teamStandingLookupService.getTeamStandings(teamIdsByLeagueId, match.getStartAt().toLocalDate());
+        List<TeamStandingSummary> homeTeamStandings = teamStandings.getOrDefault(new LeagueTeamKey(leagueId, match.getHomeId()), List.of());
+        List<TeamStandingSummary> awayTeamStandings = teamStandings.getOrDefault(new LeagueTeamKey(leagueId, match.getAwayId()), List.of());
+
+        return MatchAppItemResponse.from(
+                match,
+                stadium,
+                matchDetailDocument,
+                matchStatusDisplayResolver.resolve(match, matchDetailDocument),
+                homeTeamStandings,
+                awayTeamStandings);
+    }
 
     List<MatchAppLeagueGroupResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
         LocalDate targetDate = resolveDate(date);

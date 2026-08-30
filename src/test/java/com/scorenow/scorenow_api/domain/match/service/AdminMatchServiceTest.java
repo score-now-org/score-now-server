@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -47,7 +46,7 @@ class AdminMatchServiceTest {
     @Mock
     private SportRepository sportRepository;
     @Mock
-    private AdminFeaturedMatchService adminFeaturedMatchService;
+    private MatchScheduledStartAtUpdater matchScheduledStartAtUpdater;
     @Mock
     private MatchMapper matchMapper;
     @Mock
@@ -58,7 +57,7 @@ class AdminMatchServiceTest {
     private MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     @Test
-    void 경기_시작_일자가_변경되면_상단고정_핫매치_설정을_해제한다() {
+    void 경기_시작_시각_수정을_공통_업데이터에_위임한다() {
         Long matchId = 1L;
         Match match = Match.builder()
                 .id(matchId)
@@ -72,12 +71,12 @@ class AdminMatchServiceTest {
 
         adminMatchService.updateMatch(matchId, request);
 
-        then(adminFeaturedMatchService).should().deleteFeaturedMatchByMatchId(matchId);
-        assertThat(match.getStartAt()).isEqualTo(LocalDateTime.of(2026, 7, 24, 19, 0));
+        then(matchScheduledStartAtUpdater).should()
+                .update(match, LocalDateTime.of(2026, 7, 24, 19, 0));
     }
 
     @Test
-    void 경기_시작_시간만_변경되면_상단고정_핫매치_설정을_해제하지_않는다() {
+    void 경기_시작_시각이_없으면_공통_업데이터를_호출하지_않는다() {
         Long matchId = 1L;
         Match match = Match.builder()
                 .id(matchId)
@@ -85,14 +84,11 @@ class AdminMatchServiceTest {
                 .build();
 
         MatchUpdateRequest request = new MatchUpdateRequest();
-        request.setStartAt(LocalDateTime.of(2026, 7, 23, 21, 0));
-
         given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
 
         adminMatchService.updateMatch(matchId, request);
 
-        then(adminFeaturedMatchService).should(never()).deleteFeaturedMatchByMatchId(matchId);
-        assertThat(match.getStartAt()).isEqualTo(LocalDateTime.of(2026, 7, 23, 21, 0));
+        then(matchScheduledStartAtUpdater).should(never()).update(match, null);
     }
 
     @Test

@@ -206,13 +206,13 @@ public class BetsViewResponse {
 
         private Integer parseDetailStats(List<String> detailStats, int teamIndex) {
             if (detailStats == null || detailStats.isEmpty() || detailStats.size() < 2) {
-                return 0;
+                return null;
             }
 
             try {
                 return Integer.parseInt(detailStats.get(teamIndex));
             } catch (NumberFormatException e) {
-                return 0;
+                return null;
             }
         }
     }

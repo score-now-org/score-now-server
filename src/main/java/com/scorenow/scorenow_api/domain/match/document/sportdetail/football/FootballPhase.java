@@ -17,4 +17,18 @@ public enum FootballPhase {
     FULL_TIME("경기 종료");
 
     private final String description;
+
+    public boolean isClockRunningPhase() {
+        return switch (this) {
+            case FIRST_HALF,
+                 SECOND_HALF,
+                 EXTRA_FIRST_HALF,
+                 EXTRA_SECOND_HALF -> true;
+            case HALF_TIME,
+                 EXTRA_TIME_WAITING,
+                 EXTRA_TIME_ENDED,
+                 PENALTY_SHOOTOUT,
+                 FULL_TIME -> false;
+        };
+    }
 }

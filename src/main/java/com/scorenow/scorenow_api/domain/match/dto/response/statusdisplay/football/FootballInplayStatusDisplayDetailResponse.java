@@ -19,20 +19,17 @@ public class FootballInplayStatusDisplayDetailResponse {
     @Schema(description = "축구 경기 구간명", example = "후반")
     private String phaseName;
 
-    @Schema(description = "누적 경과 시간 분", example = "60")
-    private Integer elapsedMinutes;
-
-    @Schema(description = "경과 시간 초", example = "10")
-    private Integer elapsedSeconds;
-
     @Schema(description = "현재 구간 기준 경과 시간 분", example = "15")
     private Integer phaseElapsedMinutes;
+
+    @Schema(description = "현재 구간 기준 경과 시간 초", example = "1800 (30분 = 30*60 = 1800)")
+    private Integer phaseElapsedSeconds;
 
     @Schema(description = "타이머 진행 여부", example = "true")
     private Boolean running;
 
-    @Schema(description = "외부 API 기준 업데이트 시각. UTC", example = "2026-07-19T05:30:00Z")
-    private Instant providerUpdatedAt;
+    @Schema(description = "경과 시간 동기화 기준 시각", example = "2026-07-19T05:30:00Z")
+    private Instant syncedAt;
 
     public static FootballInplayStatusDisplayDetailResponse from(FootballClock clock) {
         if (clock == null) {
@@ -44,11 +41,10 @@ public class FootballInplayStatusDisplayDetailResponse {
         return FootballInplayStatusDisplayDetailResponse.builder()
                 .phaseCode(phase != null ? phase.name() : null)
                 .phaseName(phase != null ? phase.getDescription() : null)
-                .elapsedMinutes(clock.getElapsedMinutes())
-                .elapsedSeconds(clock.getElapsedSeconds())
                 .phaseElapsedMinutes(clock.resolvePhaseElapsedMinutes())
+                .phaseElapsedSeconds(clock.getPhaseElapsedSeconds())
                 .running(clock.getRunning())
-                .providerUpdatedAt(clock.getProviderUpdatedAt())
+                .syncedAt(clock.getClockSyncedAt())
                 .build();
     }
 }

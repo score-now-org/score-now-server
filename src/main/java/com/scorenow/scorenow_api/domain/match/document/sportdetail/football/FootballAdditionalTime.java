@@ -20,4 +20,13 @@ public class FootballAdditionalTime {
     public static FootballAdditionalTime empty() {
         return FootballAdditionalTime.builder().build();
     }
+
+    public static FootballAdditionalTime of(Integer firstHalf, Integer secondHalf, Integer extraFirstHalf, Integer extraSecondHalf) {
+        return FootballAdditionalTime.builder()
+                .firstHalf(firstHalf)
+                .secondHalf(secondHalf)
+                .extraFirstHalf(extraFirstHalf)
+                .extraSecondHalf(extraSecondHalf)
+                .build();
+    }
 }
