@@ -2,7 +2,9 @@ package com.scorenow.scorenow_api.domain.match.controller;
 
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppItemResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.statistics.MatchStatisticsResponse;
 import com.scorenow.scorenow_api.domain.match.service.MatchAppQueryService;
+import com.scorenow.scorenow_api.domain.match.service.MatchStatisticsAppQueryService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -16,6 +18,7 @@ import java.time.LocalDate;
 public class MatchAppController implements MatchAppApiDocs {
 
     private final MatchAppQueryService matchAppQueryService;
+    private final MatchStatisticsAppQueryService matchStatisticsAppQueryService;
 
     @GetMapping
     public ApiResponse<MatchAppResponse> getMatches(
@@ -30,4 +33,10 @@ public class MatchAppController implements MatchAppApiDocs {
     public ApiResponse<MatchAppItemResponse> getMatch(@PathVariable Long matchId) {
         return ApiResponse.success(matchAppQueryService.getMatch(matchId));
     }
+
+    @GetMapping("/{matchId}/statistics")
+    public ApiResponse<MatchStatisticsResponse> getMatchStatistics(@PathVariable Long matchId) {
+        return ApiResponse.success(matchStatisticsAppQueryService.getStatistics(matchId));
+    }
+
 }
