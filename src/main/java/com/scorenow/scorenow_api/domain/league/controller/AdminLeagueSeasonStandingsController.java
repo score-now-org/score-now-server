@@ -58,8 +58,7 @@ public class AdminLeagueSeasonStandingsController implements AdminLeagueSeasonSt
             @PathVariable Long leagueSeasonId,
             @RequestPart("image") MultipartFile image) {
 
-        // TODO: 리그 순위 이미지 업로드는 일단 막아두고, 추후 이미지 서버 구축 및 관련 기능 개발할 때 처리하기.
-//        adminLeagueSeasonStandingsService.uploadLeagueSeasonStandingsImage(leagueSeasonId, image);
+        adminLeagueSeasonStandingsService.uploadLeagueSeasonStandingsImage(leagueSeasonId, image);
         return ApiResponse.success();
     }
 
