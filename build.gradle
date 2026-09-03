@@ -36,6 +36,7 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
     implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'com.google.firebase:firebase-admin:9.8.0'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -59,7 +60,7 @@ dependencies {
 // QClass 생성 위치
 def querydslDir = "$buildDir/generated/querydsl"
 
-sourceSets{
+sourceSets {
     main.java.srcDirs += [querydslDir]
 }
 
