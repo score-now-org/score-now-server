@@ -23,7 +23,6 @@ public class InplayMatchSyncService {
     private final BetsApiClient betsApiClient;
 
     private final InplayCandidateStatusUpdateService inplayCandidateStatusUpdateService;
-    private final MatchClockSyncService matchClockSyncService;
 
     private final InplayMatchRedisRepository inplayMatchRedisRepository;
 
@@ -82,13 +81,6 @@ public class InplayMatchSyncService {
         if (!inplayMatches.isEmpty()) {
             int updatedCount = inplayCandidateStatusUpdateService.updateInplayStatuses(inplayMatches);
             log.info("🟢IN_PLAY 상태 업데이트 완료. requested={}, updated={}", inplayMatches.size(), updatedCount);
-
-            for (MatchCandidate inplayMatch : inplayMatches) {
-                BetsEventResponse.Event event = inplayEvents.get(inplayMatch.getApiMatchId());
-                matchClockSyncService.syncMatchClock(
-                        inplayMatch.getMatchId(),
-                        event.toMatchClock(inplayMatch.getStartAt()));
-            }
 
             inplayMatchRedisRepository.removeCandidates(inplayMatches);
         }

@@ -19,6 +19,16 @@ public enum ErrorCode {
 	MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "경기를 찾을 수 없습니다."),
 	MATCH_ALREADY_EXIST(HttpStatus.CONFLICT, "M002", "이미 존재하는 경기입니다."),
 	MATCH_INVALID_STATUS(HttpStatus.BAD_REQUEST, "M003", "잘못된 경기 상태입니다."),
+	MATCH_STADIUM_MAPPING_INVALID_STATE(
+		HttpStatus.CONFLICT,
+		"M004",
+		"임시 경기장이 할당된 경기에서만 매핑을 해제할 수 있습니다."
+	),
+
+	// Match Detail
+	MATCH_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MD001", "경기 중계 정보를 찾을 수 없습니다."),
+	MATCH_CLOCK_NOT_INITIALIZED(HttpStatus.CONFLICT, "MD002", "경기 시간 정보가 아직 생성되지 않았습니다."),
+	MATCH_CLOCK_NOT_RESUMABLE(HttpStatus.CONFLICT, "MD003", "현재 경기 구간에서는 타이머를 재개할 수 없습니다."),
 
 	// FeaturedMatch
 	FEATURED_MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "FM001", "상단고정/핫매치 설정을 찾을 수 없습니다."),
@@ -37,12 +47,14 @@ public enum ErrorCode {
 
 	// Team
 	TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "팀을 찾을 수 없습니다."),
+	TEAM_DELETE_NOT_ALLOWED(HttpStatus.CONFLICT, "T002", "수동 등록된 팀만 삭제할 수 있습니다."),
 
 	// Sport
 	SPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "스포츠를 찾을 수 없습니다."),
 
 	// Stadium
 	STADIUM_NOT_FOUND(HttpStatus.NOT_FOUND, "STA001", "경기장을 찾을 수 없습니다."),
+	STADIUM_DELETE_NOT_ALLOWED(HttpStatus.CONFLICT, "STA002", "수동 등록된 경기장만 삭제할 수 있습니다."),
 
 	// User
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
@@ -65,6 +77,18 @@ public enum ErrorCode {
 	// Push
 	PUSH_INVALID_LANDING(HttpStatus.BAD_REQUEST, "P001", "푸시 랜딩 정보가 올바르지 않습니다."),
 	PUSH_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P002", "푸시 발송에 실패했습니다.");
+
+	// Community
+	COMMUNITY_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CO001", "커뮤니티 기능은 로그인이 필요합니다."),
+	COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "CO002", "게시글을 찾을 수 없습니다."),
+	COMMUNITY_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CO003", "댓글을 찾을 수 없습니다."),
+	COMMUNITY_FORBIDDEN(HttpStatus.FORBIDDEN, "CO004", "권한이 없습니다."),
+	COMMUNITY_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "CO005", "올바르지 않은 커뮤니티 카테고리입니다."),
+	COMMUNITY_POST_INVALID(HttpStatus.BAD_REQUEST, "CO006", "게시글 내용이 올바르지 않습니다."),
+	COMMUNITY_COMMENT_INVALID(HttpStatus.BAD_REQUEST, "CO007", "댓글 내용이 올바르지 않습니다."),
+	COMMUNITY_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "CO008", "이미지가 올바르지 않습니다."),
+	COMMUNITY_IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "CO009", "이미지는 최대 10개까지 첨부할 수 있습니다."),
+	COMMUNITY_REPORT_DUPLICATED(HttpStatus.CONFLICT, "CO010", "이미 신고한 게시글입니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;

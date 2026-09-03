@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.league.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,13 +21,16 @@ public class AdminLeagueCreateRequest {
 
     @NotBlank
     @Schema(description = "영문 리그명", example = "Premier League", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("eName")
     private String eName;
 
     @Schema(description = "한글 리그명", example = "프리미어리그")
+    @JsonProperty("kName")
     private String kName;
 
     @NotBlank
     @Schema(description = "숏 리그명", example = "EPL", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("sName")
     private String sName;
 
     @Schema(description = "팀 표시 순서", example = "HOME_AWAY", allowableValues = {"HOME_AWAY", "AWAY_HOME"})

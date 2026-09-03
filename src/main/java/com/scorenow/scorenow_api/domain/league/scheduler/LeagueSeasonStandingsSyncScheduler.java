@@ -2,7 +2,7 @@ package com.scorenow.scorenow_api.domain.league.scheduler;
 
 import com.scorenow.scorenow_api.domain.league.entity.LeagueSeasonStandingsType;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueSeasonStandingsRepository;
-import com.scorenow.scorenow_api.domain.league.service.LeagueSeasonStandingsSyncService;
+import com.scorenow.scorenow_api.domain.league.service.standings.LeagueSeasonStandingsSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

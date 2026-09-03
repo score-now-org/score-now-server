@@ -1,8 +1,10 @@
 package com.scorenow.scorenow_api.domain.league.controller;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsGroupMappingsUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSeasonStandingsTypeUpdateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsGroupMappingsResponse;
 import com.scorenow.scorenow_api.domain.league.dto.response.AdminLeagueSeasonStandingsResponse;
 import com.scorenow.scorenow_api.domain.league.service.AdminLeagueSeasonStandingsService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -56,13 +58,30 @@ public class AdminLeagueSeasonStandingsController implements AdminLeagueSeasonSt
             @PathVariable Long leagueSeasonId,
             @RequestPart("image") MultipartFile image) {
 
-        adminLeagueSeasonStandingsService.uploadLeagueSeasonStandingsImage(leagueSeasonId, image);
+        // TODO: 리그 순위 이미지 업로드는 일단 막아두고, 추후 이미지 서버 구축 및 관련 기능 개발할 때 처리하기.
+//        adminLeagueSeasonStandingsService.uploadLeagueSeasonStandingsImage(leagueSeasonId, image);
         return ApiResponse.success();
     }
 
     @PostMapping("/{leagueSeasonId}/sync")
     public ApiResponse<Void> syncLeagueSeasonStandingsData(@PathVariable Long leagueSeasonId) {
         adminLeagueSeasonStandingsService.syncLeagueSeasonStandingsData(leagueSeasonId);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/{leagueSeasonId}/group-mappings")
+    public ApiResponse<AdminLeagueSeasonStandingsGroupMappingsResponse> getGroupMappings(
+            @PathVariable Long leagueSeasonId) {
+
+        return ApiResponse.success(adminLeagueSeasonStandingsService.getGroupMappings(leagueSeasonId));
+    }
+
+    @PutMapping("/{leagueSeasonId}/group-mappings")
+    public ApiResponse<Void> updateGroupMappings(
+            @PathVariable Long leagueSeasonId,
+            @RequestBody @Valid LeagueSeasonStandingsGroupMappingsUpdateRequest request) {
+
+        adminLeagueSeasonStandingsService.updateGroupMappings(leagueSeasonId, request);
         return ApiResponse.success();
     }
 }

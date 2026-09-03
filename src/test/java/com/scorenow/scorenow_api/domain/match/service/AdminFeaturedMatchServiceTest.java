@@ -2,17 +2,20 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.dto.response.FeaturedMatchCandidateResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.FeaturedMatchesResponse;
 import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatch;
 import com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
-import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +30,8 @@ import static com.scorenow.scorenow_api.domain.match.entity.FeaturedMatchType.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -40,45 +45,59 @@ class AdminFeaturedMatchServiceTest {
     @Mock
     private FeaturedMatchRepository featuredMatchRepository;
 
+    @Captor
+    private ArgumentCaptor<List<FeaturedMatch>> featuredMatchesCaptor;
+
     @Test
     void 경기_시작일_기준_displayDate가_설정되고_해당_타입의_다음_displayOrder로_저장된다() {
 
-        Match match = generateMatch(1L, 2026, 7, 23, 15, 50);
+        Match match1 = generateFootballMatch(1L, 2026, 7, 23, 15, 50);
+        Match match2 = generateFootballMatch(2L, 2026, 7, 23, 16, 50);
+        Match match3 = generateFootballMatch(3L, 2026, 7, 23, 17, 50);
 
-        given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
-        given(featuredMatchRepository.existsByMatchId(match.getId())).willReturn(false);
+        List<Match> matches = List.of(match1, match2, match3);
+        List<Long> matchIds = matches.stream().map(Match::getId).toList();
+
+        given(matchRepository.findAllByIdsOrderByStartAt(matchIds)).willReturn(matches);
+        given(featuredMatchRepository.findRegisteredMatchIds(matchIds)).willReturn(List.of());
         given(featuredMatchRepository.findMaxDisplayOrder(
                 LocalDate.of(2026, 7, 23),
                 PINNED
         )).willReturn(Optional.of(3));
 
-        service.createFeaturedMatch(match.getId(), PINNED);
+        service.createFeaturedMatch(matchIds, PINNED);
 
-        ArgumentCaptor<FeaturedMatch> captor = ArgumentCaptor.forClass(FeaturedMatch.class);
-        then(featuredMatchRepository).should().save(captor.capture());
+        then(featuredMatchRepository).should().saveAll(featuredMatchesCaptor.capture());
+        then(featuredMatchRepository).should(never()).findByDisplayDateWithMatch(any());
 
-        FeaturedMatch saved = captor.getValue();
-        assertThat(saved.getMatchId()).isEqualTo(1L);
-        assertThat(saved.getDisplayDate()).isEqualTo(LocalDate.of(2026, 7, 23));
-        assertThat(saved.getDisplayOrder()).isEqualTo(4);
+        List<FeaturedMatch> featuredMatches = featuredMatchesCaptor.getValue();
+        assertThat(featuredMatches)
+                .extracting(FeaturedMatch::getMatchId, FeaturedMatch::getDisplayDate, FeaturedMatch::getDisplayOrder, FeaturedMatch::getType)
+                .containsExactly(
+                        tuple(1L, LocalDate.of(2026, 7, 23), 4, PINNED),
+                        tuple(2L, LocalDate.of(2026, 7, 23), 5, PINNED),
+                        tuple(3L, LocalDate.of(2026, 7, 23), 6, PINNED)
+                );
     }
 
     @Test
     void 이미_등록된_경기를_등록하면_FEATURED_MATCH_ALREADY_EXISTS_예외가_발생한다() {
-        Match match = generateMatch(1L, 2026, 7, 23, 15, 50);
+        Match match = generateFootballMatch(1L, 2026, 7, 23, 15, 50);
+        List<Match> matches = List.of(match);
+        List<Long> matchIds = matches.stream().map(Match::getId).toList();
 
-        given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
-        given(featuredMatchRepository.existsByMatchId(match.getId())).willReturn(true);
+        given(matchRepository.findAllByIdsOrderByStartAt(matchIds)).willReturn(matches);
+        given(featuredMatchRepository.findRegisteredMatchIds(matchIds)).willReturn(List.of(1L));
 
-        assertThatThrownBy(() -> service.createFeaturedMatch(match.getId(), HOT_MATCH))
+        assertThatThrownBy(() -> service.createFeaturedMatch(matchIds, HOT_MATCH))
                 .isInstanceOf(BusinessException.class);
     }
 
     @Test
-    void 등록_후보_조회시_이미_등록된_경기는_registerable_false이고_시작시간은_HHmm으로_반환된다() {
-        Match m1 = generateMatch(1L, 2026, 7, 23, 15, 50);  // 상단고정,핫매치 이미 등록
-        Match m2 = generateMatch(2L, 2026, 7, 23, 20, 0);
-        Match m3 = generateMatch(3L, 2026, 7, 23, 18, 0);   // 상단고정,핫매치 이미 등록
+    void 등록_후보_조회시_이미_등록된_경기는_registerable_false이고_경기_예정_일시는_전체값으로_반환된다() {
+        Match m1 = generateFootballMatch(1L, 2026, 7, 23, 15, 50);  // 상단고정,핫매치 이미 등록
+        Match m2 = generateFootballMatch(2L, 2026, 7, 23, 20, 0);
+        Match m3 = generateFootballMatch(3L, 2026, 7, 23, 18, 0);   // 상단고정,핫매치 이미 등록
 
         given(matchRepository.findMatchesByDateRange(
                 LocalDate.of(2026, 7, 23).atStartOfDay(),
@@ -93,12 +112,31 @@ class AdminFeaturedMatchServiceTest {
         assertThat(responseList)
                 .extracting(FeaturedMatchCandidateResponse::getMatchId,
                         FeaturedMatchCandidateResponse::isRegisterable,
-                        FeaturedMatchCandidateResponse::getStartTime)
+                        FeaturedMatchCandidateResponse::getStartAt)
                 .containsExactly(
-                        tuple(1L, false, "15:50"),
-                        tuple(2L, true, "20:00"),
-                        tuple(3L, false, "18:00")
+                        tuple(1L, false, LocalDateTime.of(2026, 7, 23, 15, 50)),
+                        tuple(2L, true, LocalDateTime.of(2026, 7, 23, 20, 0)),
+                        tuple(3L, false, LocalDateTime.of(2026, 7, 23, 18, 0))
                 );
+    }
+
+    @Test
+    void 등록_경기_조회시_최상위_조회날짜와_경기별_예정_일시_전체값을_반환한다() {
+        LocalDate displayDate = LocalDate.of(2026, 7, 23);
+        Match match = generateFootballMatch(1L, 2026, 7, 23, 20, 30);
+        FeaturedMatch featuredMatch = generateFeaturedMatch(1L, match.getId(), displayDate, PINNED, 1);
+        ReflectionTestUtils.setField(featuredMatch, "match", match);
+
+        given(featuredMatchRepository.findByDisplayDateWithMatch(displayDate))
+                .willReturn(List.of(featuredMatch));
+
+        FeaturedMatchesResponse response = service.searchFeaturedMatches(displayDate);
+
+        assertThat(response.getDate()).isEqualTo("20260723");
+        assertThat(response.getPinnedMatches())
+                .singleElement()
+                .extracting(item -> item.getStartAt())
+                .isEqualTo(LocalDateTime.of(2026, 7, 23, 20, 30));
     }
 
     @Test
@@ -271,9 +309,11 @@ class AdminFeaturedMatchServiceTest {
         return featuredMatch;
     }
 
-    private Match generateMatch(Long id, int year, int month, int day, int hour, int minute) {
+    private Match generateFootballMatch(Long id, int year, int month, int day, int hour, int minute) {
         return Match.builder()
                 .id(id)
+                .sport(Sport.builder().id(1L).sportCode(SportCode.FOOTBALL).kName("축구").eName("football").build())
+                .sportId(1L)
                 .startAt(LocalDateTime.of(year, month, day, hour, minute))
                 .league(League.builder()
                         .kName("리그" + id)

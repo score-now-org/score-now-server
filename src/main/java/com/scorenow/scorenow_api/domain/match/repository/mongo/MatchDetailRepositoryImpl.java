@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository.mongo;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -9,10 +10,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
-import static com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -36,71 +36,46 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public void upsertCurrentCommentary(Long matchId, String content, String commentaryId) {
+    public void updateCurrentCommentary(Long matchId, String content, String commentaryId, boolean highlighted) {
         Query query = new Query(Criteria.where("_id").is(matchId));
+        LocalDateTime now = LocalDateTime.now();
+
         Update update = new Update()
                 .set("currentCommentary", content)
                 .set("currentCommentaryId", commentaryId)
-                .setOnInsert("_id", matchId);
+                .set("currentCommentaryHighlighted", highlighted)
+                .set("updated_at", now);
 
-        mongoTemplate.upsert(query, update, MatchDetailDocument.class);
+        mongoTemplate.updateFirst(query, update, MatchDetailDocument.class);
     }
 
     @Override
     public void upsertMatchDetail(MatchDetailDocument matchDetailDocument) {
         Query query = new Query(Criteria.where("_id").is(matchDetailDocument.getId()));
-        Update update = new Update();
+        LocalDateTime now = LocalDateTime.now();
 
-        // 홈팀 골 및 스텟 정보
-        update.set("homeScore", matchDetailDocument.getHomeScore());
-        if (matchDetailDocument.getHomeShootOutScore() != null) {
-            update.set("homeShootOutScore", matchDetailDocument.getHomeShootOutScore());
-        }
-        update.set("homeStats", matchDetailDocument.getHomeStats());
-
-        // 어웨이팀 골 및 스텟 정보
-        update.set("awayScore", matchDetailDocument.getAwayScore());
-        if (matchDetailDocument.getAwayShootOutScore() != null) {
-            update.set("awayShootOutScore", matchDetailDocument.getAwayShootOutScore());
-        }
-        update.set("awayStats", matchDetailDocument.getAwayStats());
-
-        // 추가시간의 경우 기존에 저장한 전반 추가시간이나 후반 추가시간이 사라지면 안되기 때문에, 값을 확인하고 부분적으로 수정해주는 방식으로 한다.
-        AdditionalTime additionalTime = matchDetailDocument.getAdditionalTime();
-        if (additionalTime != null) {
-            Integer firstHalf = additionalTime.getFirstHalf();
-            Integer secondHalf = additionalTime.getSecondHalf();
-            Integer extraFirstHalf = additionalTime.getExtraFirstHalf();
-            Integer extraSecondHalf = additionalTime.getExtraSecondHalf();
-
-            if (firstHalf != null) {
-                update.set("additionalTime.firstHalf", firstHalf);
-            }
-
-            if (secondHalf != null) {
-                update.set("additionalTime.secondHalf", secondHalf);
-            }
-
-            if (extraFirstHalf != null) {
-                update.set("additionalTime.extraFirstHalf", extraFirstHalf);
-            }
-
-            if (extraSecondHalf != null) {
-                update.set("additionalTime.extraSecondHalf", extraSecondHalf);
-            }
-        }
+        Update update = new Update()
+                .setOnInsert("created_at", now)
+                .set("type", matchDetailDocument.getType())               // 종목 타입
+                .set("sportDetail", matchDetailDocument.getSportDetail())  // 종목 별 상세 정보
+                .set("updated_at", now);
 
         mongoTemplate.upsert(query, update, MatchDetailDocument.class);
     }
 
     @Override
-    public void upsertMatchClock(Long matchId, MatchClock matchClock) {
+    public void createInitialMatchDetailIfAbsent(Long matchId, SportDetailType type) {
         Query query = new Query(Criteria.where("_id").is(matchId));
-        Update update = new Update();
+        LocalDateTime now = LocalDateTime.now();
 
-        update.set("matchClock", matchClock);
-        update.setOnInsert("_id", matchId);
+        Update update = new Update()
+                .setOnInsert("_id", matchId)
+                .setOnInsert("type", type)
+                .setOnInsert("currentCommentaryHighlighted", false)    // boolean 타입이므로 기본값 세팅이 필요
+                .setOnInsert("created_at", now)
+                .setOnInsert("updated_at", now);
 
         mongoTemplate.upsert(query, update, MatchDetailDocument.class);
     }
+
 }

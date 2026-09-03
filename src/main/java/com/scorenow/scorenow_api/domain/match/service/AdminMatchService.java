@@ -1,18 +1,30 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.List;
+import java.util.Objects;
+
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
+import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
+import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
+import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSearchCondition;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchSearchOptionsResponse;
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchTeamCandidateResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
@@ -32,12 +44,16 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class AdminMatchService {
 
+    /* 수동 경기 등록 과정에서 팀명 조회 시 최대 조회 결과 수 */
+    private static final int TEAM_CANDIDATE_LIMIT = 10;
+
     private final MatchRepository matchRepository;
+    private final MatchDetailRepository matchDetailRepository;
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
 
-    private final AdminFeaturedMatchService adminFeaturedMatchService;
+    private final MatchScheduledStartAtUpdater matchScheduledStartAtUpdater;
 
     private final MatchMapper matchMapper;
 
@@ -45,12 +61,38 @@ public class AdminMatchService {
 
     private final MatchRealtimeEventPublisher eventPublisher;
 
+    private final MatchStatusDisplayResolver matchStatusDisplayResolver;
+
     /**
      * 경기 리스트 조회
      */
     public Page<MatchListResponse> getMatches(MatchSearchCondition condition, Pageable pageable) {
         return matchRepository.searchMatches(condition, pageable)
                 .map(matchMapper::toResponse);
+    }
+
+    /**
+     * 경기 리스트 검색 옵션 조회
+     */
+    public AdminMatchSearchOptionsResponse getSearchOptions() {
+        return AdminMatchSearchOptionsResponse.of(
+                sportRepository.findAll(),
+                leagueRepository.findAll());
+    }
+
+    /**
+     * 경기 등록용 팀 후보 검색
+     */
+    public List<MatchTeamCandidateResponse> getTeamCandidates(String keyword, Long sportId) {
+
+        return teamRepository.searchMatchTeamCandidates(
+                        sportId,
+                        normalize(keyword),
+                        PageRequest.of(0, TEAM_CANDIDATE_LIMIT)
+                )
+                .stream()
+                .map(MatchTeamCandidateResponse::from)
+                .toList();
     }
 
     /**
@@ -63,7 +105,7 @@ public class AdminMatchService {
      * League 로 추론이 불가능한 경우, 기본값인 HOME_AWAY 들어감.
      */
     @Transactional
-    public MatchListResponse createMatch(MatchCreateRequest request) {
+    public void createMatch(MatchCreateRequest request) {
         validateMatchCreateRequest(request);
 
         Match match = matchMapper.toEntity(request);
@@ -75,13 +117,12 @@ public class AdminMatchService {
         TeamDisplayOrder teamDisplayOrder = matchTeamDisplayOrderPolicy.decide(league);
         match.updateTeamDisplayOrder(teamDisplayOrder);
 
-        matchRepository.save(match);
+        Match savedMatch = matchRepository.save(match);
+
+        SportDetailType type = SportDetailType.fromSportId(savedMatch.getSportId());
+        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), type);
 
         log.info("수동 경기 등록 완료 - matchId: {}", match.getId());
-
-        return matchRepository.findByIdWithRelations(match.getId())
-                .map(matchMapper::toResponse)
-                .orElseGet(() -> matchMapper.toResponse(match));
     }
 
     /**
@@ -99,21 +140,36 @@ public class AdminMatchService {
     // === Validation Methods ===
 
     private void validateMatchCreateRequest(MatchCreateRequest request) {
+        // 1. 리그가 존재하지 않는 경우
         if (!leagueRepository.existsById(request.getLeagueId())) {
             throw new BusinessException(ErrorCode.LEAGUE_NOT_FOUND);
         }
+
+        // 2. 존재하지 않는 팀인 경우
         if (!teamRepository.existsByIdAndIsActiveTrue(request.getHomeId())) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "홈팀을 찾을 수 없습니다.");
         }
+
         if (!teamRepository.existsByIdAndIsActiveTrue(request.getAwayId())) {
             throw new BusinessException(ErrorCode.TEAM_NOT_FOUND, "원정팀을 찾을 수 없습니다.");
         }
-        if (request.getSportId() != null && !sportRepository.existsById(request.getSportId())) {
+
+        // 3. 존재하지 않는 종목인 경우
+        if (request.getSportId() == null || !sportRepository.existsById(request.getSportId())) {
             throw new BusinessException(ErrorCode.SPORT_NOT_FOUND);
+        }
+
+        // 4. 홈팀과 어웨이팀이 동일한 경우
+        if (request.getHomeId().equals(request.getAwayId())) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "홈팀과 어웨이팀이 같습니다.");
         }
     }
 
     // === Helper Methods ===
+
+    private String normalize(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
 
     private Match findMatchById(Long matchId) {
         return matchRepository.findById(matchId)
@@ -122,25 +178,28 @@ public class AdminMatchService {
 
     private void applyUpdates(Match match, MatchUpdateRequest request) {
         if (request.getStartAt() != null) {
-
-            // 일자 기준 변경이 발생했을 때, 상단고정/핫매치 설정 해제 처리
-            if (match.isStartDateChanged(request.getStartAt())) {
-                adminFeaturedMatchService.deleteFeaturedMatchByMatchId(match.getId());
-            }
-
-            match.updateStartAt(request.getStartAt());
+            matchScheduledStartAtUpdater.update(match, request.getStartAt());
         }
 
-        if (request.getStatusCode() != null) {
-            updateMatchStatusAndPublishEvent(match, MatchStatus.valueOf(request.getStatusCode()));
-        }
-
+        /* TODO: 점수 수정 없어질 수 있음. 참고*/
         if (request.getHomeScore() != null) {
             match.updateHomeScore(request.getHomeScore());
         }
 
         if (request.getAwayScore() != null) {
             match.updateAwayScore(request.getAwayScore());
+        }
+
+        if (request.getStatusCode() != null) {
+            updateMatchStatusAndPublishEvent(match, request.getStatusCode());
+        }
+
+        if (request.getIsManual() != null) {
+            // 수동 관리 경기의 경우에는 자동 관리 경기로 전환이 불가능하다.
+            if (match.getDataOrigin() == DataOrigin.MANUAL && !request.getIsManual()) {
+                throw new BusinessException(ErrorCode.INVALID_PARAMETER, "수동 등록 경기는 자동 관리 경기로 전환할 수 없습니다.");
+            }
+            match.updateIsManual(request.getIsManual());
         }
 
         if (request.getIsActive() != null) {
@@ -153,24 +212,18 @@ public class AdminMatchService {
     }
 
     private void updateMatchStatusAndPublishEvent(Match match, MatchStatus newStatus) {
-        try {
-            if (match.getStatusCode() == newStatus) {
-                return;
-            }
 
-            match.updateStatus(newStatus);
-
-            if (newStatus == MatchStatus.ENDED) {
-                eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, match.getResultByScore());
-                return;
-            }
-
-            eventPublisher.publishMatchStatusChanged(match.getId(), newStatus);
-
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.MATCH_INVALID_STATUS);
+        if (Objects.equals(match.getStatusCode(), newStatus)) {
+            return;
         }
 
+        match.updateStatus(newStatus);
+
+        MatchDetailDocument matchDetailDocument = matchDetailRepository.findById(match.getId())
+                .orElse(null);
+
+        MatchStatusDisplayResponse matchStatusDisplayResponse = matchStatusDisplayResolver.resolve(match, matchDetailDocument);
+        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, matchStatusDisplayResponse.getDisplayText());
     }
 
 

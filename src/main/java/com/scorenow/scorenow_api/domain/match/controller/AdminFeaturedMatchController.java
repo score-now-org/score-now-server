@@ -55,13 +55,14 @@ public class AdminFeaturedMatchController implements AdminFeaturedMatchApiDocs {
      * 상단고정/핫매치 등록
      */
     @PostMapping
-    public ApiResponse<FeaturedMatchesResponse> createFeaturedMatch(
+    public ApiResponse<Void> createFeaturedMatch(
             @Valid @RequestBody FeaturedMatchCreateRequest request) {
 
-        FeaturedMatchesResponse result = adminFeaturedMatchService.createFeaturedMatch(
-                request.getMatchId(),
+        adminFeaturedMatchService.createFeaturedMatch(
+                request.getMatchIds(),
                 request.getType());
-        return ApiResponse.success(result);
+
+        return ApiResponse.success();
     }
 
     /**
