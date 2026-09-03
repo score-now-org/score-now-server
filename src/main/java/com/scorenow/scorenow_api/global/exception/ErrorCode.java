@@ -60,7 +60,11 @@ public enum ErrorCode {
 	CHAT_SEND_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CH001", "채팅 전송에는 로그인이 필요합니다."),
 	CHAT_MESSAGE_INVALID(HttpStatus.BAD_REQUEST, "CH002", "채팅 메시지가 올바르지 않습니다."),
 	CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CH003", "채팅방을 찾을 수 없습니다."),
-	CHAT_MESSAGE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "CH004", "채팅 메시지는 1000자를 초과할 수 없습니다.");
+	CHAT_MESSAGE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "CH004", "채팅 메시지는 1000자를 초과할 수 없습니다."),
+
+	// Push
+	PUSH_INVALID_LANDING(HttpStatus.BAD_REQUEST, "P001", "푸시 랜딩 정보가 올바르지 않습니다."),
+	PUSH_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P002", "푸시 발송에 실패했습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;
