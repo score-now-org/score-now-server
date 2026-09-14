@@ -76,7 +76,7 @@ public enum ErrorCode {
 
 	// Push
 	PUSH_INVALID_LANDING(HttpStatus.BAD_REQUEST, "P001", "푸시 랜딩 정보가 올바르지 않습니다."),
-	PUSH_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P002", "푸시 발송에 실패했습니다.");
+	PUSH_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P002", "푸시 발송에 실패했습니다."),
 
 	// Community
 	COMMUNITY_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CO001", "커뮤니티 기능은 로그인이 필요합니다."),
