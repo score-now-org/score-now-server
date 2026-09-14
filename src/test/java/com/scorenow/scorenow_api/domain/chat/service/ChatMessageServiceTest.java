@@ -45,7 +45,11 @@ class ChatMessageServiceTest {
 		Long matchId = 1L;
 		Long userId = 10L;
 		Match match = Match.builder().id(matchId).build();
-		User user = User.builder().id(userId).nickname("score-user").build();
+		User user = User.builder()
+			.id(userId)
+			.nickname("score-user")
+			.profileImageUrl("https://cdn.score-now.com/profiles/10.png")
+			.build();
 		LocalDateTime createdAt = LocalDateTime.of(2026, 6, 2, 20, 15);
 
 		given(matchReferenceService.requireMatch(matchId)).willReturn(match);
@@ -67,8 +71,10 @@ class ChatMessageServiceTest {
 		assertThat(savedMessage.getUserId()).isEqualTo(userId);
 		assertThat(savedMessage.getSenderNickname()).isEqualTo("score-user");
 		assertThat(savedMessage.getMessage()).isEqualTo("hello score now");
+		assertThat(response.getChatId()).isEqualTo(100L);
 		assertThat(response.getMatchId()).isEqualTo(matchId);
 		assertThat(response.getSenderNickname()).isEqualTo("score-user");
+		assertThat(response.getProfileImageUrl()).isEqualTo("https://cdn.score-now.com/profiles/10.png");
 		assertThat(response.getMessage()).isEqualTo("hello score now");
 		assertThat(response.getCreatedAt()).isEqualTo(createdAt);
 	}
