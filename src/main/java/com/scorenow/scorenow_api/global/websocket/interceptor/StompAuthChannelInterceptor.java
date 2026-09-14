@@ -8,6 +8,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -18,6 +19,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 	private static final Pattern CHAT_SEND_DESTINATION = Pattern.compile("^/pub/matches/\\d+/chat/messages$");
 	private static final Pattern CHAT_SUBSCRIBE_DESTINATION = Pattern.compile("^/sub/matches/\\d+/chat/messages$");
+	private static final String USER_ERROR_SUBSCRIBE_DESTINATION = "/user/queue/errors";
 
 	private final StompJwtAuthenticator stompJwtAuthenticator;
 
@@ -27,7 +29,11 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 	@Override
 	public Message<?> preSend(Message<?> message, MessageChannel channel) {
-		StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+		StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+		if (accessor == null) {
+			return message;
+		}
+
 		StompCommand command = accessor.getCommand();
 
 		if (StompCommand.CONNECT.equals(command)) {
@@ -36,7 +42,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 			validateDestination(accessor.getDestination(), CHAT_SEND_DESTINATION);
 			validateAuthenticatedUser(accessor.getUser());
 		} else if (StompCommand.SUBSCRIBE.equals(command)) {
-			validateDestination(accessor.getDestination(), CHAT_SUBSCRIBE_DESTINATION);
+			validateSubscribeDestination(accessor.getDestination());
 		}
 
 		return message;
@@ -46,6 +52,14 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 		if (destination == null || !allowedPattern.matcher(destination).matches()) {
 			throw new BusinessException(ErrorCode.INVALID_PARAMETER);
 		}
+	}
+
+	private void validateSubscribeDestination(String destination) {
+		if (USER_ERROR_SUBSCRIBE_DESTINATION.equals(destination)) {
+			return;
+		}
+
+		validateDestination(destination, CHAT_SUBSCRIBE_DESTINATION);
 	}
 
 	private void validateAuthenticatedUser(Principal user) {

@@ -45,8 +45,10 @@ class ChatMessageControllerTest {
 		Long userId = 10L;
 		ChatMessageRequest request = request("hello score now");
 		ChatMessageResponse response = ChatMessageResponse.builder()
+			.chatId(100L)
 			.matchId(matchId)
 			.senderNickname("score-user")
+			.profileImageUrl("https://cdn.score-now.com/profiles/10.png")
 			.message("hello score now")
 			.createdAt(LocalDateTime.of(2026, 6, 30, 20, 15))
 			.build();

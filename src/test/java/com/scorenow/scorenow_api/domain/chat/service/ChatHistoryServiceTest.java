@@ -56,6 +56,10 @@ class ChatHistoryServiceTest {
 		assertThat(response.getMessages()).hasSize(2);
 		assertThat(response.getMessages()).extracting(ChatMessageResponse::getMessage)
 			.containsExactly("message-5", "message-4");
+		assertThat(response.getMessages()).extracting(ChatMessageResponse::getChatId)
+			.containsExactly(5L, 4L);
+		assertThat(response.getMessages()).extracting(ChatMessageResponse::getProfileImageUrl)
+			.containsExactly("https://cdn.score-now.com/profiles/10.png", "https://cdn.score-now.com/profiles/10.png");
 		assertThat(response.getNextCursor()).isEqualTo(4L);
 		assertThat(response.isHasNext()).isTrue();
 		then(chatMessageRepository).should(never())
@@ -117,7 +121,11 @@ class ChatHistoryServiceTest {
 
 	private ChatMessage message(Long id, Long matchId, String content) {
 		Match match = Match.builder().id(matchId).build();
-		User user = User.builder().id(10L).nickname("score-user").build();
+		User user = User.builder()
+			.id(10L)
+			.nickname("score-user")
+			.profileImageUrl("https://cdn.score-now.com/profiles/10.png")
+			.build();
 		ChatMessage chatMessage = ChatMessage.create(match, user, content);
 		ReflectionTestUtils.setField(chatMessage, "id", id);
 		ReflectionTestUtils.setField(chatMessage, "createdAt", LocalDateTime.of(2026, 6, 2, 20, id.intValue()));
