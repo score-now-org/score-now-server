@@ -104,6 +104,23 @@ class ChatHistoryServiceTest {
 	}
 
 	@Test
+	void getMessages_returns_message_when_user_association_is_null() {
+		Long matchId = 1L;
+		ChatMessage chatMessage = message(5L, matchId, "message-5");
+		ReflectionTestUtils.setField(chatMessage, "user", null);
+		given(matchReferenceService.requireMatch(matchId)).willReturn(Match.builder().id(matchId).build());
+		given(chatMessageRepository.findByMatch_IdOrderByIdDesc(matchId, PageRequest.of(0, 31)))
+			.willReturn(List.of(chatMessage));
+
+		ChatMessageSliceResponse response = chatHistoryService.getMessages(matchId, null, 30);
+
+		assertThat(response.getMessages()).singleElement().satisfies(message -> {
+			assertThat(message.getSenderNickname()).isEqualTo("score-user");
+			assertThat(message.getProfileImageUrl()).isNull();
+		});
+	}
+
+	@Test
 	void getMessages_fails_when_size_is_less_than_one() {
 		assertThatExceptionOfType(BusinessException.class)
 			.isThrownBy(() -> chatHistoryService.getMessages(1L, null, 0))

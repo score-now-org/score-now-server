@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.chat.dto;
 import java.time.LocalDateTime;
 
 import com.scorenow.scorenow_api.domain.chat.entity.ChatMessage;
+import com.scorenow.scorenow_api.domain.user.entity.User;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -32,11 +33,13 @@ public class ChatMessageResponse {
 	private LocalDateTime createdAt;
 
 	public static ChatMessageResponse of(ChatMessage chatMessage, Long matchId) {
+		User user = chatMessage.getUser();
+
 		return ChatMessageResponse.builder()
 			.chatId(chatMessage.getId())
 			.matchId(matchId)
 			.senderNickname(chatMessage.getSenderNickname())
-			.profileImageUrl(chatMessage.getUser().getProfileImageUrl())
+			.profileImageUrl(user != null ? user.getProfileImageUrl() : null)
 			.message(chatMessage.getMessage())
 			.createdAt(chatMessage.getCreatedAt())
 			.build();
