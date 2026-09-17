@@ -77,9 +77,8 @@ public class GcsService implements FileStorage {
 
         try {
             boolean deleted = storage.delete(bucketName, objectName);
-
             if (!deleted) {
-                throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+                log.warn("GCS에서 삭제할 파일을 찾을 수 없습니다. objectName: {}", objectName);
             }
 
         } catch (StorageException e) {
