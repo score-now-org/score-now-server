@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.chat.entity;
 import static org.assertj.core.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.user.entity.User;
@@ -61,5 +62,17 @@ class ChatMessageTest {
 		assertThatExceptionOfType(BusinessException.class)
 			.isThrownBy(() -> ChatMessage.create(match, sender, overLimitMessage))
 			.satisfies(exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_MESSAGE_LENGTH_EXCEEDED));
+	}
+
+	@Test
+	void getUserId_returns_null_when_user_association_is_absent() {
+		ChatMessage chatMessage = ChatMessage.create(
+			Match.builder().id(1L).build(),
+			User.builder().id(10L).nickname("score-user").build(),
+			"message"
+		);
+		ReflectionTestUtils.setField(chatMessage, "user", null);
+
+		assertThat(chatMessage.getUserId()).isNull();
 	}
 }

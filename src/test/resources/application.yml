@@ -1,0 +1,38 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: false
+  cloud:
+    aws:
+      credentials:
+        access-key: test-access-key
+        secret-key: test-secret-key
+      region:
+        static: ap-northeast-2
+      s3:
+        bucket: test-bucket
+
+firebase:
+  enabled: false
+
+scheduling:
+  enabled: false
+
+betsapi:
+  base-url: https://example.com
+  token: test-token
+  connect-timeout: 1
+  read-timeout: 1
+
+jwt:
+  secret: test-jwt-secret-must-be-at-least-32-characters
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost

@@ -29,9 +29,9 @@ public class ChatMessage extends BaseEntity {
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Match match;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_chat_messages_user"))
-	@OnDelete(action = OnDeleteAction.CASCADE)
+	@ManyToOne(fetch = FetchType.LAZY, optional = true)
+	@JoinColumn(name = "user_id", nullable = true, foreignKey = @ForeignKey(name = "fk_chat_messages_user"))
+	@OnDelete(action = OnDeleteAction.SET_NULL)
 	private User user;
 
 	@Column(name = "sender_nickname", nullable = false)
@@ -45,7 +45,7 @@ public class ChatMessage extends BaseEntity {
 	}
 
 	public Long getUserId() {
-		return user.getId();
+		return user != null ? user.getId() : null;
 	}
 
 	public static ChatMessage create(Match match, User sender, String message) {
