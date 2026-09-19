@@ -45,7 +45,7 @@ spring:
       stack:
         auto: false
 gcs:
-  bucket: ${GCS_BUCKET}
+  bucket: ${GCS_BUCKET:scorenow-images}
 
 logging:
   level:
