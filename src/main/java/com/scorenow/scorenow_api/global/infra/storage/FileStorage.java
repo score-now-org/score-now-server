@@ -12,4 +12,10 @@ public interface FileStorage {
     default String getFileUrl(String key) {
         return key;
     }
+
+    default void deleteFile(String key) {
+    }
+
+    default void deleteFileByUrl(String fileUrl) {
+    }
 }
