@@ -48,6 +48,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/community/comments/*").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/community/posts/*/reaction").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/posts/*/reports").authenticated()
+                        // 비로그인 사용자가 조회할 수 있는 커뮤니티/채팅 읽기 API
+                        .requestMatchers(HttpMethod.GET, "/api/v1/community/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/chat/*/history").permitAll()
                         // Swagger 관련 리소스 전체 접근 허용
                         .requestMatchers(
                                 "/v3/api-docs/**",
