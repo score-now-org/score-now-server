@@ -20,6 +20,9 @@ spring:
 firebase:
   enabled: false
 
+gcs:
+  bucket: test-bucket
+
 scheduling:
   enabled: false
 

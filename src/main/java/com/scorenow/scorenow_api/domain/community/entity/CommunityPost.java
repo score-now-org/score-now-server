@@ -42,7 +42,7 @@ public class CommunityPost extends BaseEntity {
 
 	public static final int MAX_TITLE_LENGTH = 100;
 	public static final int MAX_CONTENT_LENGTH = 5000;
-	public static final int POPULAR_RECOMMENDATION_WEIGHT = 10;
+	public static final int POPULAR_LIKE_WEIGHT = 10;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -153,12 +153,8 @@ public class CommunityPost extends BaseEntity {
 		this.reportCount++;
 	}
 
-	public long getRecommendationCount() {
-		return likeCount + dislikeCount;
-	}
-
 	public long getRawPopularScore() {
-		return viewCount + getRecommendationCount() * POPULAR_RECOMMENDATION_WEIGHT;
+		return viewCount + likeCount * POPULAR_LIKE_WEIGHT;
 	}
 
 	public double getPopularScore(LocalDateTime now) {

@@ -11,6 +11,7 @@ import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostImage;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostImageRepository;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostRepository;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityUploadedImageRepository;
 import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.service.UserReferenceService;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -29,12 +30,14 @@ public class CommunityPostCommandService {
 	private final CommunityReferenceService referenceService;
 	private final CommunityPostRepository postRepository;
 	private final CommunityPostImageRepository imageRepository;
+	private final CommunityUploadedImageRepository uploadedImageRepository;
 
 	@Transactional
 	public Long createPost(Long userId, CommunityPostCreateRequest request) {
 		Long loginUserId = authService.requireLogin(userId);
 		User author = userReferenceService.requireActiveUser(loginUserId);
 		List<String> imageKeys = normalizeImageKeys(request.getImageKeys());
+		validateImageOwnership(loginUserId, imageKeys);
 
 		CommunityPost post = CommunityPost.create(author, request.getCategory(), request.getTitle(),
 			request.getContent());
@@ -47,6 +50,7 @@ public class CommunityPostCommandService {
 	public void updatePost(Long postId, Long userId, CommunityPostUpdateRequest request) {
 		Long loginUserId = authService.requireLogin(userId);
 		List<String> imageKeys = normalizeImageKeys(request.getImageKeys());
+		validateImageOwnership(loginUserId, imageKeys);
 		CommunityPost post = referenceService.requireActivePost(postId);
 
 		post.update(loginUserId, request.getCategory(), request.getTitle(), request.getContent());
@@ -85,5 +89,11 @@ public class CommunityPostCommandService {
 			})
 			.distinct()
 			.toList();
+	}
+
+	private void validateImageOwnership(Long userId, List<String> imageKeys) {
+		if (!imageKeys.isEmpty() && uploadedImageRepository.countByImageKeyInAndOwner_Id(imageKeys, userId) != imageKeys.size()) {
+			throw new BusinessException(ErrorCode.COMMUNITY_IMAGE_INVALID);
+		}
 	}
 }

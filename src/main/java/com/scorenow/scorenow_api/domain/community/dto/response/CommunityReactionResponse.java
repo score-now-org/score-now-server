@@ -13,7 +13,6 @@ public class CommunityReactionResponse {
 	private CommunityReactionType currentReaction;
 	private long likeCount;
 	private long dislikeCount;
-	private long recommendationCount;
 
 	public static CommunityReactionResponse of(Long postId, CommunityReactionType currentReaction, long likeCount,
 		long dislikeCount) {
@@ -22,7 +21,6 @@ public class CommunityReactionResponse {
 			.currentReaction(currentReaction)
 			.likeCount(likeCount)
 			.dislikeCount(dislikeCount)
-			.recommendationCount(likeCount + dislikeCount)
 			.build();
 	}
 }

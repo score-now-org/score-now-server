@@ -31,6 +31,7 @@ import lombok.NoArgsConstructor;
 	name = "community_comments",
 	indexes = {
 		@Index(name = "idx_community_comments_post_id_id", columnList = "post_id, id"),
+		@Index(name = "idx_community_comments_post_status_like_id", columnList = "post_id, status, like_count, id"),
 		@Index(name = "idx_community_comments_root_id", columnList = "root_comment_id")
 	}
 )
@@ -65,6 +66,9 @@ public class CommunityComment extends BaseEntity {
 
 	@Column(nullable = false)
 	private int depth;
+
+	@Column(name = "like_count", nullable = false)
+	private long likeCount;
 
 	@Lob
 	@Column(nullable = false, columnDefinition = "TEXT")

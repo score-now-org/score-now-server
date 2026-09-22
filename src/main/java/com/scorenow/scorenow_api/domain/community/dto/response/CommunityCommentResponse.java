@@ -19,6 +19,7 @@ public class CommunityCommentResponse {
 	private Long rootCommentId;
 	private int depth;
 	private String content;
+	private long likeCount;
 	private LocalDateTime createdAt;
 
 	public static CommunityCommentResponse of(CommunityComment comment) {
@@ -31,6 +32,7 @@ public class CommunityCommentResponse {
 			.rootCommentId(comment.getRootCommentId())
 			.depth(comment.getDepth())
 			.content(comment.getContent())
+			.likeCount(comment.getLikeCount())
 			.createdAt(comment.getCreatedAt())
 			.build();
 	}

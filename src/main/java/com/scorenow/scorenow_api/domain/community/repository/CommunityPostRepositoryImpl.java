@@ -86,9 +86,8 @@ public class CommunityPostRepositoryImpl implements CommunityPostRepositoryCusto
 	}
 
 	private OrderSpecifier<?>[] popularCandidateOrder() {
-		NumberExpression<Long> recommendationCount = communityPost.likeCount.add(communityPost.dislikeCount);
 		NumberExpression<Long> popularScore = communityPost.viewCount.add(
-			recommendationCount.multiply(CommunityPost.POPULAR_RECOMMENDATION_WEIGHT)
+			communityPost.likeCount.multiply(CommunityPost.POPULAR_LIKE_WEIGHT)
 		);
 
 		return new OrderSpecifier[] {

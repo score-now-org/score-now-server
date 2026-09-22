@@ -27,7 +27,7 @@ public class CommunityImageController {
 		@AuthenticationPrincipal Long userId,
 		@RequestPart("image") MultipartFile image
 	) {
-		authService.requireLogin(userId);
-		return ApiResponse.success(communityImageService.uploadImage(image));
+		Long loginUserId = authService.requireLogin(userId);
+		return ApiResponse.success(communityImageService.uploadImage(loginUserId, image));
 	}
 }

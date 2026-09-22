@@ -23,16 +23,13 @@ public class CommunityPostDetailResponse {
 	private long viewCount;
 	private long likeCount;
 	private long dislikeCount;
-	private long recommendationCount;
 	private long commentCount;
 	private long reportCount;
-	private double popularScore;
 	private List<CommunityPostImageResponse> images;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
-	public static CommunityPostDetailResponse of(CommunityPost post, List<CommunityPostImageResponse> images,
-		LocalDateTime now) {
+	public static CommunityPostDetailResponse of(CommunityPost post, List<CommunityPostImageResponse> images) {
 		return CommunityPostDetailResponse.builder()
 			.id(post.getId())
 			.category(post.getCategory())
@@ -44,10 +41,8 @@ public class CommunityPostDetailResponse {
 			.viewCount(post.getViewCount())
 			.likeCount(post.getLikeCount())
 			.dislikeCount(post.getDislikeCount())
-			.recommendationCount(post.getRecommendationCount())
 			.commentCount(post.getCommentCount())
 			.reportCount(post.getReportCount())
-			.popularScore(post.getPopularScore(now))
 			.images(images)
 			.createdAt(post.getCreatedAt())
 			.updatedAt(post.getUpdatedAt())

@@ -5,9 +5,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.community.dto.request.CommunityReportCreateRequest;
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityReportResponse;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityComment;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityCommentReport;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostReport;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostStatus;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityCommentReportRepository;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostReportRepository;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostRepository;
 import com.scorenow.scorenow_api.domain.user.entity.User;
@@ -24,6 +27,7 @@ public class CommunityReportService {
 	private final CommunityAuthService authService;
 	private final UserReferenceService userReferenceService;
 	private final CommunityReferenceService referenceService;
+	private final CommunityCommentReportRepository commentReportRepository;
 	private final CommunityPostReportRepository reportRepository;
 	private final CommunityPostRepository postRepository;
 
@@ -42,6 +46,19 @@ public class CommunityReportService {
 
 		CommunityPost updatedPost = referenceService.requireActivePost(postId);
 		return CommunityReportResponse.of(updatedPost.getId(), updatedPost.getReportCount());
+	}
+
+	@Transactional
+	public void reportComment(Long commentId, Long userId, CommunityReportCreateRequest request) {
+		Long loginUserId = authService.requireLogin(userId);
+		User reporter = userReferenceService.requireActiveUser(loginUserId);
+		CommunityComment comment = referenceService.requireActiveComment(commentId);
+
+		if (commentReportRepository.existsByComment_IdAndReporter_Id(commentId, loginUserId)) {
+			throw new BusinessException(ErrorCode.COMMUNITY_REPORT_DUPLICATED);
+		}
+
+		commentReportRepository.save(CommunityCommentReport.create(comment, reporter, request.getReason(), request.getDetail()));
 	}
 
 	private void validateUpdatedPost(int updatedRows) {

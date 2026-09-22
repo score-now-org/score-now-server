@@ -8,6 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityImageUploadResponse;
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostImageResponse;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostImage;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityUploadedImage;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityUploadedImageRepository;
+import com.scorenow.scorenow_api.domain.user.entity.User;
+import com.scorenow.scorenow_api.domain.user.service.UserReferenceService;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
@@ -21,11 +25,15 @@ public class CommunityImageService {
 	private static final String COMMUNITY_IMAGE_DIRECTORY = "community/posts";
 
 	private final FileStorage fileStorage;
+	private final UserReferenceService userReferenceService;
+	private final CommunityUploadedImageRepository uploadedImageRepository;
 
-	public CommunityImageUploadResponse uploadImage(MultipartFile image) {
+	public CommunityImageUploadResponse uploadImage(Long userId, MultipartFile image) {
 		validateImage(image);
+		User owner = userReferenceService.requireActiveUser(userId);
 
 		String imageKey = fileStorage.uploadFileAndReturnKey(image, COMMUNITY_IMAGE_DIRECTORY);
+		uploadedImageRepository.save(CommunityUploadedImage.create(owner, imageKey));
 		return CommunityImageUploadResponse.of(imageKey, fileStorage.getFileUrl(imageKey));
 	}
 
@@ -33,10 +41,6 @@ public class CommunityImageService {
 		return images.stream()
 			.map(image -> CommunityPostImageResponse.of(image, fileStorage.getFileUrl(image.getImageKey())))
 			.toList();
-	}
-
-	public String getImageUrl(String imageKey) {
-		return fileStorage.getFileUrl(imageKey);
 	}
 
 	private void validateImage(MultipartFile image) {

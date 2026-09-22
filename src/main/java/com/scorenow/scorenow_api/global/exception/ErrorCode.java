@@ -88,7 +88,7 @@ public enum ErrorCode {
 	COMMUNITY_COMMENT_INVALID(HttpStatus.BAD_REQUEST, "CO007", "댓글 내용이 올바르지 않습니다."),
 	COMMUNITY_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "CO008", "이미지가 올바르지 않습니다."),
 	COMMUNITY_IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "CO009", "이미지는 최대 10개까지 첨부할 수 있습니다."),
-	COMMUNITY_REPORT_DUPLICATED(HttpStatus.CONFLICT, "CO010", "이미 신고한 게시글입니다."),
+	COMMUNITY_REPORT_DUPLICATED(HttpStatus.CONFLICT, "CO010", "이미 신고한 대상입니다."),
 
     // File Storage
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일 업로드에 실패했습니다."),
