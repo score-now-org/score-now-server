@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +22,16 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class GcsService implements FileStorage {
+
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+    private static final List<String> ALLOWED_EXTENSIONS = List.of(
+            "jpg", "jpeg", "png", "webp"
+    );
+
+    private static final List<String> ALLOWED_CONTENT_TYPES = List.of(
+            "image/jpeg", "image/png", "image/webp"
+    );
 
     private final Storage storage;
 
@@ -44,11 +55,13 @@ public class GcsService implements FileStorage {
             return null;
         }
 
+        validateImageFile(file);
+
         String objectName = buildObjectName(file, directory);
 
         BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectName)
                 .setContentType(file.getContentType())
-                .setCacheControl("no-cache, max-age=0")
+                .setCacheControl("public, max-age=31536000, immutable")
                 .build();
 
         uploadFileToGcs(file, blobInfo);
@@ -99,13 +112,29 @@ public class GcsService implements FileStorage {
         deleteFile(objectName);
     }
 
-    private String buildObjectName(MultipartFile file, String directory) {
-        String normalizedDirectory = normalizeDirectory(directory);
+    private void validateImageFile(MultipartFile file) {
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        }
 
         String originalFilename = Optional.ofNullable(file.getOriginalFilename()).orElse("");
+        String extension = extractExtension(originalFilename).replace(".", "").toLowerCase();
 
-        String extension = extractExtension(originalFilename);
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        }
 
+        String contentType = file.getContentType();
+
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        }
+    }
+
+    private String buildObjectName(MultipartFile file, String directory) {
+        String normalizedDirectory = normalizeDirectory(directory);
+        String originalFilename = Optional.ofNullable(file.getOriginalFilename()).orElse("");
+        String extension = extractExtension(originalFilename).toLowerCase();
         return normalizedDirectory + UUID.randomUUID() + extension;
     }
 
