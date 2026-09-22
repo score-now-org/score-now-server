@@ -3,7 +3,6 @@ package com.scorenow.scorenow_api.domain.community.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,17 +16,14 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 
 	Optional<CommunityComment> findByIdAndStatus(Long id, CommunityCommentStatus status);
 
-	@EntityGraph(attributePaths = "author")
 	List<CommunityComment> findByPost_IdAndStatusOrderByIdDesc(Long postId, CommunityCommentStatus status,
 		Pageable pageable);
 
-	@EntityGraph(attributePaths = "author")
 	List<CommunityComment> findByPost_IdAndStatusAndIdLessThanOrderByIdDesc(Long postId,
 		CommunityCommentStatus status, Long cursor, Pageable pageable);
 
 	@Query("""
 		select c from CommunityComment c
-		join fetch c.author
 		where c.post.id = :postId and c.status = :status
 		order by c.likeCount desc, c.id desc
 		""")
@@ -36,7 +32,6 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 
 	@Query("""
 		select c from CommunityComment c
-		join fetch c.author
 		where c.post.id = :postId and c.status = :status
 		and (c.likeCount < :likeCount or (c.likeCount = :likeCount and c.id < :commentId))
 		order by c.likeCount desc, c.id desc
@@ -45,7 +40,14 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 		@Param("status") CommunityCommentStatus status, @Param("likeCount") long likeCount,
 		@Param("commentId") long commentId, Pageable pageable);
 
-	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+		select c.likeCount from CommunityComment c
+		where c.id = :commentId and c.status = :status
+		""")
+	Optional<Long> findLikeCountByIdAndStatus(@Param("commentId") Long commentId,
+		@Param("status") CommunityCommentStatus status);
+
+	@Modifying(flushAutomatically = true)
 	@Query("""
 		update CommunityComment c
 		set c.likeCount = c.likeCount + 1
@@ -53,7 +55,7 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 		""")
 	int increaseLikeCount(@Param("commentId") Long commentId, @Param("status") CommunityCommentStatus status);
 
-	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Modifying(flushAutomatically = true)
 	@Query("""
 		update CommunityComment c
 		set c.likeCount = case when c.likeCount > 0 then c.likeCount - 1 else 0 end

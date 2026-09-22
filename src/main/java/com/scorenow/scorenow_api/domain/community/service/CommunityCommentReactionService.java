@@ -40,8 +40,9 @@ public class CommunityCommentReactionService {
 				() -> createReaction(comment, user, liked)
 			);
 
-		CommunityComment updatedComment = referenceService.requireActiveComment(commentId);
-		return CommunityCommentReactionResponse.of(commentId, liked, updatedComment.getLikeCount());
+		long likeCount = commentRepository.findLikeCountByIdAndStatus(commentId, CommunityCommentStatus.ACTIVE)
+			.orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
+		return CommunityCommentReactionResponse.of(commentId, liked, likeCount);
 	}
 
 	private void createReaction(CommunityComment comment, User user, boolean liked) {

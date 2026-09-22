@@ -2,7 +2,6 @@ package com.scorenow.scorenow_api.domain.community.service;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,10 +117,7 @@ public class CommunityPostQueryService {
 			return Set.of();
 		}
 
-		return imageRepository.findByPost_IdInOrderByPost_IdAscSortOrderAsc(postIds)
-			.stream()
-			.map(image -> image.getPost().getId())
-			.collect(Collectors.toCollection(HashSet::new));
+		return Set.copyOf(imageRepository.findPostIdsWithImages(postIds));
 	}
 
 	private List<CommunityPost> getPopularPosts(Long cursor, int limit) {
