@@ -10,10 +10,10 @@ import lombok.Getter;
 public class CommunityCommentSliceResponse {
 
 	private List<CommunityCommentResponse> comments;
-	private Long nextCursor;
+	private String nextCursor;
 	private boolean hasNext;
 
-	public static CommunityCommentSliceResponse of(List<CommunityCommentResponse> comments, Long nextCursor,
+	public static CommunityCommentSliceResponse of(List<CommunityCommentResponse> comments, String nextCursor,
 		boolean hasNext) {
 		return CommunityCommentSliceResponse.builder()
 			.comments(comments)

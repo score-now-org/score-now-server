@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.scorenow.scorenow_api.domain.community.dto.request.CommunityCommentCreateRequest;
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityCommentResponse;
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityCommentSliceResponse;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityCommentSort;
 import com.scorenow.scorenow_api.domain.community.service.CommunityCommentService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
@@ -31,10 +32,11 @@ public class CommunityCommentController {
 	@GetMapping("/posts/{postId}/comments")
 	public ApiResponse<CommunityCommentSliceResponse> getComments(
 		@PathVariable Long postId,
-		@RequestParam(required = false) Long cursor,
+		@RequestParam(defaultValue = "LATEST") CommunityCommentSort sort,
+		@RequestParam(required = false) String cursor,
 		@RequestParam(defaultValue = DEFAULT_SIZE) int size
 	) {
-		return ApiResponse.success(communityCommentService.getComments(postId, cursor, size));
+		return ApiResponse.success(communityCommentService.getComments(postId, sort, cursor, size));
 	}
 
 	@PostMapping("/posts/{postId}/comments")

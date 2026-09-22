@@ -17,29 +17,21 @@ public class CommunityPostListResponse {
 	private String categoryName;
 	private String title;
 	private String authorNickname;
-	private String thumbnailImageUrl;
+	private boolean hasImages;
 	private long viewCount;
-	private long likeCount;
-	private long dislikeCount;
-	private long recommendationCount;
 	private long commentCount;
-	private double popularScore;
 	private LocalDateTime createdAt;
 
-	public static CommunityPostListResponse of(CommunityPost post, String thumbnailImageUrl, LocalDateTime now) {
+	public static CommunityPostListResponse of(CommunityPost post, boolean hasImages) {
 		return CommunityPostListResponse.builder()
 			.id(post.getId())
 			.category(post.getCategory())
 			.categoryName(post.getCategory().getDisplayName())
 			.title(post.getTitle())
 			.authorNickname(post.getAuthorNickname())
-			.thumbnailImageUrl(thumbnailImageUrl)
+			.hasImages(hasImages)
 			.viewCount(post.getViewCount())
-			.likeCount(post.getLikeCount())
-			.dislikeCount(post.getDislikeCount())
-			.recommendationCount(post.getRecommendationCount())
 			.commentCount(post.getCommentCount())
-			.popularScore(post.getPopularScore(now))
 			.createdAt(post.getCreatedAt())
 			.build();
 	}

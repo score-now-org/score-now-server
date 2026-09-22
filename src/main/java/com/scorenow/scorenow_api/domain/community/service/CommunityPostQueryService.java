@@ -2,9 +2,11 @@ package com.scorenow.scorenow_api.domain.community.service;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -88,7 +90,7 @@ public class CommunityPostQueryService {
 			imageRepository.findByPost_IdOrderBySortOrderAsc(postId)
 		);
 
-		return CommunityPostDetailResponse.of(post, images, LocalDateTime.now());
+		return CommunityPostDetailResponse.of(post, images);
 	}
 
 	private CommunityPostSliceResponse createSlice(List<CommunityPost> posts, int size) {
@@ -100,31 +102,26 @@ public class CommunityPostQueryService {
 	}
 
 	private List<CommunityPostListResponse> toListResponses(List<CommunityPost> posts) {
-		LocalDateTime now = LocalDateTime.now();
-		Map<Long, String> thumbnailUrls = getThumbnailUrls(posts);
+		Set<Long> postIdsWithImages = getPostIdsWithImages(posts);
 
 		return posts.stream()
-			.map(post -> CommunityPostListResponse.of(post, thumbnailUrls.get(post.getId()), now))
+			.map(post -> CommunityPostListResponse.of(post, postIdsWithImages.contains(post.getId())))
 			.toList();
 	}
 
-	private Map<Long, String> getThumbnailUrls(List<CommunityPost> posts) {
+	private Set<Long> getPostIdsWithImages(List<CommunityPost> posts) {
 		List<Long> postIds = posts.stream()
 			.map(CommunityPost::getId)
 			.toList();
 
 		if (postIds.isEmpty()) {
-			return Map.of();
+			return Set.of();
 		}
 
 		return imageRepository.findByPost_IdInOrderByPost_IdAscSortOrderAsc(postIds)
 			.stream()
-			.collect(Collectors.toMap(
-				image -> image.getPost().getId(),
-				image -> imageService.getImageUrl(image.getImageKey()),
-				(existing, ignored) -> existing,
-				LinkedHashMap::new
-			));
+			.map(image -> image.getPost().getId())
+			.collect(Collectors.toCollection(HashSet::new));
 	}
 
 	private List<CommunityPost> getPopularPosts(Long cursor, int limit) {
