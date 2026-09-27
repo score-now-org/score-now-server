@@ -49,42 +49,32 @@ public class PushSendHistory {
 
 	private LocalDateTime sentAt;
 
-	public static PushSendHistory success(
+	public static PushSendHistory processing(
 		AdminPushSendRequest request,
-		String firebaseMessageId
+		PushPlatform platform
 	) {
 		PushSendHistory history = new PushSendHistory();
 
-		history.platform = request.platform();
+		history.platform = platform;
 		history.title = request.title();
 		history.content = request.content();
 		history.landingType = request.landingType();
 		history.matchId = request.matchId();
 		history.imageUrl = request.imageUrl();
-		history.status = PushSendStatus.SUCCESS;
-		history.firebaseMessageId = firebaseMessageId;
+		history.status = PushSendStatus.PROCESSING;
 		history.sentAt = LocalDateTime.now();
 
 		return history;
 	}
 
-	public static PushSendHistory failed(
-		AdminPushSendRequest request,
-		String failureReason
-	) {
-		PushSendHistory history = new PushSendHistory();
+	public void markSuccess(String firebaseMessageId) {
+		this.status = PushSendStatus.SUCCESS;
+		this.firebaseMessageId = firebaseMessageId;
+	}
 
-		history.platform = request.platform();
-		history.title = request.title();
-		history.content = request.content();
-		history.landingType = request.landingType();
-		history.matchId = request.matchId();
-		history.imageUrl = request.imageUrl();
-		history.status = PushSendStatus.FAILED;
-		history.failureReason = failureReason;
-		history.sentAt = LocalDateTime.now();
-
-		return history;
+	public void markFailed(String failureReason) {
+		this.status = PushSendStatus.FAILED;
+		this.failureReason = failureReason;
 	}
 
 }
