@@ -10,6 +10,7 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.entity.SportExternalMapping;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
+import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
@@ -46,6 +47,8 @@ class MatchEventSyncServiceTest {
     private MatchDetailRepository matchDetailRepository;
     @Mock
     private SportExternalMappingRepository sportExternalMappingRepository;
+    @Mock
+    private SportCodeResolver sportCodeResolver;
 
     @Test
     void 자동_동기화_경기_저장시_초기_MatchDetailDocument를_생성한다() {
@@ -74,6 +77,8 @@ class MatchEventSyncServiceTest {
             ReflectionTestUtils.setField(match, "id", 30L);
             return match;
         });
+        given(sportCodeResolver.resolveByInternalSportId(1L))
+                .willReturn(SportCode.FOOTBALL);
 
         matchEventSyncService.syncEvent(DataOrigin.BETS, event, "1");
 
