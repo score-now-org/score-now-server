@@ -2,7 +2,6 @@ package com.scorenow.scorenow_api.domain.match.service.statusdisplay.football;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballClock;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
@@ -10,6 +9,7 @@ import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.footbal
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.service.displaytext.football.FootballClockDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.InplayStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +22,8 @@ public class FootballInplayStatusDisplayResolver implements InplayStatusDisplayR
     private final FootballClockDisplayTextResolver footballClockDisplayTextResolver;
 
     @Override
-    public SportDetailType type() {
-        return SportDetailType.FOOTBALL;
+    public SportCode type() {
+        return SportCode.FOOTBALL;
     }
 
     @Override

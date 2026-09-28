@@ -56,7 +56,7 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
 
         Update update = new Update()
                 .setOnInsert("created_at", now)
-                .set("type", matchDetailDocument.getType())               // 종목 타입
+                .set("type", matchDetailDocument.getSportCode())           // 종목 타입
                 .set("sportDetail", matchDetailDocument.getSportDetail())  // 종목 별 상세 정보
                 .set("updated_at", now);
 

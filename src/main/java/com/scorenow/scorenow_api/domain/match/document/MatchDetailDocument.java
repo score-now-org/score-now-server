@@ -2,11 +2,13 @@ package com.scorenow.scorenow_api.domain.match.document;
 
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.entity.BaseDocument;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @Getter
 @Builder
@@ -15,7 +17,8 @@ public class MatchDetailDocument extends BaseDocument {
     @Id
     private Long id;
 
-    private SportDetailType type; //  종목
+    @Field("type")
+    private SportCode sportCode; //  종목
 
     private String currentCommentaryId; // 현재 중계 멘트 id
     private String currentCommentary;   // 현재 중계 멘트
@@ -32,7 +35,7 @@ public class MatchDetailDocument extends BaseDocument {
     public MatchDetailDocument withSportDetail(SportDetail sportDetail) {
         return MatchDetailDocument.builder()
                 .id(id)
-                .type(type)
+                .sportCode(sportCode)
                 .currentCommentaryId(currentCommentaryId)
                 .currentCommentary(currentCommentary)
                 .currentCommentaryHighlighted(currentCommentaryHighlighted)

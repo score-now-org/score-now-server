@@ -8,6 +8,7 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.Foot
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballStats;
 import com.scorenow.scorenow_api.domain.match.repository.FootballMatchDetailRepository;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -52,7 +53,7 @@ public class FootballMatchDetailRepositoryImpl implements FootballMatchDetailRep
 
     private void updateFootballDetail(Long matchId, Update update) {
         Query query = Query.query(Criteria.where("_id").is(matchId)
-                .and("type").is(SportDetailType.FOOTBALL));
+                .and("type").is(SportCode.FOOTBALL));
 
         update.set(SPORT_DETAIL_PATH + "._class", FootballDetail.TYPE_ALIAS)
                 .set("updated_at", LocalDateTime.now());

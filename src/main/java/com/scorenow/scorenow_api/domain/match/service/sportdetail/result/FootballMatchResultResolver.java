@@ -2,19 +2,19 @@ package com.scorenow.scorenow_api.domain.match.service.sportdetail.result;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import org.springframework.stereotype.Component;
 
 @Component
 public class FootballMatchResultResolver implements MatchResultResolver {
 
     @Override
-    public SportDetailType type() {
-        return SportDetailType.FOOTBALL;
+    public SportCode type() {
+        return SportCode.FOOTBALL;
     }
 
     @Override

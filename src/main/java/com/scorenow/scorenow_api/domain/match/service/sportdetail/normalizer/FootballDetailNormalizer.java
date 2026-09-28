@@ -1,9 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer;
 
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.service.MatchEventResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -29,8 +29,8 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
     private final MatchEventResolver matchEventResolver;
 
     @Override
-    public SportDetailType type() {
-        return SportDetailType.FOOTBALL;
+    public SportCode type() {
+        return SportCode.FOOTBALL;
     }
 
     @Override

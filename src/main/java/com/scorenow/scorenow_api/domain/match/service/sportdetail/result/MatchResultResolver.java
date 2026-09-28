@@ -1,13 +1,13 @@
 package com.scorenow.scorenow_api.domain.match.service.sportdetail.result;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 
 public interface MatchResultResolver {
-    SportDetailType type();
+    SportCode type();
 
     MatchResult resolveResult(Match match, MatchDetailDocument detail);
 

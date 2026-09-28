@@ -1,9 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.service.statusdisplay;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class InplayStatusDisplayResolverRegistry {
 
-    private final Map<SportDetailType, InplayStatusDisplayResolver> resolvers;
+    private final Map<SportCode, InplayStatusDisplayResolver> resolvers;
 
     public InplayStatusDisplayResolverRegistry(List<InplayStatusDisplayResolver> resolverList) {
         this.resolvers = resolverList.stream()
@@ -24,7 +24,7 @@ public class InplayStatusDisplayResolverRegistry {
                         resolver -> resolver));
     }
 
-    public MatchStatusDisplayResponse resolve(SportDetailType type, Match match, MatchDetailDocument matchDetailDocument) {
+    public MatchStatusDisplayResponse resolve(SportCode type, Match match, MatchDetailDocument matchDetailDocument) {
         InplayStatusDisplayResolver resolver = resolvers.get(type);
 
         if (resolver == null) {

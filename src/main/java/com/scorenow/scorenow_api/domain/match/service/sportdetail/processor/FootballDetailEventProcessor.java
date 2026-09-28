@@ -8,6 +8,7 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.Foot
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.service.displaytext.football.FootballClockDisplayTextResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,8 @@ public class FootballDetailEventProcessor implements SportDetailEventProcessor {
     private final FootballClockDisplayTextResolver footballClockDisplayTextResolver;
 
     @Override
-    public SportDetailType type() {
-        return SportDetailType.FOOTBALL;
+    public SportCode type() {
+        return SportCode.FOOTBALL;
     }
 
     /**
