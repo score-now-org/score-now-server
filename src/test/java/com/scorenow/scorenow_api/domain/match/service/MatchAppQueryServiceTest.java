@@ -6,7 +6,6 @@ import com.scorenow.scorenow_api.domain.league.service.standings.TeamStandingLoo
 import com.scorenow.scorenow_api.domain.league.service.standings.model.LeagueTeamKey;
 import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppItemResponse;
@@ -24,6 +23,7 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
@@ -77,7 +77,7 @@ class MatchAppQueryServiceTest {
         MatchStatusDisplayResponse statusDisplayResponse = statusDisplay("전반 27");
         MatchDetailDocument detail = MatchDetailDocument.builder()
                 .id(match.getId())
-                .type(SportDetailType.FOOTBALL)
+                .type(SportCode.FOOTBALL)
                 .currentCommentary("선제골 이후 홈팀이 흐름을 잡습니다.")
                 .currentCommentaryHighlighted(true)
                 .build();
@@ -135,7 +135,7 @@ class MatchAppQueryServiceTest {
                 .build());
         MatchDetailDocument detail = MatchDetailDocument.builder()
                 .id(match.getId())
-                .type(SportDetailType.FOOTBALL)
+                .type(SportCode.FOOTBALL)
                 .sportDetail(FootballDetail.builder()
                         .shootOutScore(FootballShootOutScore.builder()
                                 .homeScore(4)

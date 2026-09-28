@@ -2,7 +2,6 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
@@ -13,6 +12,8 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer.SportDetailNormalizerRegistry;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
+import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.StadiumData;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
@@ -43,6 +44,8 @@ public class MatchDetailService {
 
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
 
+    private final SportCodeResolver sportCodeResolver;
+
     @Transactional
     public void updateInplayMatchDetail(DataOrigin dataOrigin, ViewResult viewResult) {
         String apiMatchId = viewResult.getId();
@@ -53,18 +56,18 @@ public class MatchDetailService {
         MatchDetailDocument currentMatchDetailDocument = matchDetailRepository.findById(match.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
 
-        SportDetailType sportDetailType = SportDetailType.fromSportId(match.getSportId());
+        SportCode sportCode = sportCodeResolver.resolveByInternalSportId(match.getSportId());
 
-        if (currentMatchDetailDocument.getType() != sportDetailType) {
+        if (currentMatchDetailDocument.getType() != sportCode) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 상세 종목 정보가 일치하지 않습니다.");
         }
 
         // 종목에 특화된 형태로 정규화
-        SportDetail normalizedSportDetail = normalizerRegistry.normalize(sportDetailType, viewResult);
+        SportDetail normalizedSportDetail = normalizerRegistry.normalize(sportCode, viewResult);
 
         // 기존 종목 상세 정보와 정규화한 상세 정보를 비교하여 병합
         SportDetail mergedSportDetail = mergeSportDetail(
-                sportDetailType,
+                sportCode,
                 currentMatchDetailDocument.getSportDetail(),
                 normalizedSportDetail
         );
@@ -72,7 +75,7 @@ public class MatchDetailService {
         // 새로운 문서 생성
         MatchDetailDocument newMatchDetailDocument = MatchDetailDocument.builder()
                 .id(match.getId())
-                .type(sportDetailType)
+                .type(sportCode)
                 .sportDetail(mergedSportDetail)
                 .build();
 
@@ -112,11 +115,11 @@ public class MatchDetailService {
     }
 
     private SportDetail mergeSportDetail(
-            SportDetailType sportDetailType,
+            SportCode sportCode,
             SportDetail currentSportDetail,
             SportDetail newSportDetail) {
 
-        return switch (sportDetailType) {
+        return switch (sportCode) {
             case FOOTBALL -> mergeFootballDetail(currentSportDetail, newSportDetail);
             default -> newSportDetail;
         };

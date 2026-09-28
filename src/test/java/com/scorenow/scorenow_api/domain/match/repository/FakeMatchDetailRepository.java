@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
@@ -59,7 +59,7 @@ public class FakeMatchDetailRepository implements MatchDetailRepository {
     }
 
     @Override
-    public void createInitialMatchDetailIfAbsent(Long matchId, SportDetailType type) {
+    public void createInitialMatchDetailIfAbsent(Long matchId, SportCode type) {
         if (database.containsKey(matchId)) {
             return;
         }

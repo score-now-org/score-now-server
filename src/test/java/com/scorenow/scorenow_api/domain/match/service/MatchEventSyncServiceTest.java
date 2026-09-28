@@ -4,11 +4,11 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.entity.SportExternalMapping;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
@@ -78,7 +78,7 @@ class MatchEventSyncServiceTest {
         matchEventSyncService.syncEvent(DataOrigin.BETS, event, "1");
 
         then(matchDetailRepository).should()
-                .createInitialMatchDetailIfAbsent(30L, SportDetailType.FOOTBALL);
+                .createInitialMatchDetailIfAbsent(30L, SportCode.FOOTBALL);
     }
 
     private BetsEventResponse.Event createEvent() {

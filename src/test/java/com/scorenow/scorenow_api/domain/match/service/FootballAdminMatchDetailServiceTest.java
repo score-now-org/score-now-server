@@ -1,7 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballClock;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballPhase;
@@ -18,6 +17,7 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.displaytext.football.FootballClockDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -303,7 +303,7 @@ class FootballAdminMatchDetailServiceTest {
     private MatchDetailDocument footballDocument(FootballDetail footballDetail) {
         return MatchDetailDocument.builder()
                 .id(MATCH_ID)
-                .type(SportDetailType.FOOTBALL)
+                .type(SportCode.FOOTBALL)
                 .sportDetail(footballDetail)
                 .build();
     }

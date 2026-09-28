@@ -27,7 +27,7 @@ public class SportDetailEventProcessorRegistry {
             MatchDetailDocument currentMatchDetailDocument,
             MatchDetailDocument newMatchDetailDocument) {
 
-        SportCode type = newMatchDetailDocument.getSportCode();
+        SportCode type = newMatchDetailDocument.getType();
 
         SportDetailEventProcessor processor = eventProcessors.get(type);
         if (processor == null) {

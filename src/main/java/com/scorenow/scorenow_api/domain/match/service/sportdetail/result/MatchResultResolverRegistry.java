@@ -54,10 +54,10 @@ public class MatchResultResolverRegistry {
     }
 
     private SportCode resolveType(MatchDetailDocument matchDetailDocument) {
-        if (matchDetailDocument == null || matchDetailDocument.getSportCode() == null) {
+        if (matchDetailDocument == null || matchDetailDocument.getType() == null) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 상세 종목 정보가 없습니다.");
         }
 
-        return matchDetailDocument.getSportCode();
+        return matchDetailDocument.getType();
     }
 }
