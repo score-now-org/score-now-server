@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -55,6 +56,9 @@ class AdminMatchServiceTeamDisplayOrderTest {
 
     @InjectMocks
     private AdminMatchService adminMatchService;
+
+    @Mock
+    private SportCodeResolver sportCodeResolver;
 
     @Test
     void 수동_경기_생성시_리그의_표시_정책을_Match에_저장한다() {

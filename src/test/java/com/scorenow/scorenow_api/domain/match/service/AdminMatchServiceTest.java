@@ -13,6 +13,7 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
+import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,8 @@ class AdminMatchServiceTest {
     private MatchRealtimeEventPublisher eventPublisher;
     @Mock
     private MatchStatusDisplayResolver matchStatusDisplayResolver;
+    @Mock
+    private SportCodeResolver sportCodeResolver;
 
     @Test
     void 경기_시작_시각_수정을_공통_업데이터에_위임한다() {
@@ -123,6 +126,7 @@ class AdminMatchServiceTest {
         given(leagueRepository.findById(request.getLeagueId())).willReturn(Optional.of(league));
         given(matchTeamDisplayOrderPolicy.decide(league)).willReturn(TeamDisplayOrder.HOME_AWAY);
         given(matchRepository.save(match)).willReturn(match);
+        given(sportCodeResolver.resolveByInternalSportId(match.getSportId())).willReturn(SportCode.FOOTBALL);
 
         adminMatchService.createMatch(request);
 
