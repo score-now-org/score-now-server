@@ -11,13 +11,15 @@ public class CommunityPostSliceResponse {
 
 	private List<CommunityPostListResponse> posts;
 	private Long nextCursor;
+	private Long nextCursorLikeCount;
 	private boolean hasNext;
 
 	public static CommunityPostSliceResponse of(List<CommunityPostListResponse> posts, Long nextCursor,
-		boolean hasNext) {
+		Long nextCursorLikeCount, boolean hasNext) {
 		return CommunityPostSliceResponse.builder()
 			.posts(posts)
 			.nextCursor(nextCursor)
+			.nextCursorLikeCount(nextCursorLikeCount)
 			.hasNext(hasNext)
 			.build();
 	}

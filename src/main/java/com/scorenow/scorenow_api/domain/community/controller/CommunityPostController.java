@@ -44,9 +44,10 @@ public class CommunityPostController {
 		@RequestParam(defaultValue = "ALL") CommunityBoardType boardType,
 		@RequestParam(defaultValue = "LATEST") CommunityPostSort sort,
 		@RequestParam(required = false) Long cursor,
+		@RequestParam(required = false) Long cursorLikeCount,
 		@RequestParam(defaultValue = DEFAULT_SIZE) int size
 	) {
-		return ApiResponse.success(queryService.getPosts(boardType, sort, cursor, size));
+		return ApiResponse.success(queryService.getPosts(boardType, sort, cursor, cursorLikeCount, size));
 	}
 
 	@GetMapping("/me")

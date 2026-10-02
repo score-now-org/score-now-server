@@ -44,18 +44,23 @@ public class CommunityPostQueryService {
 
 	@Transactional(readOnly = true)
 	public CommunityPostSliceResponse getPosts(CommunityBoardType boardType, CommunityPostSort sort, Long cursor,
-		int size) {
+		Long cursorLikeCount, int size) {
 		int normalizedSize = normalizeSize(size);
 		CommunityBoardType normalizedBoardType = boardType == null ? CommunityBoardType.ALL : boardType;
 		CommunityPostSort normalizedSort = sort == null ? CommunityPostSort.LATEST : sort;
+		if (cursorLikeCount != null && (normalizedSort != CommunityPostSort.RECOMMENDED
+			|| cursor == null || cursor <= 0 || cursorLikeCount < 0)) {
+			throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+		}
 
 		if (normalizedBoardType.isPopular()) {
-			return createSlice(getPopularPosts(normalizedSort, cursor, normalizedSize + 1), normalizedSize);
+			return createSlice(getPopularPosts(normalizedSort, cursor, cursorLikeCount, normalizedSize + 1),
+				normalizedSize, normalizedSort);
 		}
 
 		List<CommunityPost> posts = postRepository.searchActivePosts(normalizedBoardType, normalizedSort, cursor,
-			normalizedSize + 1);
-		return createSlice(posts, normalizedSize);
+			cursorLikeCount, normalizedSize + 1);
+		return createSlice(posts, normalizedSize, normalizedSort);
 	}
 
 	@Transactional(readOnly = true)
@@ -64,19 +69,19 @@ public class CommunityPostQueryService {
 		int normalizedSize = normalizeSize(size);
 
 		List<CommunityPost> posts = postRepository.searchMyPosts(loginUserId, cursor, normalizedSize + 1);
-		return createSlice(posts, normalizedSize);
+		return createSlice(posts, normalizedSize, CommunityPostSort.LATEST);
 	}
 
 	@Transactional(readOnly = true)
 	public List<CommunityPostListResponse> getPopularRollingPosts(Integer size) {
 		int normalizedSize = normalizePopularSize(size, POPULAR_ROLLING_MAX_SIZE);
-		return toListResponses(getPopularPosts(CommunityPostSort.LATEST, null, normalizedSize));
+		return toListResponses(getPopularPosts(CommunityPostSort.LATEST, null, null, normalizedSize));
 	}
 
 	@Transactional(readOnly = true)
 	public List<CommunityPostListResponse> getPopularTopPosts(Integer size) {
 		int normalizedSize = normalizePopularSize(size, POPULAR_TOP_MAX_SIZE);
-		return toListResponses(getPopularPosts(CommunityPostSort.LATEST, null, normalizedSize));
+		return toListResponses(getPopularPosts(CommunityPostSort.LATEST, null, null, normalizedSize));
 	}
 
 	@Transactional
@@ -96,12 +101,14 @@ public class CommunityPostQueryService {
 		return CommunityPostDetailResponse.of(post, images);
 	}
 
-	private CommunityPostSliceResponse createSlice(List<CommunityPost> posts, int size) {
+	private CommunityPostSliceResponse createSlice(List<CommunityPost> posts, int size, CommunityPostSort sort) {
 		boolean hasNext = posts.size() > size;
 		List<CommunityPost> slicedPosts = hasNext ? posts.subList(0, size) : posts;
 		Long nextCursor = slicedPosts.isEmpty() ? null : slicedPosts.get(slicedPosts.size() - 1).getId();
+		Long nextCursorLikeCount = sort != CommunityPostSort.RECOMMENDED || slicedPosts.isEmpty()
+			? null : slicedPosts.get(slicedPosts.size() - 1).getLikeCount();
 
-		return CommunityPostSliceResponse.of(toListResponses(slicedPosts), nextCursor, hasNext);
+		return CommunityPostSliceResponse.of(toListResponses(slicedPosts), nextCursor, nextCursorLikeCount, hasNext);
 	}
 
 	private List<CommunityPostListResponse> toListResponses(List<CommunityPost> posts) {
@@ -124,7 +131,7 @@ public class CommunityPostQueryService {
 		return Set.copyOf(imageRepository.findPostIdsWithImages(postIds));
 	}
 
-	private List<CommunityPost> getPopularPosts(CommunityPostSort sort, Long cursor, int limit) {
+	private List<CommunityPost> getPopularPosts(CommunityPostSort sort, Long cursor, Long cursorLikeCount, int limit) {
 		LocalDateTime now = LocalDateTime.now();
 		List<CommunityPost> candidates = postRepository.findPopularCandidates(now.minusHours(24), POPULAR_CANDIDATE_LIMIT);
 
@@ -146,6 +153,14 @@ public class CommunityPostQueryService {
 
 		if (cursor == null) {
 			return rankedPosts.stream().limit(limit).toList();
+		}
+
+		if (sort == CommunityPostSort.RECOMMENDED && cursorLikeCount != null) {
+			return rankedPosts.stream()
+				.filter(post -> post.getLikeCount() < cursorLikeCount
+					|| (post.getLikeCount() == cursorLikeCount && post.getId() < cursor))
+				.limit(limit)
+				.toList();
 		}
 
 		int cursorIndex = -1;
