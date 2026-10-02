@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.community.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,7 @@ import com.scorenow.scorenow_api.domain.community.entity.CommunityCommentSort;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostStatus;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityCommentRepository;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityCommentReactionRepository;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostRepository;
 import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.service.UserReferenceService;
@@ -36,10 +38,12 @@ public class CommunityCommentService {
 	private final UserReferenceService userReferenceService;
 	private final CommunityReferenceService referenceService;
 	private final CommunityCommentRepository commentRepository;
+	private final CommunityCommentReactionRepository reactionRepository;
 	private final CommunityPostRepository postRepository;
 
 	@Transactional(readOnly = true)
-	public CommunityCommentSliceResponse getComments(Long postId, CommunityCommentSort sort, String cursor, int size) {
+	public CommunityCommentSliceResponse getComments(Long postId, Long userId, CommunityCommentSort sort,
+		String cursor, int size) {
 		referenceService.requireActivePost(postId);
 		int normalizedSize = normalizeSize(size);
 		CommunityCommentSort normalizedSort = sort == null ? CommunityCommentSort.LATEST : sort;
@@ -53,7 +57,7 @@ public class CommunityCommentService {
 		String nextCursor = slicedComments.isEmpty() ? null
 			: CommunityCommentCursor.of(normalizedSort, slicedComments.get(slicedComments.size() - 1));
 
-		return CommunityCommentSliceResponse.of(toResponses(slicedComments), nextCursor, hasNext);
+		return CommunityCommentSliceResponse.of(toResponses(slicedComments, userId), nextCursor, hasNext);
 	}
 
 	private List<CommunityComment> getComments(Long postId, CommunityCommentSort sort,
@@ -81,7 +85,7 @@ public class CommunityCommentService {
 		CommunityComment savedComment = commentRepository.save(
 			CommunityComment.create(post, author, parentComment, request.getContent())
 		);
-		CommunityCommentResponse response = CommunityCommentResponse.of(savedComment);
+		CommunityCommentResponse response = CommunityCommentResponse.of(savedComment, false);
 		validateUpdatedPost(postRepository.increaseCommentCount(postId, CommunityPostStatus.ACTIVE));
 
 		return response;
@@ -97,9 +101,14 @@ public class CommunityCommentService {
 		validateUpdatedPost(postRepository.decreaseCommentCount(postId, CommunityPostStatus.ACTIVE));
 	}
 
-	private List<CommunityCommentResponse> toResponses(List<CommunityComment> comments) {
+	private List<CommunityCommentResponse> toResponses(List<CommunityComment> comments, Long userId) {
+		List<Long> commentIds = comments.stream().map(CommunityComment::getId).toList();
+		Set<Long> likedCommentIds = userId == null || commentIds.isEmpty()
+			? Set.of()
+			: Set.copyOf(reactionRepository.findLikedCommentIds(userId, commentIds));
+
 		return comments.stream()
-			.map(CommunityCommentResponse::of)
+			.map(comment -> CommunityCommentResponse.of(comment, likedCommentIds.contains(comment.getId())))
 			.toList();
 	}
 

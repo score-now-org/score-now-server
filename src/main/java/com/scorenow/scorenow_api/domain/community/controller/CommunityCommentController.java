@@ -32,11 +32,12 @@ public class CommunityCommentController {
 	@GetMapping("/posts/{postId}/comments")
 	public ApiResponse<CommunityCommentSliceResponse> getComments(
 		@PathVariable Long postId,
+		@AuthenticationPrincipal Long userId,
 		@RequestParam(defaultValue = "LATEST") CommunityCommentSort sort,
 		@RequestParam(required = false) String cursor,
 		@RequestParam(defaultValue = DEFAULT_SIZE) int size
 	) {
-		return ApiResponse.success(communityCommentService.getComments(postId, sort, cursor, size));
+		return ApiResponse.success(communityCommentService.getComments(postId, userId, sort, cursor, size));
 	}
 
 	@PostMapping("/posts/{postId}/comments")

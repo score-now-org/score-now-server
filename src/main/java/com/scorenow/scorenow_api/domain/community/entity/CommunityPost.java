@@ -33,6 +33,8 @@ import lombok.NoArgsConstructor;
 	indexes = {
 		@Index(name = "idx_community_posts_status_id", columnList = "status, id"),
 		@Index(name = "idx_community_posts_category_status_id", columnList = "category, status, id"),
+		@Index(name = "idx_community_posts_status_likes_id", columnList = "status, like_count, id"),
+		@Index(name = "idx_community_posts_category_status_likes_id", columnList = "category, status, like_count, id"),
 		@Index(name = "idx_community_posts_created_at", columnList = "created_at")
 	}
 )

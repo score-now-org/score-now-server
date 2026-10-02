@@ -105,6 +105,7 @@ public class AuthService {
                 userLoginHistoryRepository.save(history);
 
                 UserDto userDto = UserDto.builder()
+                                .id(user.getId())
                                 .socialId(user.getSocialId())
                                 .nickname(user.getNickname())
                                 .profileImageUrl(user.getProfileImageUrl())
@@ -147,6 +148,7 @@ public class AuthService {
                 user.changeNickname(request.getNickname());
 
                 UserDto userDto = UserDto.builder()
+                                .id(user.getId())
                                 .socialId(user.getSocialId())
                                 .nickname(user.getNickname())
                                 .profileImageUrl(user.getProfileImageUrl())
@@ -169,6 +171,7 @@ public class AuthService {
                 User user = userRepository.findById(id)
                                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
                 return UserDto.builder()
+                                .id(user.getId())
                                 .socialId(user.getSocialId())
                                 .nickname(user.getNickname())
                                 .profileImageUrl(user.getProfileImageUrl())

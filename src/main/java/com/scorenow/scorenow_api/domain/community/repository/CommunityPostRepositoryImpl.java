@@ -14,6 +14,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityBoardType;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityCategory;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityPostSort;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -25,16 +26,27 @@ public class CommunityPostRepositoryImpl implements CommunityPostRepositoryCusto
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public List<CommunityPost> searchActivePosts(CommunityBoardType boardType, Long cursor, int limit) {
+	public List<CommunityPost> searchActivePosts(CommunityBoardType boardType, CommunityPostSort sort, Long cursor,
+		Long cursorLikeCount, int limit) {
+		if (sort == CommunityPostSort.RECOMMENDED && cursor != null && cursorLikeCount == null) {
+			cursorLikeCount = queryFactory.select(communityPost.likeCount)
+				.from(communityPost)
+				.where(communityPost.id.eq(cursor))
+				.fetchOne();
+			if (cursorLikeCount == null) {
+				return List.of();
+			}
+		}
+
 		return queryFactory
 			.selectFrom(communityPost)
 			.leftJoin(communityPost.author).fetchJoin()
 			.where(
 				active(),
 				categoryEq(boardType),
-				cursorLt(cursor)
+				postCursorLt(sort, cursor, cursorLikeCount)
 			)
-			.orderBy(communityPost.id.desc())
+			.orderBy(postOrder(sort))
 			.limit(limit)
 			.fetch();
 	}
@@ -74,6 +86,21 @@ public class CommunityPostRepositoryImpl implements CommunityPostRepositoryCusto
 
 	private BooleanExpression cursorLt(Long cursor) {
 		return cursor == null ? null : communityPost.id.lt(cursor);
+	}
+
+	private BooleanExpression postCursorLt(CommunityPostSort sort, Long cursor, Long cursorLikeCount) {
+		if (sort != CommunityPostSort.RECOMMENDED || cursor == null) {
+			return cursorLt(cursor);
+		}
+
+		return communityPost.likeCount.lt(cursorLikeCount)
+			.or(communityPost.likeCount.eq(cursorLikeCount).and(communityPost.id.lt(cursor)));
+	}
+
+	private OrderSpecifier<?>[] postOrder(CommunityPostSort sort) {
+		return sort == CommunityPostSort.RECOMMENDED
+			? new OrderSpecifier[] {communityPost.likeCount.desc(), communityPost.id.desc()}
+			: new OrderSpecifier[] {communityPost.id.desc()};
 	}
 
 	private BooleanExpression categoryEq(CommunityBoardType boardType) {

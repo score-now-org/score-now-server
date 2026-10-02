@@ -19,6 +19,7 @@ import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostDeta
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostListResponse;
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostSliceResponse;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityBoardType;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityPostSort;
 import com.scorenow.scorenow_api.domain.community.service.CommunityPostCommandService;
 import com.scorenow.scorenow_api.domain.community.service.CommunityPostQueryService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -41,10 +42,12 @@ public class CommunityPostController {
 	@GetMapping
 	public ApiResponse<CommunityPostSliceResponse> getPosts(
 		@RequestParam(defaultValue = "ALL") CommunityBoardType boardType,
+		@RequestParam(defaultValue = "LATEST") CommunityPostSort sort,
 		@RequestParam(required = false) Long cursor,
+		@RequestParam(required = false) Long cursorLikeCount,
 		@RequestParam(defaultValue = DEFAULT_SIZE) int size
 	) {
-		return ApiResponse.success(queryService.getPosts(boardType, cursor, size));
+		return ApiResponse.success(queryService.getPosts(boardType, sort, cursor, cursorLikeCount, size));
 	}
 
 	@GetMapping("/me")
