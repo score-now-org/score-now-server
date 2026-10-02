@@ -90,6 +90,21 @@ http://localhost:8080/swagger-ui/index.html
 
 ---
 
+## 커뮤니티 API 연동
+
+- 소셜 로그인과 닉네임 변경 응답의 `data.user.id`, 프로필 응답의 `data.id`는 사용자 DB ID입니다. 게시글·댓글의 `authorId`와 비교할 수 있습니다.
+- `GET /api/v1/community/posts/{postId}/comments`의 각 댓글에는 `liked`가 포함됩니다. 로그인 사용자의 추천 여부를 받으려면 `Authorization: Bearer {accessToken}` 헤더를 전달합니다. 비로그인 조회와 새 댓글 작성 응답의 `liked`는 `false`입니다.
+- `GET /api/v1/community/posts`는 `sort=LATEST`(기본값) 또는 `sort=RECOMMENDED`를 받습니다. 추천순은 `likeCount` 내림차순이며, 추천수가 같으면 게시글 ID 내림차순으로 조회합니다.
+- `boardType=POPULAR`는 기존 인기글 후보 범위를 사용하며, `sort=RECOMMENDED`를 지정하면 해당 후보를 추천순으로 조회합니다. 정렬을 생략하면 기존 인기 점수 정렬을 사용합니다.
+- 게시글 목록의 `nextCursor`는 숫자 형식을 유지합니다. 다음 페이지 요청의 `cursor`에 그대로 전달하고, 정렬이나 게시판을 변경할 때는 커서를 비웁니다.
+
+```text
+GET /api/v1/community/posts?boardType=ALL&sort=RECOMMENDED&size=20
+GET /api/v1/community/posts?boardType=SOCCER&sort=RECOMMENDED&cursor=101&size=20
+```
+
+---
+
 ## 💻 Coding Convention
 
 ### 🔀 Git Flow

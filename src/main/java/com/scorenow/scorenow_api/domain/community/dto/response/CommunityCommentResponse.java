@@ -20,9 +20,10 @@ public class CommunityCommentResponse {
 	private int depth;
 	private String content;
 	private long likeCount;
+	private boolean liked;
 	private LocalDateTime createdAt;
 
-	public static CommunityCommentResponse of(CommunityComment comment) {
+	public static CommunityCommentResponse of(CommunityComment comment, boolean liked) {
 		return CommunityCommentResponse.builder()
 			.id(comment.getId())
 			.postId(comment.getPostId())
@@ -33,6 +34,7 @@ public class CommunityCommentResponse {
 			.depth(comment.getDepth())
 			.content(comment.getContent())
 			.likeCount(comment.getLikeCount())
+			.liked(liked)
 			.createdAt(comment.getCreatedAt())
 			.build();
 	}

@@ -18,6 +18,7 @@ import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostList
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostSliceResponse;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityBoardType;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityPostSort;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostStatus;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostImageRepository;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostRepository;
@@ -42,15 +43,18 @@ public class CommunityPostQueryService {
 	private final CommunityAuthService authService;
 
 	@Transactional(readOnly = true)
-	public CommunityPostSliceResponse getPosts(CommunityBoardType boardType, Long cursor, int size) {
+	public CommunityPostSliceResponse getPosts(CommunityBoardType boardType, CommunityPostSort sort, Long cursor,
+		int size) {
 		int normalizedSize = normalizeSize(size);
 		CommunityBoardType normalizedBoardType = boardType == null ? CommunityBoardType.ALL : boardType;
+		CommunityPostSort normalizedSort = sort == null ? CommunityPostSort.LATEST : sort;
 
 		if (normalizedBoardType.isPopular()) {
-			return createSlice(getPopularPosts(cursor, normalizedSize + 1), normalizedSize);
+			return createSlice(getPopularPosts(normalizedSort, cursor, normalizedSize + 1), normalizedSize);
 		}
 
-		List<CommunityPost> posts = postRepository.searchActivePosts(normalizedBoardType, cursor, normalizedSize + 1);
+		List<CommunityPost> posts = postRepository.searchActivePosts(normalizedBoardType, normalizedSort, cursor,
+			normalizedSize + 1);
 		return createSlice(posts, normalizedSize);
 	}
 
@@ -66,13 +70,13 @@ public class CommunityPostQueryService {
 	@Transactional(readOnly = true)
 	public List<CommunityPostListResponse> getPopularRollingPosts(Integer size) {
 		int normalizedSize = normalizePopularSize(size, POPULAR_ROLLING_MAX_SIZE);
-		return toListResponses(getPopularPosts(null, normalizedSize));
+		return toListResponses(getPopularPosts(CommunityPostSort.LATEST, null, normalizedSize));
 	}
 
 	@Transactional(readOnly = true)
 	public List<CommunityPostListResponse> getPopularTopPosts(Integer size) {
 		int normalizedSize = normalizePopularSize(size, POPULAR_TOP_MAX_SIZE);
-		return toListResponses(getPopularPosts(null, normalizedSize));
+		return toListResponses(getPopularPosts(CommunityPostSort.LATEST, null, normalizedSize));
 	}
 
 	@Transactional
@@ -120,7 +124,7 @@ public class CommunityPostQueryService {
 		return Set.copyOf(imageRepository.findPostIdsWithImages(postIds));
 	}
 
-	private List<CommunityPost> getPopularPosts(Long cursor, int limit) {
+	private List<CommunityPost> getPopularPosts(CommunityPostSort sort, Long cursor, int limit) {
 		LocalDateTime now = LocalDateTime.now();
 		List<CommunityPost> candidates = postRepository.findPopularCandidates(now.minusHours(24), POPULAR_CANDIDATE_LIMIT);
 
@@ -133,10 +137,11 @@ public class CommunityPostQueryService {
 			candidates = List.copyOf(merged.values());
 		}
 
+		Comparator<CommunityPost> ranking = sort == CommunityPostSort.RECOMMENDED
+			? Comparator.comparingLong(CommunityPost::getLikeCount).reversed()
+			: Comparator.comparingDouble((CommunityPost post) -> post.getPopularScore(now)).reversed();
 		List<CommunityPost> rankedPosts = candidates.stream()
-			.sorted(Comparator
-				.comparingDouble((CommunityPost post) -> post.getPopularScore(now)).reversed()
-				.thenComparing(CommunityPost::getId, Comparator.reverseOrder()))
+			.sorted(ranking.thenComparing(CommunityPost::getId, Comparator.reverseOrder()))
 			.toList();
 
 		if (cursor == null) {
