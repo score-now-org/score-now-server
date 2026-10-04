@@ -22,7 +22,7 @@ public class AuthController {
 
     /**
      * 소셜로그인 API
-     * 
+     *
      * @param request
      * @return
      */
@@ -37,7 +37,7 @@ public class AuthController {
 
     /**
      * 닉네임 설정 API
-     * 
+     *
      * @param request
      * @return
      */
@@ -53,7 +53,7 @@ public class AuthController {
 
     /**
      * 로그아웃 API
-     * 
+     *
      * @return
      */
     @Operation(summary = "로그아웃", description = "Redis에서 RefreshToken을 삭제하고 로그아웃합니다.")
@@ -66,7 +66,7 @@ public class AuthController {
 
     /**
      * 사용자 프로필 조회 API
-     * 
+     *
      * @param id
      * @return
      */
@@ -79,7 +79,7 @@ public class AuthController {
 
     /**
      * 사용자 탈퇴 API
-     * 
+     *
      * @param id
      * @return
      */
@@ -92,7 +92,7 @@ public class AuthController {
 
     /**
      * 리프래시토큰 갱신 API
-     * 
+     *
      * @param request
      * @return
      */
@@ -103,5 +103,14 @@ public class AuthController {
         TokenResponseDto tokens = authService.refresh(request.getRefreshToken());
         return ApiResponse.success(new TokenResponseDto(
                 tokens.getAccessToken(), tokens.getRefreshToken()));
+    }
+
+    /**
+     * 토큰 상태 조회 API
+     */
+
+    @GetMapping("/token-status")
+    public ApiResponse<Void> checkTokenStatus() {
+        return ApiResponse.success();
     }
 }
