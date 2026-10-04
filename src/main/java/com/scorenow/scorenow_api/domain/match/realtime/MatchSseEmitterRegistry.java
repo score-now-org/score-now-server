@@ -44,8 +44,16 @@ public class MatchSseEmitterRegistry {
 
         // 2. MatchId 를 구독하는 Emitter 추가
         for (Long matchId : uniqueMatchIds) {
-            emittersByMatchId.computeIfAbsent(matchId, newMatchId -> ConcurrentHashMap.newKeySet())
-                    .add(emitter);
+            emittersByMatchId.compute(matchId, (key, emitters) -> {
+                Set<SseEmitter> updatedEmitters = emitters;
+
+                if (updatedEmitters == null) {
+                    updatedEmitters = ConcurrentHashMap.newKeySet();
+                }
+
+                updatedEmitters.add(emitter);
+                return updatedEmitters;
+            });
         }
 
         log.info("🟢SSE_OPEN connectionId={} matchIds={} activeConnections={}",
