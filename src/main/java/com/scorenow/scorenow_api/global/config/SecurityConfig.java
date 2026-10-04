@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.user.jwt.JwtAuthenticationFilter;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 
 import com.scorenow.scorenow_api.global.config.properties.CorsProperties;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -38,6 +39,12 @@ public class SecurityConfig {
                 //jwt사용 세션 stateless
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((req, res, authException) ->
+                                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED))
+                        .accessDeniedHandler((req, res, accessDeniedException) ->
+                                res.setStatus(HttpServletResponse.SC_FORBIDDEN))
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/images").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/posts").authenticated()
