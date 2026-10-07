@@ -19,7 +19,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "matches")
+@Table(
+        name = "matches",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_matches_data_origin_api_match_id",
+                        columnNames = {"data_origin", "api_match_id"}
+                )
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
