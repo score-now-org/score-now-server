@@ -6,10 +6,8 @@ import java.time.ZoneId;
 
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.constant.MatchConstants;
+import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
-import com.scorenow.scorenow_api.domain.sport.model.SportCode;
-import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
-import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -43,33 +41,32 @@ public class MatchEventSyncService {
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
 
-    private final SportExternalMappingRepository sportExternalMappingRepository;
-    private final SportCodeResolver sportCodeResolver;
-
     /**
      * 개별 경기 동기화 - league → team → match 순서 보장
      * REQUIRES_NEW: 경기 1건 실패가 다른 경기에 영향 없음
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void syncEvent(DataOrigin dataOrigin, BetsEventResponse.Event event, String externalSportId) {
-        Long internalSportId = sportExternalMappingRepository.findByProviderAndApiSportId(dataOrigin, externalSportId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND))
-                .getInternalSportId();
+    public void syncEvent(
+            MatchSyncLeagueTarget leagueTarget,
+            BetsEventResponse.Event event
+    ) {
+        // API 응답에 리그 정보가 없거나, 요청보낸 리그와 응답받은 리그 정보가 불일치 하는 경우
+        if (event.getLeague() == null || !leagueTarget.apiLeagueId().equals(event.getLeague().getId())) {
+            String targetApiLeagueId = leagueTarget.apiLeagueId();
+            String responseApiLeagueId = event.getLeague() == null ? null : event.getLeague().getId();
 
-        League savedLeague = saveLeague(dataOrigin, event.getLeague(), internalSportId);
-        Team savedHome = saveTeam(dataOrigin, event.getHome(), internalSportId);
-        Team savedAway = saveTeam(dataOrigin, event.getAway(), internalSportId);
-        saveMatch(dataOrigin, event, internalSportId, savedLeague, savedHome, savedAway);
-    }
-
-    private League saveLeague(DataOrigin dataOrigin, BetsEventResponse.League betsLeague, Long internalSportId) {
-        if (betsLeague == null) {
-            throw new BusinessException(
-                    ErrorCode.LEAGUE_NOT_FOUND,
-                    String.format("%s 에서 리그 정보를 제공하지 않았습니다.", dataOrigin));
+            String message = "리그 정보가 불일치 합니다. target_api_league_id: %s, response_api_league_id: %s".formatted(targetApiLeagueId, responseApiLeagueId);
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, message);
         }
 
-        return leagueService.getOrCreateLeague(dataOrigin, internalSportId, betsLeague.getId(), betsLeague.getName(), betsLeague.getCc());
+        DataOrigin dataOrigin = leagueTarget.dataOrigin();
+        Long internalSportId = leagueTarget.internalSportId();
+        League league = leagueService.getLeague(leagueTarget.internalLeagueId());
+
+        Team homeTeam = saveTeam(dataOrigin, event.getHome(), internalSportId);
+        Team awayTeam = saveTeam(dataOrigin, event.getAway(), internalSportId);
+
+        saveMatch(event, leagueTarget, league, homeTeam, awayTeam);
     }
 
     private Team saveTeam(DataOrigin dataOrigin, BetsEventResponse.Team betsTeam, Long internalSportId) {
@@ -83,9 +80,8 @@ public class MatchEventSyncService {
     }
 
     private void saveMatch(
-            DataOrigin dataOrigin,
             BetsEventResponse.Event event,
-            Long internalSportId,
+            MatchSyncLeagueTarget leagueTarget,
             League league,
             Team homeTeam,
             Team awayTeam) {
@@ -94,6 +90,9 @@ public class MatchEventSyncService {
             log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
             return;
         }
+
+        DataOrigin dataOrigin = leagueTarget.dataOrigin();
+        Long internalSportId = leagueTarget.internalSportId();
 
         Match match = matchRepository.findByExternalInfo(dataOrigin, event.getId())
                 .orElseGet(() -> Match.builder()
@@ -142,8 +141,7 @@ public class MatchEventSyncService {
         Match savedMatch = matchRepository.save(match);
 
         // 없으면 초기 MatchDetailDocument 생성
-        SportCode sportCode = sportCodeResolver.resolveByInternalSportId(savedMatch.getSportId());
-        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), sportCode);
+        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), leagueTarget.sportCode());
 
         log.debug("경기 저장 - {}", savedMatch.getId());
     }

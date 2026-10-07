@@ -4,13 +4,11 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
+import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
-import com.scorenow.scorenow_api.domain.sport.entity.SportExternalMapping;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
-import com.scorenow.scorenow_api.domain.sport.repository.SportExternalMappingRepository;
-import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
@@ -45,14 +43,18 @@ class MatchEventSyncServiceTest {
     private MatchRepository matchRepository;
     @Mock
     private MatchDetailRepository matchDetailRepository;
-    @Mock
-    private SportExternalMappingRepository sportExternalMappingRepository;
-    @Mock
-    private SportCodeResolver sportCodeResolver;
-
     @Test
     void 자동_동기화_경기_저장시_초기_MatchDetailDocument를_생성한다() {
         BetsEventResponse.Event event = createEvent();
+        MatchSyncLeagueTarget leagueTarget = new MatchSyncLeagueTarget(
+                DataOrigin.BETS,
+                "1",
+                "100",
+                1L,
+                SportCode.FOOTBALL,
+                2L,
+                "Premier League"
+        );
         League league = League.builder()
                 .id(2L)
                 .sportId(1L)
@@ -60,10 +62,7 @@ class MatchEventSyncServiceTest {
         Team homeTeam = Team.builder().id(10L).build();
         Team awayTeam = Team.builder().id(20L).build();
 
-        given(sportExternalMappingRepository.findByProviderAndApiSportId(DataOrigin.BETS, "1"))
-                .willReturn(Optional.of(SportExternalMapping.of(DataOrigin.BETS, "1", 1L)));
-        given(leagueService.getOrCreateLeague(DataOrigin.BETS, 1L, "100", "Premier League", "GB"))
-                .willReturn(league);
+        given(leagueService.getLeague(2L)).willReturn(league);
         given(teamService.buildImageUrl("home-image")).willReturn("home-image-url");
         given(teamService.buildImageUrl("away-image")).willReturn("away-image-url");
         given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "10", "Home", "KR", "home-image-url"))
@@ -77,11 +76,9 @@ class MatchEventSyncServiceTest {
             ReflectionTestUtils.setField(match, "id", 30L);
             return match;
         });
-        given(sportCodeResolver.resolveByInternalSportId(1L))
-                .willReturn(SportCode.FOOTBALL);
+        matchEventSyncService.syncEvent(leagueTarget, event);
 
-        matchEventSyncService.syncEvent(DataOrigin.BETS, event, "1");
-
+        then(leagueService).should().getLeague(2L);
         then(matchDetailRepository).should()
                 .createInitialMatchDetailIfAbsent(30L, SportCode.FOOTBALL);
     }

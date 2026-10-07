@@ -1,90 +1,155 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Function;
 
+import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
 import org.springframework.stereotype.Service;
 
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
-import com.scorenow.scorenow_api.global.constant.AllowLeagues;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.BETS;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchSyncService {
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private static final String UPCOMING = "예정";
+    private static final String ENDED = "종료";
 
     private final BetsApiClient betsApiClient;
+
     private final MatchEventSyncService matchEventSyncService;
+    private final MatchSyncLeagueTargetReader matchSyncLeagueTargetReader;
 
     /**
      * 예정 경기 동기화
      */
-    public int syncUpcomingMatches(String externalSportId, String day) {
-        final String normalizedDay = (day == null)
-                ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-                : day;
-        return syncEventsByLeagues("예정", externalSportId, normalizedDay,
-                externalLeagueId -> betsApiClient.getUpcomingEvents(externalSportId, externalLeagueId, normalizedDay));
+    public int syncUpcomingMatches(LocalDate utcDate) {
+        List<MatchSyncLeagueTarget> leagueTargets = matchSyncLeagueTargetReader.findEnabledLeagueTargets(BETS);
+        String resolvedUtcDay = resolveUtcDay(utcDate);
+
+        return syncEventsForLeagueTargets(
+                UPCOMING,
+                resolvedUtcDay,
+                leagueTargets,
+                leagueTarget -> betsApiClient.getUpcomingEvents(
+                        leagueTarget.apiSportId(),
+                        leagueTarget.apiLeagueId(),
+                        resolvedUtcDay
+                )
+        );
     }
 
     /**
-     * 진행 중 경기 동기화
+     * 종료 경기 동기화 (전일 ~ 당일)
+     * 참고: 추후 관리자용 수동 스케줄링 기능을 추가할 필요가 생기면 그때 syncEndedMatchesForDate(LocalDate utcDate) 를 개발하면 된다.
      */
-    public int syncInplayMatches(String externalSportId) {
-        return syncEventsByLeagues("진행중", externalSportId, null,
-                externalLeagueId -> betsApiClient.getInplayEvents(externalSportId, externalLeagueId));
-    }
+    public int syncRecentEndedMatches() {
+        List<MatchSyncLeagueTarget> leagueTargets = matchSyncLeagueTargetReader.findEnabledLeagueTargets(BETS);
 
-    /**
-     * 종료 경기 동기화
-     */
-    public int syncEndedMatches(String externalSportId, String day) {
-        final String normalizedDay = (day == null)
-                ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-                : day;
-        return syncEventsByLeagues("종료", externalSportId, normalizedDay,
-                externalLeagueId -> betsApiClient.getEndedEvents(externalSportId, externalLeagueId, normalizedDay));
-    }
+        LocalDate utcToday = LocalDate.now(ZoneOffset.UTC);
+        LocalDate utcYesterday = utcToday.minusDays(1);
 
-    /**
-     * AllowLeagues 기준 리그별 이벤트를 가져와 동기화
-     */
-    private int syncEventsByLeagues(String logLabel, String sportId, String day,
-                                    Function<String, BetsEventResponse> fetchEvents) {
-        if (day != null) {
-            log.info("{} 경기 동기화 시작 - sportId: {}, day: {}", logLabel, sportId, day);
-        } else {
-            log.info("{} 경기 동기화 시작 - sportId: {}", logLabel, sportId);
-        }
+        String resolvedUtcToday = resolveUtcDay(utcToday);
+        String resolvedUtcYesterday = resolveUtcDay(utcYesterday);
 
         int totalSynced = 0;
-        for (String leagueId : AllowLeagues.IDS) {
+
+        totalSynced += syncEventsForLeagueTargets(
+                ENDED,
+                resolvedUtcYesterday,
+                leagueTargets,
+                leagueTarget -> betsApiClient.getEndedEvents(
+                        leagueTarget.apiSportId(),
+                        leagueTarget.apiLeagueId(),
+                        resolvedUtcYesterday
+                )
+        );
+
+        totalSynced += syncEventsForLeagueTargets(
+                ENDED,
+                resolvedUtcToday,
+                leagueTargets,
+                leagueTarget -> betsApiClient.getEndedEvents(
+                        leagueTarget.apiSportId(),
+                        leagueTarget.apiLeagueId(),
+                        resolvedUtcToday
+                )
+        );
+
+        return totalSynced;
+    }
+
+    private int syncEventsForLeagueTargets(
+            String logLabel,
+            String day,
+            List<MatchSyncLeagueTarget> leagueTargets,
+            Function<MatchSyncLeagueTarget, BetsEventResponse> fetchEvents
+    ) {
+        log.info("🚀️{} 경기 동기화 시작. day={}", logLabel, day);
+
+        int totalSynced = 0;
+
+        for (MatchSyncLeagueTarget leagueTarget : leagueTargets) {
             try {
-                BetsEventResponse response = fetchEvents.apply(leagueId);
-                if (response != null && response.getResults() != null) {
-                    for (BetsEventResponse.Event event : response.getResults()) {
-                        try {
-                            matchEventSyncService.syncEvent(response.getProvider(), event, sportId);
-                            totalSynced++;
-                        } catch (Exception e) {
-                            log.error("경기 동기화 실패 eventId: {} - {}", event.getId(), e.getMessage());
-                        }
-                    }
-                    if (!response.getResults().isEmpty()) {
-                        log.debug("리그 {} 동기화: {}건", leagueId, response.getResults().size());
+                BetsEventResponse response = fetchEvents.apply(leagueTarget);
+
+                if (response == null || response.getResults() == null) {
+                    continue;
+                }
+
+                for (BetsEventResponse.Event event : response.getResults()) {
+                    try {
+                        matchEventSyncService.syncEvent(leagueTarget, event);
+                        totalSynced++;
+                    } catch (Exception e) {
+                        log.error("❌경기 동기화 실패 : " +
+                                        "syncType={}, " +
+                                        "day={}, " +
+                                        "external=[api_sport_id:{}, api_league_id:{}], " +
+                                        "internal=[sport_id:{}, sport_code:{}, league_id:{}, league_name:{}]",
+                                logLabel,
+                                day,
+                                leagueTarget.apiSportId(), leagueTarget.apiLeagueId(),
+                                leagueTarget.internalSportId(), leagueTarget.sportCode(), leagueTarget.internalLeagueId(), leagueTarget.leagueName(),
+                                e);
                     }
                 }
+
             } catch (Exception e) {
-                log.error("리그 {} 동기화 실패: {}", leagueId, e.getMessage());
+                log.error("❌리그 동기화 실패 : " +
+                                "syncType={}, " +
+                                "day={}, " +
+                                "external=[api_sport_id:{}, api_league_id:{}], " +
+                                "internal=[sport_id:{}, sport_code:{}, league_id:{}, league_name:{}]",
+                        logLabel,
+                        day,
+                        leagueTarget.apiSportId(), leagueTarget.apiLeagueId(),
+                        leagueTarget.internalSportId(), leagueTarget.sportCode(), leagueTarget.internalLeagueId(), leagueTarget.leagueName(),
+                        e);
             }
         }
-
-        log.info("{} 경기 동기화 완료 - 총 {}건", logLabel, totalSynced);
+        log.info("🏁{} 경기 동기화 완료. day={}, count={}", logLabel, day, totalSynced);
         return totalSynced;
+    }
+
+    /**
+     * YYYYMMDD 로 변경
+     * 참고: BETS는 UTC 기반으로 동작하기 때문에 날짜 기반 요청을 보낼때에는 UTC 로 보내야지 정상적으로 처리가 가능하다.
+     */
+    private String resolveUtcDay(LocalDate utcDate) {
+        return (utcDate == null
+                ? LocalDate.now(ZoneOffset.UTC)
+                : utcDate)
+                .format(DATE_FORMAT);
     }
 }

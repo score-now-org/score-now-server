@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.batch;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -22,43 +22,43 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public abstract class DateRangeSyncTasklet implements Tasklet {
 
-	protected static final String FOOTBALL = "1";
-	protected static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
-	protected final MatchSyncService matchSyncService;
-	protected final TaskExecutor taskExecutor;
-	protected final int days;
+    protected final MatchSyncService matchSyncService;
+    protected final TaskExecutor taskExecutor;
+    protected final int days;
 
-	protected abstract String getLogLabel();
-	protected abstract LocalDate getTargetDate(LocalDate base, int offset);
-	protected abstract int syncForDate(String date);
+    protected abstract String getLogLabel();
 
-	@Override
-	public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) {
-		log.info("=== [BATCH] {} 동기화 시작 ({}일 범위) ===", getLogLabel(), days);
+    protected abstract LocalDate getTargetDate(LocalDate base, int offset);
 
-		LocalDate today = LocalDate.now();
-		AtomicInteger totalCount = new AtomicInteger(0);
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
+    protected abstract int syncForDate(LocalDate localDate);
 
-		for (int i = 0; i <= days; i++) {
-			final String date = getTargetDate(today, i).format(DATE_FORMAT);
+    @Override
+    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) {
+        log.info("=== [BATCH] {} 동기화 시작 ({}일 범위) ===", getLogLabel(), days);
 
-			CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-				try {
-					int count = syncForDate(date);
-					totalCount.addAndGet(count);
-					log.debug("[BATCH] {} {} 완료: {}건", getLogLabel(), date, count);
-				} catch (Exception e) {
-					log.error("[BATCH] {} {} 실패: {}", getLogLabel(), date, e.getMessage());
-				}
-			}, taskExecutor);
+        LocalDate utcToday = LocalDate.now(ZoneOffset.UTC);
+        AtomicInteger totalCount = new AtomicInteger(0);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-			futures.add(future);
-		}
+        for (int i = 0; i <= days; i++) {
+            LocalDate targetDate = getTargetDate(utcToday, i);
 
-		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    int syncedMatchCount = syncForDate(targetDate);
+                    totalCount.addAndGet(syncedMatchCount);
+                    log.debug("🟢[BATCH] {} {} 완료: {}건", getLogLabel(), targetDate, syncedMatchCount);
+                } catch (Exception e) {
+                    log.error("🔴[BATCH] {} {} 실패: {}", getLogLabel(), targetDate, e.getMessage());
+                }
+            }, taskExecutor);
 
-		log.info("=== [BATCH] {} 동기화 완료 - 총 {}건 ===", getLogLabel(), totalCount.get());
-		return RepeatStatus.FINISHED;
-	}
+            futures.add(future);
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        log.info("=== [BATCH] {} 동기화 완료 - 총 {}건 ===", getLogLabel(), totalCount.get());
+        return RepeatStatus.FINISHED;
+    }
 }

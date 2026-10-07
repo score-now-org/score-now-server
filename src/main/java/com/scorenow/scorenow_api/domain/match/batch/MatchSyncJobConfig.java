@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MatchSyncJobConfig {
 
-	private static final int UPCOMING_DAYS = 2;
+	private static final int UPCOMING_DAYS = 2;	// TODO: 이것도 여기서 지워야 할 듯. MatchSyncJobConfig 는 배치 실행 계획서 같은 느낌인데 해당 필드가 여기 있는게 부적절함.
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 	private final MatchSyncService matchSyncService;
