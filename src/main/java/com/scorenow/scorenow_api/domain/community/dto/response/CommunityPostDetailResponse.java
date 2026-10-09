@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.scorenow.scorenow_api.domain.community.entity.CommunityCategory;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityReactionType;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -23,13 +24,15 @@ public class CommunityPostDetailResponse {
 	private long viewCount;
 	private long likeCount;
 	private long dislikeCount;
+	private CommunityReactionType currentReaction;
 	private long commentCount;
 	private long reportCount;
 	private List<CommunityPostImageResponse> images;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
-	public static CommunityPostDetailResponse of(CommunityPost post, List<CommunityPostImageResponse> images) {
+	public static CommunityPostDetailResponse of(CommunityPost post, List<CommunityPostImageResponse> images,
+		CommunityReactionType currentReaction) {
 		return CommunityPostDetailResponse.builder()
 			.id(post.getId())
 			.category(post.getCategory())
@@ -41,6 +44,7 @@ public class CommunityPostDetailResponse {
 			.viewCount(post.getViewCount())
 			.likeCount(post.getLikeCount())
 			.dislikeCount(post.getDislikeCount())
+			.currentReaction(currentReaction)
 			.commentCount(post.getCommentCount())
 			.reportCount(post.getReportCount())
 			.images(images)

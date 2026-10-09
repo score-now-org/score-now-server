@@ -34,9 +34,11 @@ public class CommunityReactionService {
 		User user = userReferenceService.requireActiveUser(loginUserId);
 		CommunityPost post = referenceService.requireActivePost(postId);
 
-		CommunityReactionType currentReaction = reactionRepository.findByPost_IdAndUser_Id(postId, loginUserId)
-			.map(reaction -> updateExistingReaction(post.getId(), reaction, request.getType()))
-			.orElseGet(() -> createReaction(post, user, request.getType()));
+		CommunityPostReaction existingReaction = reactionRepository.findByPost_IdAndUser_Id(postId, loginUserId)
+			.orElse(null);
+		CommunityReactionType currentReaction = existingReaction == null
+			? createReaction(post, user, request.getType())
+			: updateExistingReaction(post.getId(), existingReaction, request.getType());
 
 		CommunityPost updatedPost = referenceService.requireActivePost(postId);
 		return CommunityReactionResponse.of(updatedPost.getId(), currentReaction, updatedPost.getLikeCount(),

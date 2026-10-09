@@ -74,8 +74,11 @@ public class CommunityPostController {
 	}
 
 	@GetMapping("/{postId}")
-	public ApiResponse<CommunityPostDetailResponse> getPost(@PathVariable Long postId) {
-		return ApiResponse.success(queryService.getPostDetail(postId));
+	public ApiResponse<CommunityPostDetailResponse> getPost(
+		@PathVariable Long postId,
+		@AuthenticationPrincipal Long userId
+	) {
+		return ApiResponse.success(queryService.getPostDetail(postId, userId));
 	}
 
 	@PostMapping

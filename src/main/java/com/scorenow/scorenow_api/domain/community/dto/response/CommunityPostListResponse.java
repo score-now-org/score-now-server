@@ -19,6 +19,7 @@ public class CommunityPostListResponse {
 	private String authorNickname;
 	private boolean hasImages;
 	private long viewCount;
+	private long likeCount;
 	private long commentCount;
 	private LocalDateTime createdAt;
 
@@ -31,6 +32,7 @@ public class CommunityPostListResponse {
 			.authorNickname(post.getAuthorNickname())
 			.hasImages(hasImages)
 			.viewCount(post.getViewCount())
+			.likeCount(post.getLikeCount())
 			.commentCount(post.getCommentCount())
 			.createdAt(post.getCreatedAt())
 			.build();
