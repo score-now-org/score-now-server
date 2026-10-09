@@ -18,9 +18,12 @@ import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostList
 import com.scorenow.scorenow_api.domain.community.dto.response.CommunityPostSliceResponse;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityBoardType;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityPostReaction;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostSort;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostStatus;
+import com.scorenow.scorenow_api.domain.community.entity.CommunityReactionType;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostImageRepository;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityPostReactionRepository;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -38,6 +41,7 @@ public class CommunityPostQueryService {
 	private static final int POPULAR_CANDIDATE_LIMIT = 500;
 
 	private final CommunityPostRepository postRepository;
+	private final CommunityPostReactionRepository reactionRepository;
 	private final CommunityPostImageRepository imageRepository;
 	private final CommunityImageService imageService;
 	private final CommunityAuthService authService;
@@ -85,7 +89,7 @@ public class CommunityPostQueryService {
 	}
 
 	@Transactional
-	public CommunityPostDetailResponse getPostDetail(Long postId) {
+	public CommunityPostDetailResponse getPostDetail(Long postId, Long userId) {
 		int updatedRows = postRepository.increaseViewCount(postId, CommunityPostStatus.ACTIVE);
 		if (updatedRows == 0) {
 			throw new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND);
@@ -98,7 +102,12 @@ public class CommunityPostQueryService {
 			imageRepository.findByPost_IdOrderBySortOrderAsc(postId)
 		);
 
-		return CommunityPostDetailResponse.of(post, images);
+		CommunityReactionType currentReaction = userId == null ? null
+			: reactionRepository.findByPost_IdAndUser_Id(postId, userId)
+				.map(CommunityPostReaction::getType)
+				.orElse(null);
+
+		return CommunityPostDetailResponse.of(post, images, currentReaction);
 	}
 
 	private CommunityPostSliceResponse createSlice(List<CommunityPost> posts, int size, CommunityPostSort sort) {
