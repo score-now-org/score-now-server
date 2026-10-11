@@ -78,6 +78,61 @@ docker-compose up -d
 ### 3. 환경 변수 설정
 `src/main/resources/application.yml`에서 BetsAPI 토큰 및 DB 접속 정보를 설정합니다.
 
+#### 로그인 설정
+
+아래 값은 실행 환경의 환경변수 또는 Spring 설정으로 주입합니다. `.env` 파일만 생성하면 Spring Boot가 자동으로 읽지는 않습니다.
+
+| 환경변수 | Spring 설정 | 설명 |
+|---|---|---|
+| `ADMIN_ID` | `admin.id` | 관리자 로그인 ID |
+| `ADMIN_PASSWORD_HASH` | `admin.password-hash` | 새 관리자 비밀번호의 BCrypt 해시. 평문 비밀번호는 지원하지 않음 |
+| `ADMIN_TOKEN_TTL_SECONDS` | `admin.token-ttl-seconds` | 관리자 토큰 유효기간(초). 기본값 28800(8시간) |
+| `GOOGLE_CLIENT_IDS` | `auth.social.google-client-ids` | 허용할 Google ID 토큰의 Client ID. 여러 개면 쉼표로 구분 |
+| `APPLE_CLIENT_IDS` | `auth.social.apple-client-ids` | 허용할 Apple ID 토큰의 Bundle ID/Services ID. 여러 개면 쉼표로 구분 |
+| `KAKAO_APP_ID` | `auth.social.kakao-app-id` | Kakao Developers에 등록한 숫자 앱 ID. REST API 키와 다름 |
+
+관리자 설정이 없으면 관리자 로그인은 503을 반환합니다. 소셜 로그인 설정은 사용하는 공급자의 값만 필요하며, 해당 값이 없으면 그 공급자의 로그인은 503을 반환합니다. 기존 소스에 있던 관리자 비밀번호는 재사용하지 않고 새 비밀번호의 해시를 설정합니다.
+
+BCrypt 해시는 Spring Security의 `new BCryptPasswordEncoder().encode(새비밀번호)`로 생성합니다. 비밀번호는 UTF-8 기준 72바이트 이하로 설정하며, 해시와 원문을 저장소에 커밋하지 않습니다.
+
+#### 앱 로그인 요청
+
+`POST /api/v1/auth/social-login`은 공급자가 발급한 인증 토큰이 필요합니다.
+
+```json
+{"provider":"google","idToken":"<Google ID 토큰>"}
+```
+
+```json
+{"provider":"apple","idToken":"<Apple ID 토큰>","name":"<표시 이름>"}
+```
+
+```json
+{"provider":"kakao","accessToken":"<Kakao Access 토큰>","name":"<표시 이름>"}
+```
+
+Google/Apple 토큰은 공급자 공개키로 서명, 발급자, 대상 앱, 만료를 검증합니다. Kakao 토큰은 토큰 정보 API에서 대상 앱, 만료, 회원번호를 확인합니다. 회원 조회에 사용하는 `socialId`는 검증 결과에서 가져오며 요청 본문의 `socialId`는 사용하지 않습니다. 이름은 표시용 정보입니다.
+
+`POST /api/v1/auth/register-nickname`은 앱 AccessToken을 Bearer 헤더로 보내고 본문에는 `{"nickname":"새닉네임"}`을 전달합니다. 기존 `provider/socialId` 필드를 보내도 변경 대상 선정에는 사용하지 않습니다. 닉네임은 1~30자이며 기존 60일 변경 제한을 유지합니다.
+
+로그인·닉네임 변경·프로필 응답의 `user.id`/`data.id`에는 내부 회원 ID가 포함됩니다. RefreshToken은 로그인과 갱신 모두 14일이며, 계정당 한 개의 RefreshToken을 저장합니다. 탈퇴 시 RefreshToken을 삭제하고 비활성·정지·탈퇴 계정의 기존 AccessToken도 보호된 HTTP API에서 허용하지 않습니다.
+
+#### 관리자 인증과 회원 API
+
+- 로그인: `POST /api/v1/admin/login`, 본문 `{"id":"<관리자 ID>","password":"<새 비밀번호>"}`
+- 로그인 성공 응답은 기존 `{"token":"<UUID 토큰>"}` 형식을 유지합니다.
+- 관리자 API는 `Authorization: Bearer <UUID 토큰>`을 사용합니다. 기존 클라이언트의 `Authorization: <UUID 토큰>`도 지원합니다.
+- 회원 목록: `GET /api/v1/admin/members?page=0&size=15`
+- 회원 기본정보: `GET /api/v1/admin/members/{id}`
+- 회원 로그인 이력: `GET /api/v1/admin/members/{id}/security`
+- 로그아웃: `POST /api/v1/admin/logout`. Redis의 관리자 토큰을 삭제합니다.
+
+기존 `/admin/members`, `/admin/members/{id}`, `/admin/members/{id}/security` 경로도 유지합니다. `/api/v1/admin/**`와 `/admin/**`는 로그인 API를 제외하고 관리자 토큰이 필요합니다. 앱 JWT는 관리자 API에 사용할 수 없습니다. 관리자 토큰은 Redis에 저장하므로 서버 인스턴스 간 공유되며 만료 후에는 다시 로그인해야 합니다. 존재하지 않는 회원의 기본정보·보안정보 조회는 모두 404를 반환합니다.
+
+관리자 로그인 성공과 기존 `/api/v1/admin/test` 성공 응답은 프론트 호환을 위해 기존 형식을 유지합니다. 인증 실패 응답과 나머지 회원 API는 `ApiResponse` 형식을 사용합니다.
+
+검증 기준: [Google ID 토큰 검증](https://developers.google.com/identity/sign-in/web/backend-auth), [Apple 사용자 검증](https://developer.apple.com/documentation/signinwithapple/verifying-a-user), [Kakao 토큰 정보 조회](https://developers.kakao.com/docs/ko/kakaologin/rest-api#access-token-info).
+
 ### 4. 서버 실행
 ```bash
 ./gradlew bootRun

@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.admin.member.controller;
 
 import com.scorenow.scorenow_api.domain.admin.member.dto.MemberListResponseDto;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberBasicInfoResponseDto;
 import com.scorenow.scorenow_api.domain.admin.member.dto.MemberSecurityInfoResponseDto;
 import com.scorenow.scorenow_api.domain.admin.member.service.AdminMemberService;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin/members")
+@RequestMapping({"/api/v1/admin/members", "/admin/members"})
 @RequiredArgsConstructor
 @Tag(name = "Admin - Member", description = "관리자 회원 관리 API")
 public class AdminMemberController {
@@ -42,11 +43,11 @@ public class AdminMemberController {
      */
     @Operation(summary = "회원 기본정보 조회", description = "회원 ID로 기본 상세정보를 조회합니다.")
     @GetMapping("/{id}")
-    public ApiResponse<MemberListResponseDto> getUserDetailBasic(
+    public ApiResponse<MemberBasicInfoResponseDto> getUserDetailBasic(
             @PathVariable Long id
     ) {
 
-        MemberListResponseDto user = adminMemberService.getMemberDetailBasic(id);
+        MemberBasicInfoResponseDto user = adminMemberService.getMemberDetailBasic(id);
         return ApiResponse.success(user);
     }
 

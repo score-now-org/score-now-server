@@ -7,6 +7,8 @@ import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.entity.UserLoginHistory;
 import com.scorenow.scorenow_api.domain.user.repository.UserLoginHistoryRepository;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +39,7 @@ public class AdminMemberService {
     public MemberBasicInfoResponseDto getMemberDetailBasic(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         return MemberBasicInfoResponseDto.from(user);
     }
@@ -48,6 +50,9 @@ public class AdminMemberService {
      * @return
      */
     public MemberSecurityInfoResponseDto getMemberSecurityInfo(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
         List<UserLoginHistory> histories = userLoginHistoryRepository
                 .findTop10ByUserIdOrderByLoginAtDesc(userId);
 

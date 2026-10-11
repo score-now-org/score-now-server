@@ -1,5 +1,9 @@
 package com.scorenow.scorenow_api.domain.user.jwt;
 
+import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
+import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
+import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,37 +11,46 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
 
-@Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
+    private final AdminTokenStore adminTokenStore;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        String token = resolveToken(request);
-
-        if (token != null && jwtProvider.validateToken(token)) {
-
-            // AccessToken 타입 검증
-            if (!jwtProvider.isAccessToken(token)) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "AccessToken이 아닙니다");
-                return;
+        String path = request.getServletPath();
+        if (path.equals("/api/v1/admin") || path.startsWith("/api/v1/admin/")
+                || path.equals("/admin") || path.startsWith("/admin/")) {
+            String token = AdminTokenStore.resolveToken(request.getHeader("Authorization"));
+            if (adminTokenStore.isValid(token)) {
+                SecurityContextHolder.getContext().setAuthentication(
+                        new UsernamePasswordAuthenticationToken("admin", null,
+                                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
             }
-
-            // userId 파싱 후 SecurityContext 저장
-            Long userId = jwtProvider.getUserId(token);
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
-            SecurityContextHolder.getContext().setAuthentication(auth);
+        } else {
+            String token = resolveToken(request);
+            if (token != null) {
+                try {
+                    Long userId = jwtProvider.getAccessTokenUserId(token);
+                    if (userId != null && userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
+                        SecurityContextHolder.getContext().setAuthentication(
+                                new UsernamePasswordAuthenticationToken(userId, null, List.of()));
+                    }
+                } catch (JwtException | IllegalArgumentException e) {
+                    SecurityContextHolder.clearContext();
+                }
+            }
         }
 
         filterChain.doFilter(request, response);

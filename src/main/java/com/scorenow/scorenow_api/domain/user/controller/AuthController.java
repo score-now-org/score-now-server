@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ public class AuthController {
     @Operation(summary = "소셜 로그인", description = "소셜 플랫폼(Google, Kakao 등)을 통해 로그인합니다.")
     @PostMapping("/social-login")
     public ApiResponse<SocialLoginDto> socialLogin(
-            @RequestBody SocialLoginRequestDto request,
+            @Valid @RequestBody SocialLoginRequestDto request,
             HttpServletRequest httpRequest) {
         SocialLoginDto result = authService.socialLogin(request, httpRequest);
         return ApiResponse.success(result);
@@ -46,8 +47,8 @@ public class AuthController {
     @PostMapping("/register-nickname")
     public ApiResponse<RegisterNicknameDto> registerNickname(
             @AuthenticationPrincipal Long id,
-            @RequestBody RegisterNicknameRequestDto request) {
-        RegisterNicknameDto result = authService.registerNickname(request);
+            @Valid @RequestBody RegisterNicknameRequestDto request) {
+        RegisterNicknameDto result = authService.registerNickname(id, request);
         return ApiResponse.success(result);
     }
 
@@ -99,7 +100,7 @@ public class AuthController {
     @Operation(summary = "토큰 갱신", description = "RefreshToken으로 AccessToken과 RefreshToken을 재발급합니다.")
     @PostMapping("/refresh")
     public ApiResponse<TokenResponseDto> refresh(
-            @RequestBody RefreshTokenRequestDto request) {
+            @Valid @RequestBody RefreshTokenRequestDto request) {
         TokenResponseDto tokens = authService.refresh(request.getRefreshToken());
         return ApiResponse.success(new TokenResponseDto(
                 tokens.getAccessToken(), tokens.getRefreshToken()));
