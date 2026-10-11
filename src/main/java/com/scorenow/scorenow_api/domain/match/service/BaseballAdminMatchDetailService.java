@@ -90,7 +90,6 @@ public class BaseballAdminMatchDetailService {
 
     /**
      * 현재 이닝 수정
-     * TODO: 이닝 변경 이벤트 발행 (SportDetailEventProcessor 개발 필요)
      */
     public void updateCurrentHalfInning(Long matchId, BaseballHalfInning halfInning) {
         findBaseballMatchByMatchId(matchId);
@@ -106,11 +105,12 @@ public class BaseballAdminMatchDetailService {
                 newBaseballDetail.getCurrentHalfInning(),
                 newBaseballDetail.getCount()
         );
+
+        eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);
     }
 
     /**
      * 이닝별 점수 수정
-     * TODO: 이닝 점수 변경 이벤트 발행 (SportDetailEventProcessor 개발 필요)
      */
     @Transactional
     public void updateInningScores(Long matchId, BaseballInningScores scores) {
@@ -118,15 +118,27 @@ public class BaseballAdminMatchDetailService {
         MatchDetailDocument matchDetailDocument = findMatchDetailDocumentByMatchId(matchId);
         BaseballDetail baseballDetail = resolveBaseballDetail(matchDetailDocument.getSportDetail());
 
-        // Match 점수 수정
-        match.updateHomeScore(scores.totalHomeScore());
-        match.updateAwayScore(scores.totalAwayScore());
+        int totalHomeScore = scores.totalHomeScore();
+        int totalAwayScore = scores.totalAwayScore();
+
+        boolean scoreChanged =
+                !Objects.equals(match.getHomeScore(), totalHomeScore)
+                        || !Objects.equals(match.getAwayScore(), totalAwayScore);
+
+        if (scoreChanged) {
+            match.updateHomeScore(totalHomeScore);
+            match.updateAwayScore(totalAwayScore);
+
+            eventPublisher.publishScoreChanged(matchId, totalHomeScore, totalAwayScore);
+        }
 
         // MatchDetailDocument.baseballDetail 의 야구 이닝별 점수 수정 (아예 교체하는 방식으로 하면 될 듯)
         BaseballDetail newBaseballDetail = baseballDetail.withInningScores(scores);
         MatchDetailDocument newMatchDetailDocument = matchDetailDocument.withSportDetail(newBaseballDetail);
 
         baseballMatchDetailRepository.updateInningScores(matchId, newBaseballDetail.getInningScores());
+
+        eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);
     }
 
     /**
@@ -145,7 +157,6 @@ public class BaseballAdminMatchDetailService {
 
     /**
      * 볼 / 아웃 카운트 수정
-     * TODO: 이벤트 발행
      */
     public void updateBaseballCount(Long matchId, BaseballCount count) {
         findBaseballMatchByMatchId(matchId);
@@ -154,13 +165,15 @@ public class BaseballAdminMatchDetailService {
         BaseballDetail baseballDetail = resolveBaseballDetail(matchDetailDocument.getSportDetail());
 
         BaseballDetail newBaseballDetail = baseballDetail.withCount(count);
+        MatchDetailDocument newMatchDetailDocument = matchDetailDocument.withSportDetail(newBaseballDetail);
 
         baseballMatchDetailRepository.updateCount(matchId, newBaseballDetail.getCount());
+
+        eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);
     }
 
     /**
      * 베이스별 정보 수정
-     * TODO: 이벤트 발행
      */
     public void updateBaseStates(Long matchId, BaseballBaseStates baseStates) {
         findBaseballMatchByMatchId(matchId);
@@ -169,8 +182,11 @@ public class BaseballAdminMatchDetailService {
         BaseballDetail baseballDetail = resolveBaseballDetail(matchDetailDocument.getSportDetail());
 
         BaseballDetail newBaseballDetail = baseballDetail.withBaseStates(baseStates);
+        MatchDetailDocument newMatchDetailDocument = matchDetailDocument.withSportDetail(newBaseballDetail);
 
         baseballMatchDetailRepository.updateBaseStates(matchId, newBaseballDetail.getBaseStates());
+
+        eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);
     }
 
     /**
@@ -184,7 +200,11 @@ public class BaseballAdminMatchDetailService {
         BaseballDetail baseballDetail = resolveBaseballDetail(matchDetailDocument.getSportDetail());
 
         BaseballDetail newBaseballDetail = baseballDetail.withPitcher(pitcher);
+        MatchDetailDocument newMatchDetailDocument = matchDetailDocument.withSportDetail(newBaseballDetail);
+
         baseballMatchDetailRepository.updatePitcher(matchId, newBaseballDetail.getPitcher());
+
+        eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);
     }
 
     /**
@@ -198,7 +218,11 @@ public class BaseballAdminMatchDetailService {
         BaseballDetail baseballDetail = resolveBaseballDetail(matchDetailDocument.getSportDetail());
 
         BaseballDetail newBaseballDetail = baseballDetail.withBatter(batter);
+        MatchDetailDocument newMatchDetailDocument = matchDetailDocument.withSportDetail(newBaseballDetail);
+
         baseballMatchDetailRepository.updateBatter(matchId, newBaseballDetail.getBatter());
+
+        eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);
     }
 
 

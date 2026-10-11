@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse.ViewResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +13,7 @@ import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,7 @@ public class MatchLineupGoalsService {
 			log.info("📡[GOALS VIEW CALL] matchId={}, sportId={}, apiMatchId={}",
 				matchId, sportId, apiMatchId);
 
-			var viewResponse = betsApiClient.getEventView(apiMatchId);
+			var viewResponse = betsApiClient.getFootballEventView(apiMatchId);
 
 			log.info("📩[GOALS VIEW RESP] matchId={}, hasResults={}",
 				matchId,
@@ -79,7 +79,7 @@ public class MatchLineupGoalsService {
 			}
 
 			var result = viewResponse.getResults().get(0);
-			List<BetsViewResponse.EventText> events = result.getEvents();
+			List<BetsFootballViewResponse.EventText> events = result.getEvents();
 			if (events == null || events.isEmpty()) {
 				log.debug("⏭[GOALS] events empty matchId={}, apiMatchId={}", matchId, apiMatchId);
 				return;
@@ -106,7 +106,7 @@ public class MatchLineupGoalsService {
 
 	@Transactional
 	public void updateLineupGoals(MatchLineupDocument matchLineupDocument, ViewResult matchDetail) {
-		List<BetsViewResponse.EventText> events = matchDetail.getEvents();
+		List<BetsFootballViewResponse.EventText> events = matchDetail.getEvents();
 
 		if (events == null || events.isEmpty()) {
 			log.info("⏭[GOALS] events empty apiMatchId={}", matchDetail.getId());
@@ -196,7 +196,7 @@ public class MatchLineupGoalsService {
 		return s == null ? "" : s.trim().toUpperCase();
 	}
 
-	private Map<String, Integer> buildGoalCounts(List<BetsViewResponse.EventText> events) {
+	private Map<String, Integer> buildGoalCounts(List<BetsFootballViewResponse.EventText> events) {
 		Map<String, Integer> counts = new HashMap<>();
 
 		for (var ev : events) {

@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball;
 
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.TypeAlias;
@@ -100,5 +101,10 @@ public class BaseballDetail implements SportDetail {
         return this.toBuilder()
                 .batter(batter)
                 .build();
+    }
+
+    @Override
+    public SportCode type() {
+        return SportCode.BASEBALL;
     }
 }

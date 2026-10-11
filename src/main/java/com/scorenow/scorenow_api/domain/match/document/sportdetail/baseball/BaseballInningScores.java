@@ -84,4 +84,44 @@ public class BaseballInningScores {
         return total;
     }
 
+    /**
+     * 이닝 별 점수 정보를 활용하여 현재 이닝 정보를 역산한다.
+     */
+    public BaseballHalfInning resolveCurrentHalfInning() {
+        int minInning = BaseballHalfInning.getMinInning();
+        int maxInning = BaseballHalfInning.getMaxInning();
+
+        for (int inning = minInning; inning <= maxInning; inning++) {
+            BaseballHalfInning currentTopInning = BaseballHalfInning.getTopInning(inning);
+            BaseballHalfInning currentBottomInning = BaseballHalfInning.getBottomInning(inning);
+
+            // 1. 어웨이(TOP) 점수가 있고, 홈(BOTTOM) 점수는 없다면, 현재는 N회 초이다.
+            if (scoresByHalfInning.get(currentTopInning) != null && scoresByHalfInning.get(currentBottomInning) == null) {
+                return currentTopInning;
+            }
+
+            // 2. 어웨이(TOP) 점수가 있고, 홈(BOTTOM) 점수도 있고, 다음 이닝 어웨이(TOP) 점수가 없다면, 현재는 N회 말이다.
+            if (scoresByHalfInning.get(currentTopInning) != null && scoresByHalfInning.get(currentBottomInning) != null) {
+
+                BaseballHalfInning nextTopInning = BaseballHalfInning.getTopInning(inning + 1);
+
+                // 다음 이닝 초(TOP) 정보가 없는 경우 (최대 이닝인 20회를 넘어가는 경우)
+                if (nextTopInning == null) {
+                    return currentBottomInning;
+                }
+
+                // 다음 이닝 초(TOP) 점수가 없는 경우
+                if (scoresByHalfInning.get(nextTopInning) == null) {
+                    return currentBottomInning;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public Integer getHalfInningScore(BaseballHalfInning halfInning) {
+        return scoresByHalfInning.get(halfInning);
+    }
+
 }

@@ -12,15 +12,19 @@ import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
+import com.scorenow.scorenow_api.external.betsapi.mapper.BetsEventSideMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -39,6 +43,8 @@ class MatchEventSyncServiceTest {
     private AdminFeaturedMatchService adminFeaturedMatchService;
     @Mock
     private MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
+    @Spy
+    private BetsEventSideMapper betsEventSideMapper;
     @Mock
     private MatchRepository matchRepository;
     @Mock
@@ -81,6 +87,54 @@ class MatchEventSyncServiceTest {
         then(leagueService).should().getLeague(2L);
         then(matchDetailRepository).should()
                 .createInitialMatchDetailIfAbsent(30L, SportCode.FOOTBALL);
+    }
+
+    @Test
+    void 야구는_Bets의_팀과_점수_순서를_반대로_저장한다() {
+        BetsEventResponse.Event event = createEvent();
+        event.setSs("4-1");
+
+        MatchSyncLeagueTarget leagueTarget = new MatchSyncLeagueTarget(
+                DataOrigin.BETS,
+                "16",
+                "100",
+                1L,
+                SportCode.BASEBALL,
+                2L,
+                "KBO"
+        );
+        League league = League.builder()
+                .id(2L)
+                .sportId(1L)
+                .build();
+        Team actualHomeTeam = Team.builder().id(20L).build();
+        Team actualAwayTeam = Team.builder().id(10L).build();
+
+        given(leagueService.getLeague(2L)).willReturn(league);
+        given(teamService.buildImageUrl("home-image")).willReturn("home-image-url");
+        given(teamService.buildImageUrl("away-image")).willReturn("away-image-url");
+        given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "20", "Away", "JP", "away-image-url"))
+                .willReturn(actualHomeTeam);
+        given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "10", "Home", "KR", "home-image-url"))
+                .willReturn(actualAwayTeam);
+        given(matchTeamDisplayOrderPolicy.decide(league)).willReturn(TeamDisplayOrder.HOME_AWAY);
+        given(matchRepository.findByExternalInfo(DataOrigin.BETS, event.getId())).willReturn(Optional.empty());
+        given(matchRepository.save(any(Match.class))).willAnswer(invocation -> {
+            Match match = invocation.getArgument(0);
+            ReflectionTestUtils.setField(match, "id", 30L);
+            return match;
+        });
+
+        matchEventSyncService.syncEvent(leagueTarget, event);
+
+        ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
+        then(matchRepository).should().save(matchCaptor.capture());
+        Match savedMatch = matchCaptor.getValue();
+
+        assertThat(savedMatch.getHomeId()).isEqualTo(20L);
+        assertThat(savedMatch.getAwayId()).isEqualTo(10L);
+        assertThat(savedMatch.getHomeScore()).isEqualTo(1);
+        assertThat(savedMatch.getAwayScore()).isEqualTo(4);
     }
 
     private BetsEventResponse.Event createEvent() {

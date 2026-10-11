@@ -1,6 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchSearchOptionsResponse.StatusOption;
+import java.util.Arrays;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -15,6 +18,32 @@ import java.util.Map;
 @Getter
 @Builder
 public class BaseballAdminMatchDetailResponse {
+
+    // 전체 선택지이며 현재 경기 상태에 따른 전환 가능 여부를 의미하지 않는다.
+    @Builder.Default
+    private List<StatusOption> statusOptions = Arrays.stream(MatchStatus.values())
+            .map(StatusOption::from)
+            .toList();
+
+    @Builder.Default
+    private List<HalfInningOption> halfInningOptions = Arrays.stream(BaseballHalfInning.values())
+            .map(HalfInningOption::from)
+            .toList();
+
+    @Getter
+    @AllArgsConstructor
+    public static class HalfInningOption {
+        private final String value;
+        private final String label;
+        private final int currentInningNumber;
+        private final String currentHalfInning;
+
+        public static HalfInningOption from(BaseballHalfInning inning) {
+            return new HalfInningOption(inning.name(), inning.getDescription(),
+                    inning.getInningNumber(), inning.getHalf().name());
+        }
+    }
+
 
     @Schema(description = "경기 시작 시간", example = "2026-06-05T20:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -172,13 +201,13 @@ public class BaseballAdminMatchDetailResponse {
     public static class BaseState {
         private Integer baseNumber;
         private boolean runnerOnBase;
-        private String runner;
+        private String runnerName;
 
         public static BaseState from(BaseballBase base, BaseballBaseStates.BaseballBaseState baseState) {
             return BaseState.builder()
                     .baseNumber(base.getBaseNumber())
                     .runnerOnBase(baseState.isRunnerOnBase())
-                    .runner(baseState.getRunnerName())
+                    .runnerName(baseState.getRunnerName())
                     .build();
         }
     }

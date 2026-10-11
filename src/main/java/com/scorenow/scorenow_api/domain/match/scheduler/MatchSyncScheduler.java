@@ -25,9 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 public class MatchSyncScheduler {
-
-    private static final String FOOTBALL = "1";
-
     private final JobLauncher jobLauncher;
     private final Job matchSyncJob;
     private final MatchSyncService matchSyncService;
@@ -57,14 +54,14 @@ public class MatchSyncScheduler {
     }
 
     /**
-     * Ended - 10분마다 (오늘 경기만, 종료 후 30분 내 반영)
+     * Ended - 10분마다 (UTC 전일 및 당일 경기, 종료 후 30분 내 반영)
      */
     @Scheduled(fixedDelay = 600000, zone = "Asia/Seoul")
     public void syncEndedMatches() {
         log.info("=== [ENDED] 종료 경기 동기화 ===");
 
         try {
-            int count = matchSyncService.syncEndedMatches(FOOTBALL, null);
+            int count = matchSyncService.syncRecentEndedMatches();
             log.info("[ENDED] 동기화 완료 - {}건", count);
         } catch (Exception e) {
             log.error("[ENDED] 동기화 실패", e);
@@ -77,7 +74,7 @@ public class MatchSyncScheduler {
      */
     @Scheduled(cron = "0 0/30 * * * *", zone = "Asia/Seoul")
     public void loadInplayCandidatesToCache() {
-        log.info("📅 INPLAY 예정 경기 캐싱 시작");
+        log.info("📅 1시간 이내 시작 예정 경기 캐싱 시작");
 
         try {
             inplayMatchCandidateLoadService.loadInplayCandidatesToCache(ZonedDateTime.now(SEOUL_TIME_ZONE_ID));
@@ -92,7 +89,7 @@ public class MatchSyncScheduler {
      */
     @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     public void syncInplayMatches() {
-        log.info("📅 INPLAY 경기 동기화 시작");
+        log.info("📅 시작 경기 동기화 시작");
 
         try {
             inplayMatchSyncService.syncInplayMatches(ZonedDateTime.now(SEOUL_TIME_ZONE_ID));

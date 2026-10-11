@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.Base
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballCount;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballInningScores;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballStats;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
@@ -25,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -264,7 +266,57 @@ class BaseballAdminMatchDetailServiceTest {
         assertThat(countCaptor.getValue().getBalls()).isZero();
         assertThat(countCaptor.getValue().getStrikes()).isZero();
         assertThat(countCaptor.getValue().getOuts()).isZero();
+        then(eventProcessorRegistry).should().process(any(), any());
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
+    }
+
+    @Test
+    void 이닝별_점수의_총점이_변경되면_경기_점수와_두_이벤트_처리를_수행한다() {
+        Match match = givenBaseballMatch(0, 0);
+        BaseballDetail currentDetail = BaseballDetail.builder()
+                .inningScores(BaseballInningScores.initialize())
+                .build();
+        MatchDetailDocument currentDocument = baseballDocument(currentDetail);
+        BaseballInningScores newScores = inningScores(Map.of(
+                BaseballHalfInning.FIRST_INNING_TOP, 2,
+                BaseballHalfInning.FIRST_INNING_BOTTOM, 1));
+        given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(currentDocument));
+
+        service.updateInningScores(MATCH_ID, newScores);
+
+        assertThat(match.getHomeScore()).isEqualTo(1);
+        assertThat(match.getAwayScore()).isEqualTo(2);
+        then(eventPublisher).should().publishScoreChanged(MATCH_ID, 1, 2);
+        then(baseballMatchDetailRepository).should().updateInningScores(MATCH_ID, newScores);
+
+        ArgumentCaptor<MatchDetailDocument> newDocumentCaptor =
+                ArgumentCaptor.forClass(MatchDetailDocument.class);
+        then(eventProcessorRegistry).should().process(eq(currentDocument), newDocumentCaptor.capture());
+        BaseballDetail capturedDetail = (BaseballDetail) newDocumentCaptor.getValue().getSportDetail();
+        assertThat(capturedDetail.getInningScores()).isSameAs(newScores);
+    }
+
+    @Test
+    void 이닝별_점수의_배치만_변경되고_총점이_같으면_공통_점수_이벤트는_발행하지_않는다() {
+        givenBaseballMatch(1, 1);
+        BaseballDetail currentDetail = BaseballDetail.builder()
+                .inningScores(inningScores(Map.of(
+                        BaseballHalfInning.FIRST_INNING_TOP, 1,
+                        BaseballHalfInning.FIRST_INNING_BOTTOM, 1)))
+                .build();
+        MatchDetailDocument currentDocument = baseballDocument(currentDetail);
+        BaseballInningScores newScores = inningScores(Map.of(
+                BaseballHalfInning.FIRST_INNING_TOP, 0,
+                BaseballHalfInning.FIRST_INNING_BOTTOM, 0,
+                BaseballHalfInning.SECOND_INNING_TOP, 1,
+                BaseballHalfInning.SECOND_INNING_BOTTOM, 1));
+        given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(currentDocument));
+
+        service.updateInningScores(MATCH_ID, newScores);
+
+        then(eventPublisher).should(never()).publishScoreChanged(any(), any(), any());
+        then(baseballMatchDetailRepository).should().updateInningScores(MATCH_ID, newScores);
+        then(eventProcessorRegistry).should().process(eq(currentDocument), any(MatchDetailDocument.class));
     }
 
     @Test
@@ -286,6 +338,7 @@ class BaseballAdminMatchDetailServiceTest {
         assertThat(awayCaptor.getValue().getHits()).isEqualTo(2);
         assertThat(awayCaptor.getValue().getErrors()).isEqualTo(1);
         assertThat(awayCaptor.getValue().getBaseOnBalls()).isZero();
+        then(eventProcessorRegistry).shouldHaveNoInteractions();
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
     }
 
@@ -298,6 +351,7 @@ class BaseballAdminMatchDetailServiceTest {
         service.updateBaseballCount(MATCH_ID, count);
 
         then(baseballMatchDetailRepository).should().updateCount(MATCH_ID, count);
+        then(eventProcessorRegistry).should().process(any(), any());
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
     }
 
@@ -311,6 +365,7 @@ class BaseballAdminMatchDetailServiceTest {
         service.updateBaseStates(MATCH_ID, baseStates);
 
         then(baseballMatchDetailRepository).should().updateBaseStates(MATCH_ID, baseStates);
+        then(eventProcessorRegistry).should().process(any(), any());
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
     }
 
@@ -322,6 +377,7 @@ class BaseballAdminMatchDetailServiceTest {
         service.updatePitcher(MATCH_ID, "투수");
 
         then(baseballMatchDetailRepository).should().updatePitcher(MATCH_ID, "투수");
+        then(eventProcessorRegistry).should().process(any(), any());
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
     }
 
@@ -333,6 +389,7 @@ class BaseballAdminMatchDetailServiceTest {
         service.updateBatter(MATCH_ID, "타자");
 
         then(baseballMatchDetailRepository).should().updateBatter(MATCH_ID, "타자");
+        then(eventProcessorRegistry).should().process(any(), any());
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
     }
 
@@ -344,7 +401,26 @@ class BaseballAdminMatchDetailServiceTest {
         service.updateDetailedBroadcastEnabled(MATCH_ID, true);
 
         then(baseballMatchDetailRepository).should().updateDetailedBroadcastEnabled(MATCH_ID, true);
+        then(eventProcessorRegistry).shouldHaveNoInteractions();
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
+    }
+
+    private Match givenBaseballMatch(Integer homeScore, Integer awayScore) {
+        Match match = Match.builder()
+                .id(MATCH_ID)
+                .sportId(SPORT_ID)
+                .homeScore(homeScore)
+                .awayScore(awayScore)
+                .build();
+        given(matchRepository.findById(MATCH_ID)).willReturn(Optional.of(match));
+        given(sportCodeResolver.resolveByInternalSportId(SPORT_ID)).willReturn(SportCode.BASEBALL);
+        return match;
+    }
+
+    private BaseballInningScores inningScores(Map<BaseballHalfInning, Integer> values) {
+        EnumMap<BaseballHalfInning, Integer> scores = new EnumMap<>(BaseballHalfInning.class);
+        scores.putAll(values);
+        return BaseballInningScores.of(scores);
     }
 
     private void givenMatchSport(SportCode sportCode) {

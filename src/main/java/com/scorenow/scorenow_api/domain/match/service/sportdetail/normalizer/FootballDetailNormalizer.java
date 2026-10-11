@@ -1,10 +1,8 @@
 package com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer;
 
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.service.MatchEventResolver;
-import com.scorenow.scorenow_api.domain.sport.model.SportCode;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +11,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class FootballDetailNormalizer implements SportDetailNormalizer {
+public class FootballDetailNormalizer {
 
     private static final int MD_FIRST_HALF = 0;
     private static final int MD_SECOND_HALF = 1;
@@ -28,13 +26,7 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
 
     private final MatchEventResolver matchEventResolver;
 
-    @Override
-    public SportCode type() {
-        return SportCode.FOOTBALL;
-    }
-
-    @Override
-    public SportDetail normalize(BetsViewResponse.ViewResult viewResult) {
+    public FootballDetail normalize(BetsFootballViewResponse.ViewResult viewResult) {
         FootballPhase phase = toPhase(viewResult);
 
         return FootballDetail.builder()
@@ -46,7 +38,7 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
                 .build();
     }
 
-    private FootballShootOutScore normalizeShootOutScore(BetsViewResponse.ViewResult viewResult) {
+    private FootballShootOutScore normalizeShootOutScore(BetsFootballViewResponse.ViewResult viewResult) {
         List<String> eventTexts = viewResult.getEventTexts();
         if (eventTexts == null || eventTexts.isEmpty()) {
             return null;
@@ -61,9 +53,9 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
     }
 
 
-    private FootballStats normalizeHomeStats(BetsViewResponse.ViewResult externalData) {
+    private FootballStats normalizeHomeStats(BetsFootballViewResponse.ViewResult externalData) {
 
-        BetsViewResponse.Stats stats = externalData.getStats();
+        BetsFootballViewResponse.Stats stats = externalData.getStats();
         if (stats == null) {
             return null;
         }
@@ -81,8 +73,8 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
                 .build();
     }
 
-    private FootballStats normalizeAwayStats(BetsViewResponse.ViewResult externalData) {
-        BetsViewResponse.Stats stats = externalData.getStats();
+    private FootballStats normalizeAwayStats(BetsFootballViewResponse.ViewResult externalData) {
+        BetsFootballViewResponse.Stats stats = externalData.getStats();
         if (stats == null) {
             return null;
         }
@@ -100,9 +92,9 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
                 .build();
     }
 
-    private FootballClock normalizeClock(BetsViewResponse.ViewResult externalData, FootballPhase phase) {
+    private FootballClock normalizeClock(BetsFootballViewResponse.ViewResult externalData, FootballPhase phase) {
 
-        BetsViewResponse.Timer timer = externalData.getTimer();
+        BetsFootballViewResponse.Timer timer = externalData.getTimer();
         if (timer == null) {
             return null;
         }
@@ -125,8 +117,8 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
                 .build();
     }
 
-    private FootballAdditionalTime normalizeAdditionalTime(BetsViewResponse.ViewResult externalData) {
-        BetsViewResponse.Timer timer = externalData.getTimer();
+    private FootballAdditionalTime normalizeAdditionalTime(BetsFootballViewResponse.ViewResult externalData) {
+        BetsFootballViewResponse.Timer timer = externalData.getTimer();
         if (timer == null || timer.getMd() == null || timer.getTa() == null || timer.getTa() < 0) {
             return null;
         }
@@ -149,8 +141,8 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
     /**
      * Bets View API 응답을 기반으로, 시스템 내부에서 사용하는 축구 경기 시간 정보로 변환
      */
-    private FootballPhase toPhase(BetsViewResponse.ViewResult externalData) {
-        BetsViewResponse.Timer timer = externalData.getTimer();
+    private FootballPhase toPhase(BetsFootballViewResponse.ViewResult externalData) {
+        BetsFootballViewResponse.Timer timer = externalData.getTimer();
         if (timer == null || timer.getMd() == null) {
             return null;
         }
@@ -185,7 +177,7 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
     /**
      * 하프타임, 후반전, 경기 종료
      */
-    private FootballPhase resolveStoppedSecondHalfPhase(BetsViewResponse.Timer timer) {
+    private FootballPhase resolveStoppedSecondHalfPhase(BetsFootballViewResponse.Timer timer) {
         // 경기 종료 (연장전 가지 않고 끝나는 경우)
         if (FULL_TIME_MINUTE.equals(timer.getTm())) {
             return FootballPhase.FULL_TIME;
@@ -202,7 +194,7 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
     /**
      * 연장 대기, 연장 전반
      */
-    private FootballPhase resolveStoppedExtraFirstHalfPhase(BetsViewResponse.Timer timer) {
+    private FootballPhase resolveStoppedExtraFirstHalfPhase(BetsFootballViewResponse.Timer timer) {
         // 연장 대기 (후반전 종료 후 연장 전반 시작 전)
         if (FULL_TIME_MINUTE.equals(timer.getTm())) {
             return FootballPhase.EXTRA_TIME_WAITING;
@@ -215,7 +207,7 @@ public class FootballDetailNormalizer implements SportDetailNormalizer {
      * 연장 후반, 연장 종료, 경기 종료
      * 참고 : 연장 종료는 하지 판단하지 않는다. 이유는 Bets 에서 내려주는 응답값만으로는 승부차기와 연장 종료가 구분이 안간다.
      */
-    private FootballPhase resolveStoppedExtraSecondHalfPhase(BetsViewResponse.Timer timer) {
+    private FootballPhase resolveStoppedExtraSecondHalfPhase(BetsFootballViewResponse.Timer timer) {
         // 경기 종료 (승부차기 가지 않고 끝나는 경우)
         if (EXTRA_FULL_TIME_MINUTE.equals(timer.getTm())) {
             return FootballPhase.FULL_TIME;

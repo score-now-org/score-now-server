@@ -6,7 +6,6 @@ import lombok.Getter;
 
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 
 @Getter
@@ -51,6 +50,10 @@ public class BaseballBaseStates {
         }
 
         return new BaseballBaseStates(copy);
+    }
+
+    public BaseballBaseState getBaseState(BaseballBase base) {
+        return baseStates.get(base);
     }
 
     @Getter

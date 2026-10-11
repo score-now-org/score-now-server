@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -47,8 +47,8 @@ public class BetsApiTestController {
 	}
 
 	@GetMapping("/event/view")
-	public ApiResponse<BetsViewResponse> testEventView(@RequestParam String eventId) {
-		return ApiResponse.success(betsApiClient.getEventView(eventId));
+	public ApiResponse<BetsFootballViewResponse> testEventView(@RequestParam String eventId) {
+		return ApiResponse.success(betsApiClient.getFootballEventView(eventId));
 	}
 
 //	@PostMapping("/sync/upcoming")

@@ -111,6 +111,26 @@ public enum BaseballHalfInning {
         return 20;
     }
 
+    public static BaseballHalfInning getTopInning(int inningNumber) {
+        for (BaseballHalfInning halfInning : BaseballHalfInning.values()) {
+            if (halfInning.inningNumber == inningNumber && halfInning.isTop()) {
+                return halfInning;
+            }
+        }
+
+        return null;
+    }
+
+    public static BaseballHalfInning getBottomInning(int inningNumber) {
+        for (BaseballHalfInning halfInning : BaseballHalfInning.values()) {
+            if (halfInning.inningNumber == inningNumber && halfInning.isBottom()) {
+                return halfInning;
+            }
+        }
+
+        return null;
+    }
+
     public enum Half {
         TOP, BOTTOM
     }

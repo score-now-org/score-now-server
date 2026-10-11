@@ -21,6 +21,8 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.external.betsapi.mapper.BetsEventSideMapper;
+import com.scorenow.scorenow_api.external.betsapi.mapper.BetsEventSideMapper.MappedSides;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ public class MatchEventSyncService {
     private final TeamService teamService;
     private final AdminFeaturedMatchService adminFeaturedMatchService;
     private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
+    private final BetsEventSideMapper betsEventSideMapper;
 
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
@@ -62,11 +65,20 @@ public class MatchEventSyncService {
         DataOrigin dataOrigin = leagueTarget.dataOrigin();
         Long internalSportId = leagueTarget.internalSportId();
         League league = leagueService.getLeague(leagueTarget.internalLeagueId());
+        MappedSides mappedSides = betsEventSideMapper.map(leagueTarget.sportCode(), event);
 
-        Team homeTeam = saveTeam(dataOrigin, event.getHome(), internalSportId);
-        Team awayTeam = saveTeam(dataOrigin, event.getAway(), internalSportId);
+        Team homeTeam = saveTeam(dataOrigin, mappedSides.homeTeam(), internalSportId);
+        Team awayTeam = saveTeam(dataOrigin, mappedSides.awayTeam(), internalSportId);
 
-        saveMatch(event, leagueTarget, league, homeTeam, awayTeam);
+        saveMatch(
+                event,
+                leagueTarget,
+                league,
+                homeTeam,
+                awayTeam,
+                mappedSides.homeScore(),
+                mappedSides.awayScore()
+        );
     }
 
     private Team saveTeam(DataOrigin dataOrigin, BetsEventResponse.Team betsTeam, Long internalSportId) {
@@ -84,7 +96,9 @@ public class MatchEventSyncService {
             MatchSyncLeagueTarget leagueTarget,
             League league,
             Team homeTeam,
-            Team awayTeam) {
+            Team awayTeam,
+            Integer homeScore,
+            Integer awayScore) {
 
         if (event.getLeague() == null || event.getHome() == null || event.getAway() == null) {
             log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
@@ -125,17 +139,9 @@ public class MatchEventSyncService {
             }
         }
 
-        if (event.getSs() != null && event.getSs().contains("-")) {
-            String[] scores = event.getSs().split("-");
-            if (scores.length == 2) {
-                try {
-                    match.updateHomeScore(Integer.parseInt(scores[0].trim()));
-                    match.updateAwayScore(Integer.parseInt(scores[1].trim()));
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid score format for eventId {}: ss='{}'", event.getId(), event.getSs());
-                }
-
-            }
+        if (homeScore != null && awayScore != null) {
+            match.updateHomeScore(homeScore);
+            match.updateAwayScore(awayScore);
         }
 
         Match savedMatch = matchRepository.save(match);
