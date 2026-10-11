@@ -27,13 +27,14 @@ public class AdminLoginController {
 
     private final String adminId;
     private final String adminPasswordHash;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
     private final AdminTokenStore tokenStore;
 
-    public AdminLoginController(AdminTokenStore tokenStore,
+    public AdminLoginController(AdminTokenStore tokenStore, BCryptPasswordEncoder passwordEncoder,
             @Value("${admin.id:${ADMIN_ID:}}") String adminId,
             @Value("${admin.password-hash:${ADMIN_PASSWORD_HASH:}}") String adminPasswordHash) {
         this.tokenStore = tokenStore;
+        this.passwordEncoder = passwordEncoder;
         this.adminId = adminId;
         this.adminPasswordHash = adminPasswordHash;
     }

@@ -8,6 +8,7 @@ import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.JwkSet;
 import io.jsonwebtoken.security.Jwks;
@@ -37,6 +38,8 @@ public class SocialLoginVerifier {
     private final Set<String> googleClientIds;
     private final Set<String> appleClientIds;
     private final String kakaoAppId;
+    private final JwtParser googleIdTokenParser;
+    private final JwtParser appleIdTokenParser;
     private final Cache<String, JwkSet> signingKeys = Caffeine.newBuilder()
             .maximumSize(2)
             .expireAfterWrite(Duration.ofMinutes(5))
@@ -53,6 +56,8 @@ public class SocialLoginVerifier {
         this.googleClientIds = clientIds(googleClientIds);
         this.appleClientIds = clientIds(appleClientIds);
         this.kakaoAppId = kakaoAppId.trim();
+        this.googleIdTokenParser = createIdTokenParser("https://www.googleapis.com/oauth2/v3/certs");
+        this.appleIdTokenParser = createIdTokenParser("https://appleid.apple.com/auth/keys");
     }
 
     public VerifiedUser verify(SocialLoginRequestDto request) {
@@ -64,9 +69,9 @@ public class SocialLoginVerifier {
             return switch (provider) {
                 case "google" -> verifyIdToken(provider, request.getIdToken(), googleClientIds,
                         Set.of("https://accounts.google.com", "accounts.google.com"),
-                        "https://www.googleapis.com/oauth2/v3/certs");
+                        googleIdTokenParser);
                 case "apple" -> verifyIdToken(provider, request.getIdToken(), appleClientIds,
-                        Set.of("https://appleid.apple.com"), "https://appleid.apple.com/auth/keys");
+                        Set.of("https://appleid.apple.com"), appleIdTokenParser);
                 case "kakao" -> verifyKakao(request.getAccessToken());
                 default -> throw new BusinessException(ErrorCode.INVALID_PARAMETER, "지원하지 않는 소셜 로그인입니다.");
             };
@@ -81,21 +86,12 @@ public class SocialLoginVerifier {
     }
 
     private VerifiedUser verifyIdToken(String provider, String token, Set<String> clientIds,
-            Set<String> issuers, String keysUrl) {
+            Set<String> issuers, JwtParser parser) {
         requireToken(token);
         if (clientIds.isEmpty()) {
             throw new BusinessException(ErrorCode.SOCIAL_LOGIN_NOT_CONFIGURED);
         }
-        Claims claims = Jwts.parser()
-                .keyLocator(header -> {
-                    if (!"RS256".equals(header.get("alg")) || !(header.get("kid") instanceof String keyId)) {
-                        throw new BusinessException(ErrorCode.SOCIAL_TOKEN_INVALID);
-                    }
-                    return signingKey(keysUrl, keyId);
-                })
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = parser.parseSignedClaims(token).getPayload();
 
         if (!issuers.contains(claims.getIssuer()) || claims.getAudience() == null
                 || Collections.disjoint(clientIds, claims.getAudience())
@@ -103,6 +99,17 @@ public class SocialLoginVerifier {
             throw new BusinessException(ErrorCode.SOCIAL_TOKEN_INVALID);
         }
         return new VerifiedUser(provider, claims.getSubject(), claims.get("name", String.class));
+    }
+
+    private JwtParser createIdTokenParser(String keysUrl) {
+        return Jwts.parser()
+                .keyLocator(header -> {
+                    if (!"RS256".equals(header.get("alg")) || !(header.get("kid") instanceof String keyId)) {
+                        throw new BusinessException(ErrorCode.SOCIAL_TOKEN_INVALID);
+                    }
+                    return signingKey(keysUrl, keyId);
+                })
+                .build();
     }
 
     private Key signingKey(String keysUrl, String keyId) {

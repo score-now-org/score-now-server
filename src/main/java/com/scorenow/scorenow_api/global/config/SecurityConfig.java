@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenAuthenticationFilter;
 import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtAuthenticationFilter;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
@@ -15,10 +16,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -41,21 +44,23 @@ public class SecurityConfig {
     private final ObjectMapper objectMapper;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ← 추가
-                .csrf(csrf -> csrf.disable())
-                //jwt사용 세션 stateless
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, exception) ->
-                                writeError(response, ErrorCode.AUTHENTICATION_REQUIRED))
-                        .accessDeniedHandler((request, response, exception) ->
-                                writeError(response, ErrorCode.ACCESS_DENIED)))
+    @Order(1)
+    public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
+        configureCommonSecurity(http)
+                .securityMatcher("/api/v1/admin/**", "/admin/**")
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/login", "/admin/login").permitAll()
-                        .requestMatchers("/api/v1/admin/**", "/admin/**").hasRole("ADMIN")
+                        .anyRequest().hasRole("ADMIN"))
+                .addFilterBefore(new AdminTokenAuthenticationFilter(adminTokenStore),
+                        UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        configureCommonSecurity(http)
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/images").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/posts").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/community/posts/me").authenticated()
@@ -88,9 +93,27 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtProvider, userRepository, adminTokenStore),
+                        new JwtAuthenticationFilter(jwtProvider, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    private HttpSecurity configureCommonSecurity(HttpSecurity http) throws Exception {
+        return http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) ->
+                                writeError(response, ErrorCode.AUTHENTICATION_REQUIRED))
+                        .accessDeniedHandler((request, response, exception) ->
+                                writeError(response, ErrorCode.ACCESS_DENIED)));
+    }
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     private void writeError(HttpServletResponse response, ErrorCode errorCode) throws IOException {

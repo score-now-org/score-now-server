@@ -117,6 +117,8 @@ Google/Apple 토큰은 공급자 공개키로 서명, 발급자, 대상 앱, 만
 
 로그인·닉네임 변경·프로필 응답의 `user.id`/`data.id`에는 내부 회원 ID가 포함됩니다. RefreshToken은 로그인과 갱신 모두 14일이며, 계정당 한 개의 RefreshToken을 저장합니다. 탈퇴 시 RefreshToken을 삭제하고 비활성·정지·탈퇴 계정의 기존 AccessToken도 보호된 HTTP API에서 허용하지 않습니다.
 
+AccessToken 인증 시 DB에서 회원 상태를 조회해 탈퇴·정지를 즉시 반영합니다.
+
 #### 관리자 인증과 회원 API
 
 - 로그인: `POST /api/v1/admin/login`, 본문 `{"id":"<관리자 ID>","password":"<새 비밀번호>"}`
@@ -128,6 +130,8 @@ Google/Apple 토큰은 공급자 공개키로 서명, 발급자, 대상 앱, 만
 - 로그아웃: `POST /api/v1/admin/logout`. Redis의 관리자 토큰을 삭제합니다.
 
 기존 `/admin/members`, `/admin/members/{id}`, `/admin/members/{id}/security` 경로도 유지합니다. `/api/v1/admin/**`와 `/admin/**`는 로그인 API를 제외하고 관리자 토큰이 필요합니다. 앱 JWT는 관리자 API에 사용할 수 없습니다. 관리자 토큰은 Redis에 저장하므로 서버 인스턴스 간 공유되며 만료 후에는 다시 로그인해야 합니다. 존재하지 않는 회원의 기본정보·보안정보 조회는 모두 404를 반환합니다.
+
+관리자 경로는 우선 적용되는 전용 인증 체인에서 UUID 토큰을 검증합니다. 나머지 경로는 앱 JWT 인증 체인을 사용하며 관리자 UUID 토큰으로 회원 인증을 받을 수 없습니다.
 
 관리자 로그인 성공과 기존 `/api/v1/admin/test` 성공 응답은 프론트 호환을 위해 기존 형식을 유지합니다. 인증 실패 응답과 나머지 회원 API는 `ApiResponse` 형식을 사용합니다.
 
