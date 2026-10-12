@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.realtime;
 
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballClock;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.dto.sse.*;
@@ -104,5 +105,26 @@ public class MatchRealtimeEventPublisher {
         MatchRealtimeEvent<FootballShootOutScoreChangePayload> data = MatchRealtimeEvent.of(FOOTBALL_SHOOT_OUT_SCORE_CHANGED, matchId, payload);
 
         registry.sendToMatch(matchId, FOOTBALL_SHOOT_OUT_SCORE_CHANGED.name(), data);
+    }
+
+    /**
+     * 야구 상세 정보 변경 이벤트 발행
+     * [이벤트 발행 조건]
+     * 1. 이닝 변경
+     * 2. 이닝 별 점수 변경
+     * 3. 볼/아웃 카운트 변경
+     * 4. 주자 진루 현황 변경
+     * 5. 투수/타자 변경
+     */
+    public void publishBaseballDetailChanged(Long matchId, BaseballDetail baseballDetail) {
+        if (baseballDetail == null) {
+            return;
+        }
+
+        BaseballDetailChangedPayload payload = BaseballDetailChangedPayload.from(baseballDetail);
+
+        MatchRealtimeEvent<BaseballDetailChangedPayload> data = MatchRealtimeEvent.of(BASEBALL_DETAIL_CHANGED, matchId, payload);
+
+        registry.sendToMatch(matchId, BASEBALL_DETAIL_CHANGED.name(), data);
     }
 }

@@ -2,20 +2,20 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
+import com.scorenow.scorenow_api.domain.match.dto.sync.MatchDetailSyncSnapshot;
+import com.scorenow.scorenow_api.domain.match.dto.sync.MatchDetailSyncStadium;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
-import com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer.SportDetailNormalizerRegistry;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.StadiumData;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -38,60 +38,56 @@ public class MatchDetailService {
 
     private final MatchRealtimeEventPublisher eventPublisher;
 
-    private final SportDetailNormalizerRegistry normalizerRegistry;
     private final SportDetailEventProcessorRegistry eventProcessorRegistry;
 
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
 
     @Transactional
-    public void updateInplayMatchDetail(DataOrigin dataOrigin, ViewResult viewResult) {
-        String apiMatchId = viewResult.getId();
+    public void updateInplayMatchDetail(MatchDetailSyncSnapshot snapshot) {
+        DataOrigin dataOrigin = snapshot.dataOrigin();
+        SportCode sportCode = snapshot.sportCode();
+        Long matchId = snapshot.matchId();
 
-        Match match = matchRepository.findByExternalInfo(dataOrigin, apiMatchId)
+        Match inplayMatch = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
 
-        MatchDetailDocument currentMatchDetailDocument = matchDetailRepository.findById(match.getId())
+        MatchDetailDocument currentMatchDetailDocument = matchDetailRepository.findById(inplayMatch.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
 
-        SportDetailType sportDetailType = SportDetailType.fromSportId(match.getSportId());
-
-        if (currentMatchDetailDocument.getType() != sportDetailType) {
+        if (sportCode != currentMatchDetailDocument.getType()) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 상세 종목 정보가 일치하지 않습니다.");
         }
 
-        // 종목에 특화된 형태로 정규화
-        SportDetail normalizedSportDetail = normalizerRegistry.normalize(sportDetailType, viewResult);
-
         // 기존 종목 상세 정보와 정규화한 상세 정보를 비교하여 병합
         SportDetail mergedSportDetail = mergeSportDetail(
-                sportDetailType,
+                sportCode,
                 currentMatchDetailDocument.getSportDetail(),
-                normalizedSportDetail
+                snapshot.sportDetail()
         );
 
         // 새로운 문서 생성
         MatchDetailDocument newMatchDetailDocument = MatchDetailDocument.builder()
-                .id(match.getId())
-                .type(sportDetailType)
+                .id(inplayMatch.getId())
+                .type(sportCode)
                 .sportDetail(mergedSportDetail)
                 .build();
 
         // 종목 공통 : 점수 업데이트 및 이벤트 발행
-        updateMatchScoreAndPublishEvent(match, viewResult.getHomeScore(), viewResult.getAwayScore());
+        updateMatchScoreAndPublishEvent(inplayMatch, snapshot.homeScore(), snapshot.awayScore());
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
-        StadiumData stadiumData = viewResult.getExtra().getStadiumData();
-        if (stadiumData != null) {
+        MatchDetailSyncStadium stadium = snapshot.stadium();
+        if (stadium != null) {
             Long stadiumId = stadiumCacheService.getOrCreateStadiumId(
                     dataOrigin,
-                    viewResult.getSportId(),
-                    stadiumData.getId(),
-                    stadiumData.getName(),
-                    stadiumData.getCity());
+                    snapshot.externalSportId(),
+                    stadium.externalId(),
+                    stadium.name(),
+                    stadium.city());
 
             // 경기 정보에 경기장 정보가 할당되어 있지 않은 경우에만 할당
-            if (match.isStadiumEmpty()) {
-                match.updateStadiumId(stadiumId);
+            if (inplayMatch.isStadiumEmpty()) {
+                inplayMatch.updateStadiumId(stadiumId);
             }
         }
 
@@ -103,23 +99,49 @@ public class MatchDetailService {
 
         // 종목 공통 : 경기 상태 업데이트 및 이벤트 발행
         updateMatchStatusAndPublishEvent(
-                match,
+                inplayMatch,
                 newMatchDetailDocument,
-                MatchStatus.fromCode(viewResult.getTimeStatus())
+                snapshot.status()
         );
 
-        log.info("✅ 경기 상세 데이터(MySQL & MongoDB) 동기화 완료 matchId:{}, apiMatchId:{}", match.getId(), apiMatchId);
+        log.info("✅ 경기 상세 데이터(MySQL & MongoDB) 동기화 완료. dataOrigin:{} sportCode:{} matchId:{}, apiMatchId:{}",
+                dataOrigin,
+                sportCode,
+                inplayMatch.getId(),
+                inplayMatch.getApiMatchId()
+        );
     }
 
     private SportDetail mergeSportDetail(
-            SportDetailType sportDetailType,
+            SportCode sportCode,
             SportDetail currentSportDetail,
             SportDetail newSportDetail) {
 
-        return switch (sportDetailType) {
+        return switch (sportCode) {
             case FOOTBALL -> mergeFootballDetail(currentSportDetail, newSportDetail);
+            case BASEBALL -> mergeBaseballDetail(currentSportDetail, newSportDetail);
             default -> newSportDetail;
         };
+    }
+
+    /**
+     * 기존 야구 경기 상세 문서와 Bets View API 를 통해 얻은 야구 상세 문서를 병합한다.
+     * 단, Bets 에서 제공하는 항목에 대해서만 교체를 진행한다.
+     */
+    private BaseballDetail mergeBaseballDetail(SportDetail currentSportDetail, SportDetail newSportDetail) {
+        BaseballDetail currentBaseballDetail = resolveBaseballDetail(currentSportDetail);
+        BaseballDetail newBaseballDetail = resolveBaseballDetail(newSportDetail);
+
+        BaseballDetail merged = currentBaseballDetail;
+        if (newBaseballDetail.getInningScores() != null) {
+            merged = merged.withInningScores(newBaseballDetail.getInningScores());
+        }
+
+        if (newBaseballDetail.getCurrentHalfInning() != null) {
+            merged = merged.withCurrentHalfInning(newBaseballDetail.getCurrentHalfInning());
+        }
+
+        return merged;
     }
 
     private FootballDetail mergeFootballDetail(SportDetail currentSportDetail, SportDetail newSportDetail) {
@@ -217,6 +239,18 @@ public class MatchDetailService {
         }
 
         return footballDetail;
+    }
+
+    private BaseballDetail resolveBaseballDetail(SportDetail sportDetail) {
+        if (sportDetail == null) {
+            return BaseballDetail.empty();
+        }
+
+        if (!(sportDetail instanceof BaseballDetail baseballDetail)) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "야구 상세 정보가 아닙니다.");
+        }
+
+        return baseballDetail;
     }
 
     private <T> T resolveIncomingOrCurrent(T currentValue, T incomingValue) {

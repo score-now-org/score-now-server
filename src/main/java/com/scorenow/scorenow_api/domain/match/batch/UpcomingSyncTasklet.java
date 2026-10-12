@@ -8,13 +8,15 @@ import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
 
 public class UpcomingSyncTasklet extends DateRangeSyncTasklet {
 
+	private static final String UPCOMING = "예정 경기 동기화";
+
 	public UpcomingSyncTasklet(MatchSyncService matchSyncService, TaskExecutor taskExecutor, int days) {
 		super(matchSyncService, taskExecutor, days);
 	}
 
 	@Override
 	protected String getLogLabel() {
-		return "Upcoming";
+		return UPCOMING;
 	}
 
 	@Override
@@ -23,7 +25,7 @@ public class UpcomingSyncTasklet extends DateRangeSyncTasklet {
 	}
 
 	@Override
-	protected int syncForDate(String date) {
-		return matchSyncService.syncUpcomingMatches(FOOTBALL, date);
+	protected int syncForDate(LocalDate localDate) {
+		return matchSyncService.syncUpcomingMatches(localDate);
 	}
 }

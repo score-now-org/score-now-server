@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.global.config;
 
 import com.scorenow.scorenow_api.domain.league.document.standings.football.FootballStandingsData;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import org.springframework.boot.autoconfigure.domain.EntityScanner;
 import org.springframework.context.ApplicationContext;
@@ -24,6 +25,8 @@ public class MongoMappingConfig {
 
         managedTypes.add(FootballDetail.class);
         managedTypes.add(FootballStandingsData.class);
+
+        managedTypes.add(BaseballDetail.class);
 
         return MongoManagedTypes.fromIterable(managedTypes);
     }

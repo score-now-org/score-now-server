@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.service.sportdetail.processor;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 @Component
 public class SportDetailEventProcessorRegistry {
 
-    private final Map<SportDetailType, SportDetailEventProcessor> eventProcessors;
+    private final Map<SportCode, SportDetailEventProcessor> eventProcessors;
 
     public SportDetailEventProcessorRegistry(List<SportDetailEventProcessor> eventProcessorList) {
         this.eventProcessors = eventProcessorList.stream()
@@ -27,7 +27,7 @@ public class SportDetailEventProcessorRegistry {
             MatchDetailDocument currentMatchDetailDocument,
             MatchDetailDocument newMatchDetailDocument) {
 
-        SportDetailType type = newMatchDetailDocument.getType();
+        SportCode type = newMatchDetailDocument.getType();
 
         SportDetailEventProcessor processor = eventProcessors.get(type);
         if (processor == null) {

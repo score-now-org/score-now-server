@@ -1,9 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.service.sportdetail.statistics;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
 import com.scorenow.scorenow_api.domain.match.dto.response.statistics.football.FootballStatisticsResponse;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 public class FootballStatisticsResolver implements MatchStatisticsResolver {
 
     @Override
-    public SportDetailType type() {
-        return SportDetailType.FOOTBALL;
+    public SportCode type() {
+        return SportCode.FOOTBALL;
     }
 
     @Override

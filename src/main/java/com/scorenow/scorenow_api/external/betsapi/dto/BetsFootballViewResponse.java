@@ -9,7 +9,7 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import lombok.Data;
 
 @Data
-public class BetsViewResponse {
+public class BetsFootballViewResponse {
     private final DataOrigin provider = DataOrigin.BETS;
 
     private List<ViewResult> results;
@@ -29,13 +29,13 @@ public class BetsViewResponse {
         @JsonProperty("time_status")
         private String timeStatus;
 
-        private BetsViewResponse.League league;
+        private BetsFootballViewResponse.League league;
 
         @JsonProperty("home")
-        private BetsViewResponse.Team homeTeam;
+        private BetsFootballViewResponse.Team homeTeam;
 
         @JsonProperty("away")
-        private BetsViewResponse.Team awayTeam;
+        private BetsFootballViewResponse.Team awayTeam;
 
         private String ss;      // 현재 스코어 정보 home:away
         private Stats stats;

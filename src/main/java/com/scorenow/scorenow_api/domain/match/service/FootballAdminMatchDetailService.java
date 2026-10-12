@@ -2,7 +2,6 @@ package com.scorenow.scorenow_api.domain.match.service;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.dto.request.*;
 import com.scorenow.scorenow_api.domain.match.dto.response.FootballAdminMatchDetailResponse;
@@ -16,6 +15,8 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.displaytext.football.FootballClockDisplayTextResolver;
 import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.SportDetailEventProcessorRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
+import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,8 @@ public class FootballAdminMatchDetailService {
     private final FootballClockDisplayTextResolver footballClockDisplayTextResolver;
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
     private final MatchScheduledStartAtUpdater matchScheduledStartAtUpdater;
+
+    private final SportCodeResolver sportCodeResolver;
 
     /**
      * 축구 경기 중계 데이터 조회
@@ -296,7 +299,7 @@ public class FootballAdminMatchDetailService {
     private MatchDetailDocument findFootballMatchDetailDocumentByMatchId(Long matchId) {
         MatchDetailDocument matchDetailDocument = findMatchDetailDocumentByMatchId(matchId);
 
-        if (matchDetailDocument.getType() != SportDetailType.FOOTBALL) {
+        if (matchDetailDocument.getType() != SportCode.FOOTBALL) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "축구 경기 상세 정보가 아닙니다.");
         }
 
@@ -333,13 +336,13 @@ public class FootballAdminMatchDetailService {
 
     private void validateFootballMatch(Match match, MatchDetailDocument currentMatchDetailDocument) {
         // 경기 종목 사전 검증
-        SportDetailType matchSportDetailType = SportDetailType.fromSportId(match.getSportId());
-        if (matchSportDetailType != SportDetailType.FOOTBALL) {
+        SportCode sportCode = sportCodeResolver.resolveByInternalSportId(match.getSportId());
+        if (sportCode != SportCode.FOOTBALL) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "축구 경기 상세 정보 수정 요청이 아닙니다.");
         }
 
         // 축구 경기 검증
-        if (currentMatchDetailDocument.getType() != SportDetailType.FOOTBALL) {
+        if (currentMatchDetailDocument.getType() != SportCode.FOOTBALL) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "축구 경기 상세 정보 수정 요청이 아닙니다.");
         }
     }

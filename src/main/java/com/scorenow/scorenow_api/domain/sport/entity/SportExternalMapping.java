@@ -8,11 +8,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "sport_external_mappings",
+@Table(
+        name = "sport_external_mappings",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_sport_external_mappings",
-                        columnNames = {"provider", "api_sport_id"})})
+                        name = "uk_sport_external_provider_api_sport",
+                        columnNames = {"provider", "api_sport_id"}
+                ),
+                @UniqueConstraint(
+                        name = "uk_sport_external_provider_internal_sport",
+                        columnNames = {"provider", "internal_sport_id"}
+                )
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter

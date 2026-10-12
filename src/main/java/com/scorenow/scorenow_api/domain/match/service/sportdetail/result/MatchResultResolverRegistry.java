@@ -1,9 +1,9 @@
 package com.scorenow.scorenow_api.domain.match.service.sportdetail.result;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchResult;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class MatchResultResolverRegistry {
 
-    private final Map<SportDetailType, MatchResultResolver> resolvers;
+    private final Map<SportCode, MatchResultResolver> resolvers;
 
     public MatchResultResolverRegistry(List<MatchResultResolver> resolvers) {
         this.resolvers = resolvers.stream()
@@ -45,7 +45,7 @@ public class MatchResultResolverRegistry {
         return getResolver(resolveType(matchDetailDocument)).resolveWinnerTeamName(match, matchResult);
     }
 
-    private MatchResultResolver getResolver(SportDetailType type) {
+    private MatchResultResolver getResolver(SportCode type) {
         MatchResultResolver resolver = resolvers.get(type);
         if (resolver == null) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "지원하지 않는 종목입니다. type=" + type);
@@ -53,7 +53,7 @@ public class MatchResultResolverRegistry {
         return resolver;
     }
 
-    private SportDetailType resolveType(MatchDetailDocument matchDetailDocument) {
+    private SportCode resolveType(MatchDetailDocument matchDetailDocument) {
         if (matchDetailDocument == null || matchDetailDocument.getType() == null) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 상세 종목 정보가 없습니다.");
         }

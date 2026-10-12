@@ -1,7 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.repository;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,5 +17,5 @@ public interface MatchDetailRepository {
 
     void upsertMatchDetail(MatchDetailDocument matchDetailDocument);
 
-    void createInitialMatchDetailIfAbsent(Long matchId, SportDetailType type);
+    void createInitialMatchDetailIfAbsent(Long matchId, SportCode type);
 }

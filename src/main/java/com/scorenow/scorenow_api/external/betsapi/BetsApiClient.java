@@ -1,16 +1,9 @@
 package com.scorenow.scorenow_api.external.betsapi;
 
+import com.scorenow.scorenow_api.external.betsapi.dto.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsLeagueResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsSquadResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsStandingsResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsTeamResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,139 +13,152 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class BetsApiClient {
 
-	private final RestTemplate restTemplate;
-	private final BetsApiProperties properties;
+    private final RestTemplate restTemplate;
+    private final BetsApiProperties properties;
 
-	/**
-	 * 예정 경기 조회
-	 */
-	public BetsEventResponse getUpcomingEvents(String apiSportId, String apiLeagueId, String day) {
-		String url = buildUrl("/v3/events/upcoming")
-			.queryParam("sport_id", apiSportId)
-			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(apiLeagueId))
-			.queryParamIfPresent("day", java.util.Optional.ofNullable(day))
-			.build().toUriString();
+    /**
+     * 예정 경기 조회
+     */
+    public BetsEventResponse getUpcomingEvents(String apiSportId, String apiLeagueId, String day) {
+        String url = buildUrl("/v3/events/upcoming")
+                .queryParam("sport_id", apiSportId)
+                .queryParamIfPresent("league_id", java.util.Optional.ofNullable(apiLeagueId))
+                .queryParamIfPresent("day", java.util.Optional.ofNullable(day))
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsEventResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsEventResponse.class);
+    }
 
-	/**
-	 * 진행 중 경기 조회
-	 */
-	public BetsEventResponse getInplayEvents(String apiSportId, String apiLeagueId) {
-		String url = buildUrl("/v3/events/inplay")
-			.queryParam("sport_id", apiSportId)
-			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(apiLeagueId))
-			.build().toUriString();
+    /**
+     * 진행 중 경기 조회
+     */
+    public BetsEventResponse getInplayEvents(String apiSportId, String apiLeagueId) {
+        String url = buildUrl("/v3/events/inplay")
+                .queryParam("sport_id", apiSportId)
+                .queryParamIfPresent("league_id", java.util.Optional.ofNullable(apiLeagueId))
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsEventResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsEventResponse.class);
+    }
 
-	/**
-	 * 종료 경기 조회
-	 */
-	public BetsEventResponse getEndedEvents(String apiSportId, String apiLeagueId, String day) {
-		String url = buildUrl("/v3/events/ended")
-			.queryParam("sport_id", apiSportId)
-			.queryParamIfPresent("league_id", java.util.Optional.ofNullable(apiLeagueId))
-			.queryParamIfPresent("day", java.util.Optional.ofNullable(day))
-			.build().toUriString();
+    /**
+     * 종료 경기 조회
+     */
+    public BetsEventResponse getEndedEvents(String apiSportId, String apiLeagueId, String day) {
+        String url = buildUrl("/v3/events/ended")
+                .queryParam("sport_id", apiSportId)
+                .queryParamIfPresent("league_id", java.util.Optional.ofNullable(apiLeagueId))
+                .queryParamIfPresent("day", java.util.Optional.ofNullable(day))
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsEventResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsEventResponse.class);
+    }
 
-	/**
-	 * 리그 목록 조회
-	 */
-	public BetsLeagueResponse getLeagues(String apiSportId, int page) {
-		String url = buildUrl("/v4/league")
-			.queryParam("sport_id", apiSportId)
-			.queryParam("page", page)
-			.build().toUriString();
+    /**
+     * 리그 목록 조회
+     */
+    public BetsLeagueResponse getLeagues(String apiSportId, int page) {
+        String url = buildUrl("/v4/league")
+                .queryParam("sport_id", apiSportId)
+                .queryParam("page", page)
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsLeagueResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsLeagueResponse.class);
+    }
 
-	/**
-	 * 팀 목록 조회
-	 */
-	public BetsTeamResponse getTeams(String apiSportId, String maxId) {
-		String url = buildUrl("/v3/team")
-			.queryParam("sport_id", apiSportId)
-			.queryParamIfPresent("max_id", java.util.Optional.ofNullable(maxId))
-			.build().toUriString();
+    /**
+     * 팀 목록 조회
+     */
+    public BetsTeamResponse getTeams(String apiSportId, String maxId) {
+        String url = buildUrl("/v3/team")
+                .queryParam("sport_id", apiSportId)
+                .queryParamIfPresent("max_id", java.util.Optional.ofNullable(maxId))
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsTeamResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsTeamResponse.class);
+    }
 
-	/**
-	 * 경기 상세 정보 조회
-	 * 다건 조회 가능 (event_id=11915004,11914547,11914527,11914156)
-	 */
-	public BetsViewResponse getEventView(String eventId) {
-		String url = buildUrl("/v1/event/view")
-			.queryParam("event_id", eventId)
-			.build().toUriString();
+    /**
+     * 축구 경기 상세 정보 조회
+     * 다건 조회 가능 (event_id=11915004,11914547,11914527,11914156)
+     */
+    public BetsFootballViewResponse getFootballEventView(String footballEventIds) {
+        String url = buildUrl("/v1/event/view")
+                .queryParam("event_id", footballEventIds)
+                .build().toUriString();
 
-		log.debug("BetsAPI 상세 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsViewResponse.class);
-	}
+        log.debug("BetsAPI 상세 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsFootballViewResponse.class);
+    }
 
-	/**
-	 * 라인업 조회
-	 */
-	public BetsLineupResponse getLineup(String eventId) {
-		String url = buildUrl("/v4/event/lineup")
-			.queryParam("event_id", eventId)
-			.build().toUriString();
+    /**
+     * 야구 경기 상세 정보 조회
+     * 다건 조회 가능 (event_id=11915004,11914547,11914527,11914156)
+     */
+    public BetsBaseballViewResponse getBaseballEventView(String baseballEventIds) {
+        String url = buildUrl("/v1/event/view")
+                .queryParam("event_id", baseballEventIds)
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsLineupResponse.class);
-	}
+        log.debug("BetsAPI 상세 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsBaseballViewResponse.class);
+    }
 
-	/**
-	 * 팀순위 조회
-	 */
-	public BetsStandingsResponse getStandings(String leagueId) {
-		String url = buildUrl("/v4/league/table")
-			.queryParam("league_id", leagueId)
-			.build().toUriString();
+    /**
+     * 라인업 조회
+     */
+    public BetsLineupResponse getLineup(String eventId) {
+        String url = buildUrl("/v4/event/lineup")
+                .queryParam("event_id", eventId)
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsStandingsResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsLineupResponse.class);
+    }
 
-	/**
-	 * 스쿼드 조회
-	 */
-	public BetsSquadResponse getSquad(String teamId) {
-		String url = buildUrl("/v4/team/squad")
-			.queryParam("team_id", teamId)
-			.build().toUriString();
+    /**
+     * 팀순위 조회
+     */
+    public BetsStandingsResponse getStandings(String leagueId) {
+        String url = buildUrl("/v4/league/table")
+                .queryParam("league_id", leagueId)
+                .build().toUriString();
 
-		log.debug("BetsAPI 호출: {}", maskToken(url));
-		return restTemplate.getForObject(url, BetsSquadResponse.class);
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsStandingsResponse.class);
+    }
 
-	/**
-	 * URL 빌더(공통)
-	 */
-	private UriComponentsBuilder buildUrl(String path) {
-		return UriComponentsBuilder
-			.fromHttpUrl(properties.getBaseUrl())
-			.path(path)
-			.queryParam("token", properties.getToken());
-	}
+    /**
+     * 스쿼드 조회
+     */
+    public BetsSquadResponse getSquad(String teamId) {
+        String url = buildUrl("/v4/team/squad")
+                .queryParam("team_id", teamId)
+                .build().toUriString();
 
-	/**
-	 * 로그에 토큰 노출 방지
-	 */
-	private String maskToken(String url) {
-		return url.replaceAll("token=[^&]+", "token=***");
-	}
+        log.debug("BetsAPI 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsSquadResponse.class);
+    }
+
+    /**
+     * URL 빌더(공통)
+     */
+    private UriComponentsBuilder buildUrl(String path) {
+        return UriComponentsBuilder
+                .fromHttpUrl(properties.getBaseUrl())
+                .path(path)
+                .queryParam("token", properties.getToken());
+    }
+
+    /**
+     * 로그에 토큰 노출 방지
+     */
+    private String maskToken(String url) {
+        return url.replaceAll("token=[^&]+", "token=***");
+    }
 }

@@ -4,5 +4,5 @@ import lombok.Getter;
 
 @Getter
 public enum SportCode {
-    FOOTBALL
+    FOOTBALL, BASEBALL
 }

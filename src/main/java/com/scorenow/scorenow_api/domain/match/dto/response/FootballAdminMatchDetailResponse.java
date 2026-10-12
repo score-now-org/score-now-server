@@ -1,18 +1,47 @@
 package com.scorenow.scorenow_api.domain.match.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
+import com.scorenow.scorenow_api.domain.match.dto.response.AdminMatchSearchOptionsResponse.StatusOption;
+import java.util.Arrays;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
 @Schema(description = "관리자 축구 경기 상세 응답")
 public class FootballAdminMatchDetailResponse {
+
+    // 전체 선택지이며 현재 경기 상태에 따른 전환 가능 여부를 의미하지 않는다.
+    @Builder.Default
+    private List<StatusOption> statusOptions = Arrays.stream(MatchStatus.values())
+            .map(StatusOption::from)
+            .toList();
+
+    @Builder.Default
+    private List<PhaseOption> phaseOptions = Arrays.stream(FootballPhase.values())
+            .map(PhaseOption::from)
+            .toList();
+
+    @Getter
+    @AllArgsConstructor
+    public static class PhaseOption {
+        private final String value;
+        private final String label;
+        private final boolean clockRunningPhase;
+
+        public static PhaseOption from(FootballPhase phase) {
+            return new PhaseOption(phase.name(), phase.getDescription(), phase.isClockRunningPhase());
+        }
+    }
+
 
     @Schema(description = "경기 시작 시간", example = "2026-06-05T20:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

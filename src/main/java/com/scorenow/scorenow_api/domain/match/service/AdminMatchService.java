@@ -7,11 +7,12 @@ import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
+import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -62,6 +63,8 @@ public class AdminMatchService {
     private final MatchRealtimeEventPublisher eventPublisher;
 
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
+
+    private final SportCodeResolver sportCodeResolver;
 
     /**
      * 경기 리스트 조회
@@ -119,8 +122,8 @@ public class AdminMatchService {
 
         Match savedMatch = matchRepository.save(match);
 
-        SportDetailType type = SportDetailType.fromSportId(savedMatch.getSportId());
-        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), type);
+        SportCode sportCode = sportCodeResolver.resolveByInternalSportId(savedMatch.getSportId());
+        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), sportCode);
 
         log.info("수동 경기 등록 완료 - matchId: {}", match.getId());
     }

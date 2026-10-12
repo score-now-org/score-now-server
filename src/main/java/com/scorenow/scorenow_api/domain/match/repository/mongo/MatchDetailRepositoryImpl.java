@@ -1,8 +1,8 @@
 package com.scorenow.scorenow_api.domain.match.repository.mongo;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
-import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetailType;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -56,7 +56,7 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
 
         Update update = new Update()
                 .setOnInsert("created_at", now)
-                .set("type", matchDetailDocument.getType())               // 종목 타입
+                .set("type", matchDetailDocument.getType())           // 종목 타입
                 .set("sportDetail", matchDetailDocument.getSportDetail())  // 종목 별 상세 정보
                 .set("updated_at", now);
 
@@ -64,7 +64,7 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public void createInitialMatchDetailIfAbsent(Long matchId, SportDetailType type) {
+    public void createInitialMatchDetailIfAbsent(Long matchId, SportCode type) {
         Query query = new Query(Criteria.where("_id").is(matchId));
         LocalDateTime now = LocalDateTime.now();
 

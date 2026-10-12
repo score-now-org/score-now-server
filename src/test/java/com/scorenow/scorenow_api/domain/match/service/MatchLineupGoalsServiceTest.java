@@ -18,8 +18,8 @@ import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse;
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsViewResponse.ViewResult;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse.ViewResult;
 
 @ExtendWith(MockitoExtension.class)
 class MatchLineupGoalsServiceTest {
@@ -47,9 +47,9 @@ class MatchLineupGoalsServiceTest {
 	@Test
 	void 득점_이벤트를_라인업_선수에게_반영한다() {
 		LineupPlayer player = mock(LineupPlayer.class);
-		BetsViewResponse response = mock(BetsViewResponse.class);
+		BetsFootballViewResponse response = mock(BetsFootballViewResponse.class);
 		ViewResult result = mock(ViewResult.class);
-		BetsViewResponse.EventText event = 득점_이벤트(
+		BetsFootballViewResponse.EventText event = 득점_이벤트(
 			"Goal - Son Heung-min (Tottenham)"
 		);
 
@@ -58,7 +58,7 @@ class MatchLineupGoalsServiceTest {
 		when(document.getSportId()).thenReturn(37L);
 		when(document.getApiMatchId()).thenReturn("api-match-1");
 
-		when(betsApiClient.getEventView("api-match-1"))
+		when(betsApiClient.getFootballEventView("api-match-1"))
 			.thenReturn(response);
 		when(response.getResults()).thenReturn(List.of(result));
 		when(result.getEvents()).thenReturn(List.of(event));
@@ -81,10 +81,10 @@ class MatchLineupGoalsServiceTest {
 		LineupPlayer player = mock(LineupPlayer.class);
 		ViewResult matchDetail = mock(ViewResult.class);
 
-		BetsViewResponse.EventText firstGoal = 득점_이벤트(
+		BetsFootballViewResponse.EventText firstGoal = 득점_이벤트(
 			"Goal - Son Heung-min (Tottenham)"
 		);
-		BetsViewResponse.EventText secondGoal = 득점_이벤트(
+		BetsFootballViewResponse.EventText secondGoal = 득점_이벤트(
 			"Goal - Son Heung-min (Tottenham)"
 		);
 
@@ -107,7 +107,7 @@ class MatchLineupGoalsServiceTest {
 	void 기존_득점_수와_같으면_저장하지_않는다() {
 		LineupPlayer player = mock(LineupPlayer.class);
 		ViewResult matchDetail = mock(ViewResult.class);
-		BetsViewResponse.EventText event = 득점_이벤트(
+		BetsFootballViewResponse.EventText event = 득점_이벤트(
 			"Goal - Son Heung-min (Tottenham)"
 		);
 
@@ -129,7 +129,7 @@ class MatchLineupGoalsServiceTest {
 	void 득점_기록이_없는_선수의_기존_득점을_0으로_수정한다() {
 		LineupPlayer player = mock(LineupPlayer.class);
 		ViewResult matchDetail = mock(ViewResult.class);
-		BetsViewResponse.EventText event = 득점_이벤트(
+		BetsFootballViewResponse.EventText event = 득점_이벤트(
 			"Goal - Other Player (Other Team)"
 		);
 
@@ -151,7 +151,7 @@ class MatchLineupGoalsServiceTest {
 	void 득점이_아닌_이벤트는_득점_계산에서_제외한다() {
 		LineupPlayer player = mock(LineupPlayer.class);
 		ViewResult matchDetail = mock(ViewResult.class);
-		BetsViewResponse.EventText event = 득점_이벤트(
+		BetsFootballViewResponse.EventText event = 득점_이벤트(
 			"Yellow Card - Son Heung-min (Tottenham)"
 		);
 
@@ -228,14 +228,14 @@ class MatchLineupGoalsServiceTest {
 
 	@Test
 	void 경기_상세_응답이_비어있으면_저장하지_않는다() {
-		BetsViewResponse response = mock(BetsViewResponse.class);
+		BetsFootballViewResponse response = mock(BetsFootballViewResponse.class);
 
 		when(matchLineupRepo.findById(1L))
 			.thenReturn(Optional.of(document));
 		when(document.getSportId()).thenReturn(37L);
 		when(document.getApiMatchId()).thenReturn("api-match-1");
 
-		when(betsApiClient.getEventView("api-match-1"))
+		when(betsApiClient.getFootballEventView("api-match-1"))
 			.thenReturn(response);
 		when(response.getResults()).thenReturn(List.of());
 
@@ -255,9 +255,9 @@ class MatchLineupGoalsServiceTest {
 		verify(matchLineupRepo, never()).save(any());
 	}
 
-	private BetsViewResponse.EventText 득점_이벤트(String text) {
-		BetsViewResponse.EventText event =
-			mock(BetsViewResponse.EventText.class);
+	private BetsFootballViewResponse.EventText 득점_이벤트(String text) {
+		BetsFootballViewResponse.EventText event =
+			mock(BetsFootballViewResponse.EventText.class);
 
 		when(event.getText()).thenReturn(text);
 
