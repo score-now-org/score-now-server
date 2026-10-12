@@ -103,7 +103,8 @@ public class BaseballAdminMatchDetailService {
         baseballMatchDetailRepository.updateCurrentHalfInning(
                 matchId,
                 newBaseballDetail.getCurrentHalfInning(),
-                newBaseballDetail.getCount()
+                newBaseballDetail.getCount(),
+                newBaseballDetail.getBaseStates()
         );
 
         eventProcessorRegistry.process(matchDetailDocument, newMatchDetailDocument);

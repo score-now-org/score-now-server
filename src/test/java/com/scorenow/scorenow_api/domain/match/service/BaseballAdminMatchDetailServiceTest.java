@@ -254,18 +254,27 @@ class BaseballAdminMatchDetailServiceTest {
     }
 
     @Test
-    void 상세가_없어도_이닝과_초기화된_카운트를_함께_저장한다() {
+    void 상세가_없어도_이닝과_초기화된_카운트와_진루_현황을_함께_저장한다() {
         givenMatchSport(SportCode.BASEBALL);
         given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(baseballDocument(null)));
 
         service.updateCurrentHalfInning(MATCH_ID, BaseballHalfInning.FIRST_INNING_TOP);
 
         ArgumentCaptor<BaseballCount> countCaptor = ArgumentCaptor.forClass(BaseballCount.class);
+        ArgumentCaptor<BaseballBaseStates> baseStatesCaptor = ArgumentCaptor.forClass(BaseballBaseStates.class);
         then(baseballMatchDetailRepository).should().updateCurrentHalfInning(
-                eq(MATCH_ID), eq(BaseballHalfInning.FIRST_INNING_TOP), countCaptor.capture());
+                eq(MATCH_ID),
+                eq(BaseballHalfInning.FIRST_INNING_TOP),
+                countCaptor.capture(),
+                baseStatesCaptor.capture());
         assertThat(countCaptor.getValue().getBalls()).isZero();
         assertThat(countCaptor.getValue().getStrikes()).isZero();
         assertThat(countCaptor.getValue().getOuts()).isZero();
+        for (BaseballBase base : BaseballBase.values()) {
+            BaseballBaseStates.BaseballBaseState baseState = baseStatesCaptor.getValue().getBaseState(base);
+            assertThat(baseState.isRunnerOnBase()).isFalse();
+            assertThat(baseState.getRunnerName()).isEmpty();
+        }
         then(eventProcessorRegistry).should().process(any(), any());
         then(matchDetailRepository).should(never()).upsertMatchDetail(any());
     }

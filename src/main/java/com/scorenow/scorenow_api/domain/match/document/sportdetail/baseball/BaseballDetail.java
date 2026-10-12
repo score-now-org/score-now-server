@@ -62,7 +62,8 @@ public class BaseballDetail implements SportDetail {
 
         return this.toBuilder()
                 .currentHalfInning(halfInning)
-                .count(BaseballCount.empty())   // 이닝 및 공수 전환 시, 볼/아웃 카운트 초기화
+                .count(BaseballCount.empty())               // 이닝 및 공수 전환 시, 볼/아웃 카운트 초기화
+                .baseStates(BaseballBaseStates.initialize())     // 이닝 및 공수 전환 시, 진루 현황 초기화
                 .build();
     }
 

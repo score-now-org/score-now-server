@@ -5,7 +5,7 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.*;
 public interface BaseballMatchDetailRepository {
     void updateInningScores(Long matchId, BaseballInningScores scores);
 
-    void updateCurrentHalfInning(Long matchId, BaseballHalfInning currentHalfInning, BaseballCount count);
+    void updateCurrentHalfInning(Long matchId, BaseballHalfInning currentHalfInning, BaseballCount count, BaseballBaseStates baseStates);
 
     void updateStats(Long matchId, BaseballStats homeStats, BaseballStats awayStats);
 

@@ -21,10 +21,11 @@ public class BaseballMatchDetailRepositoryImpl implements BaseballMatchDetailRep
     private final MongoTemplate mongoTemplate;
 
     @Override
-    public void updateCurrentHalfInning(Long matchId, BaseballHalfInning currentHalfInning, BaseballCount count) {
+    public void updateCurrentHalfInning(Long matchId, BaseballHalfInning currentHalfInning, BaseballCount count, BaseballBaseStates baseStates) {
         updateBaseballDetail(matchId, new Update()
                 .set(SPORT_DETAIL_PATH + ".currentHalfInning", currentHalfInning)
                 .set(SPORT_DETAIL_PATH + ".count", count)
+                .set(SPORT_DETAIL_PATH + ".baseStates", baseStates)
         );
     }
 

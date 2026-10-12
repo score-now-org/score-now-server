@@ -15,6 +15,8 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class BaseballDetailChangedPayload {
     private CurrentInning currentInning;
+    private Integer homeScore;
+    private Integer awayScore;
     private List<InningScore> inningScores;
 
     private String pitcher;
@@ -32,6 +34,8 @@ public class BaseballDetailChangedPayload {
 
         return BaseballDetailChangedPayload.builder()
                 .currentInning(CurrentInning.from(baseballDetail.getCurrentHalfInning()))
+                .homeScore(baseballDetail.getInningScores() == null ? null : baseballDetail.getInningScores().totalHomeScore())
+                .awayScore(baseballDetail.getInningScores() == null ? null : baseballDetail.getInningScores().totalAwayScore())
                 .inningScores(resolveInningScores(baseballDetail.getInningScores()))
                 .pitcher(baseballDetail.getPitcher())
                 .batter(baseballDetail.getBatter())
