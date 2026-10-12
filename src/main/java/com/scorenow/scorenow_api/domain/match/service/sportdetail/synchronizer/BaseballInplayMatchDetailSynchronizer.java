@@ -61,8 +61,8 @@ public class BaseballInplayMatchDetailSynchronizer implements InplayMatchDetailS
 
         // 경기별 상세정보 형태로 변환한다. (Map<ApiMatchId, BetsBaseballViewResponse.ViewResult>)
         Map<String, BetsBaseballViewResponse.ViewResult> detailsByApiMatchId = responses.stream()
-                .filter(BetsBaseballViewResponse -> BetsBaseballViewResponse != null && BetsBaseballViewResponse.hasResults())
-                .flatMap(BetsBaseballViewResponse -> BetsBaseballViewResponse.getResults().stream())
+                .filter(response -> response != null && response.hasResults())
+                .flatMap(response -> response.getResults().stream())
                 .filter(viewResult -> viewResult != null && viewResult.getId() != null)
                 .collect(Collectors.toMap(
                         BetsBaseballViewResponse.ViewResult::getId,

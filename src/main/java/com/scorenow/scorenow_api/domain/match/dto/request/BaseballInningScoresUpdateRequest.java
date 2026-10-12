@@ -42,6 +42,11 @@ public class BaseballInningScoresUpdateRequest {
 
         for (InningScore inningScore : inningScores) {
             Integer inningNumber = inningScore.inningNumber;
+
+            if (inningNumber == null) {
+                throw new BusinessException(ErrorCode.INVALID_PARAMETER, "이닝 번호는 필수입니다.");
+            }
+
             BaseballHalfInning homeHalfInning = BaseballHalfInning.getHomeHalfInning(inningNumber);
             BaseballHalfInning awayHalfInning = BaseballHalfInning.getAwayHalfInning(inningNumber);
 

@@ -46,7 +46,13 @@ public class BaseballBaseStatesUpdateRequest {
         Map<BaseballBase, BaseballBaseState> states = new EnumMap<>(BaseballBase.class);
 
         for (BaseState state : baseStates) {
-            BaseballBase base = resolveBase(state.getBaseNumber());
+            Integer baseNumber = state.getBaseNumber();
+
+            if (baseNumber == null) {
+                throw new BusinessException(ErrorCode.INVALID_PARAMETER, "베이스 번호는 필수입니다.");
+            }
+
+            BaseballBase base = resolveBase(baseNumber);
             // 중복 체크
             if (states.containsKey(base)) {
                 throw new BusinessException(

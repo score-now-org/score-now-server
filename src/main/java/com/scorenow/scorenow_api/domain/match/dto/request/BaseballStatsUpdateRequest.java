@@ -1,6 +1,8 @@
 package com.scorenow.scorenow_api.domain.match.dto.request;
 
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballStats;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -34,6 +36,10 @@ public class BaseballStatsUpdateRequest {
         private Integer basesOnBalls;
 
         public BaseballStats toBaseballStats() {
+            if (hits == null || errors == null || basesOnBalls == null) {
+                throw new BusinessException(ErrorCode.INVALID_PARAMETER, "안타, 에러, 사사구 정보는 필수입니다.");
+            }
+
             return new BaseballStats(hits, errors, basesOnBalls);
         }
     }
