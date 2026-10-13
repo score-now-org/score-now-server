@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.user.jwt;
 
 import com.scorenow.scorenow_api.domain.user.repository.RefreshTokenRepository;
+import com.scorenow.scorenow_api.domain.user.service.UserReferenceService;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Service;
 public class TokenService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserReferenceService userReferenceService;
 
     // 로그인시 호출
     public TokenPair createToken(Long userId) {
+        userReferenceService.requireActiveUser(userId);
         String accessToken = jwtProvider.createAccessToken(userId);
         String refreshToken = jwtProvider.createRefreshToken(userId);
 

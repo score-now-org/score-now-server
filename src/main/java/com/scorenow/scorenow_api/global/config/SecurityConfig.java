@@ -1,19 +1,27 @@
 package com.scorenow.scorenow_api.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenAuthenticationFilter;
+import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtAuthenticationFilter;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
+import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import com.scorenow.scorenow_api.global.dto.ApiResponse;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.scorenow.scorenow_api.global.config.properties.CorsProperties;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -21,6 +29,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.io.IOException;
 
 @Configuration
 @EnableWebSecurity
@@ -30,21 +39,27 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final CorsProperties corsProperties;
+    private final UserRepository userRepository;
+    private final AdminTokenStore adminTokenStore;
+    private final ObjectMapper objectMapper;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
+        configureCommonSecurity(http)
+                .securityMatcher("/api/v1/admin/**", "/admin/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/login", "/admin/login").permitAll()
+                        .anyRequest().hasRole("ADMIN"))
+                .addFilterBefore(new AdminTokenAuthenticationFilter(adminTokenStore),
+                        UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ← 추가
-                .csrf(csrf -> csrf.disable())
-                //jwt사용 세션 stateless
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((req, res, authException) ->
-                                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED))
-                        .accessDeniedHandler((req, res, accessDeniedException) ->
-                                res.setStatus(HttpServletResponse.SC_FORBIDDEN))
-                )
+        configureCommonSecurity(http)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/images").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/posts").authenticated()
@@ -75,13 +90,38 @@ public class SecurityConfig {
                                 "/ws"
                         ).permitAll()
                         .requestMatchers("/api/v1/app/**").permitAll()    // 앱 전용 API 접근 허용
-                        .requestMatchers("/api/v1/admin/**").permitAll()  // Admin API 접근 허용 (임시:authenticated 로 변경 필요)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtProvider),
+                        new JwtAuthenticationFilter(jwtProvider, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    private HttpSecurity configureCommonSecurity(HttpSecurity http) throws Exception {
+        return http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) ->
+                                writeError(response, ErrorCode.AUTHENTICATION_REQUIRED))
+                        .accessDeniedHandler((request, response, exception) ->
+                                writeError(response, ErrorCode.ACCESS_DENIED)));
+    }
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    private void writeError(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getHttpStatus().value());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getWriter(),
+                ApiResponse.error(errorCode.getCode(), errorCode.getMessage()));
     }
 
     @Bean

@@ -61,12 +61,20 @@ public enum ErrorCode {
 	NICKNAME_DUPLICATED(HttpStatus.CONFLICT, "U002", "이미 사용중인 닉네임입니다."),
 	REJOIN_RESTRICTED(HttpStatus.CONFLICT, "U003", "재가입이 제한된 계정입니다."),
 	NICKNAME_RESTRICTED(HttpStatus.CONFLICT, "U004", "60일 이내 닉네임 재설정 불가합니다."),
+	USER_INACTIVE(HttpStatus.FORBIDDEN, "U005", "이용할 수 없는 계정입니다."),
 
 	// Token
 	TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "A001", "만료된 토큰입니다."),
 	TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다."),
 	TOKEN_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "A003", "RefreshToken이 아닙니다."),
 	ACCESS_TOKEN_REQUIRED(HttpStatus.UNAUTHORIZED, "A004", "AccessToken이 필요합니다."),
+	SOCIAL_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A005", "소셜 인증 토큰이 올바르지 않습니다."),
+	SOCIAL_LOGIN_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "A006", "소셜 로그인 설정이 필요합니다."),
+	SOCIAL_AUTH_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "A007", "소셜 인증 서비스에 연결할 수 없습니다."),
+	ADMIN_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "A008", "관리자 로그인 정보가 올바르지 않습니다."),
+	ADMIN_LOGIN_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "A009", "관리자 로그인 설정이 필요합니다."),
+	AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A010", "로그인이 필요합니다."),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "A011", "접근 권한이 없습니다."),
 
 	// Chat
 	CHAT_SEND_AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "CH001", "채팅 전송에는 로그인이 필요합니다."),

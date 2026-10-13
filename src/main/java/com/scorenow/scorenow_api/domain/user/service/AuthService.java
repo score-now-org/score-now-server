@@ -5,14 +5,13 @@ import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.entity.UserLoginHistory;
 import com.scorenow.scorenow_api.domain.user.enums.NicknameGenerator;
 import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
-import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.jwt.TokenPair;
 import com.scorenow.scorenow_api.domain.user.jwt.TokenService;
-import com.scorenow.scorenow_api.domain.user.redis.service.RedisService;
 import com.scorenow.scorenow_api.domain.user.repository.UserLoginHistoryRepository;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.external.social.SocialLoginVerifier;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -30,10 +29,10 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AuthService {
         private final UserRepository userRepository;
-        private final JwtProvider jwtProvider;
         private final GeoService geoService;
-        private final RedisService redisService;
         private final TokenService tokenService;
+        private final SocialLoginVerifier socialLoginVerifier;
+        private final UserReferenceService userReferenceService;
         private final NicknameGenerator nicknameGenerator;
         private final UserLoginHistoryRepository userLoginHistoryRepository;
 
@@ -48,22 +47,24 @@ public class AuthService {
         @Transactional
         public SocialLoginDto socialLogin(SocialLoginRequestDto request, HttpServletRequest httpRequest) {
 
+                SocialLoginVerifier.VerifiedUser identity = socialLoginVerifier.verify(request);
+
                 // ip 가져오기
                 String ip = extractTrustedClientIp(httpRequest);
                 // ip -> 국가 변환
                 String country = geoService.getCountryFromIp(ip);
 
                 User user = userRepository
-                                .findByProviderAndSocialId(request.getProvider(), request.getSocialId())
+                                .findByProviderAndSocialId(identity.provider(), identity.socialId())
                                 .orElse(null);
 
                 boolean isNewUser = false;
                 // 신규 사용자 생성
                 if (user == null) {
                         user = User.builder()
-                                        .provider(request.getProvider())
-                                        .socialId(request.getSocialId())
-                                        .name(request.getName())
+                                        .provider(identity.provider())
+                                        .socialId(identity.socialId())
+                                        .name(StringUtils.hasText(identity.name()) ? identity.name() : request.getName())
                                         .countryCode(country)
                                         .nickname(nicknameGenerator.generateUnique()) // 닉네임 디폴트 : 랜덤이름생성
                                         .warningCnt(0)
@@ -85,16 +86,17 @@ public class AuthService {
 
                         // 탈퇴 후 재가입시 상태복구
                         user.updateStatus(UserStatus.ACTIVE);
+                        user.setDeletedAt(null);
                         user.updateLoginCountry(country);
                         isNewUser = true; // 재가입이므로 신규 처리
                 } else {
+                        if (user.getStatus() != UserStatus.ACTIVE) {
+                                throw new BusinessException(ErrorCode.USER_INACTIVE);
+                        }
                         user.updateLoginCountry(country);
                 }
                 // JWT 발급
-                String accessToken = jwtProvider.createAccessToken(user.getId());
-                String refreshToken = jwtProvider.createRefreshToken(user.getId());
-                // freshtoken redis 저장
-                redisService.saveRefreshToken(user.getId(), refreshToken);
+                TokenPair tokens = tokenService.createToken(user.getId());
 
                 UserLoginHistory history = UserLoginHistory.builder()
                                 .user(user)
@@ -112,8 +114,8 @@ public class AuthService {
                                 .build();
 
                 return SocialLoginDto.builder()
-                                .accessToken(accessToken)
-                                .refreshToken(refreshToken)
+                                .accessToken(tokens.getAccessToken())
+                                .refreshToken(tokens.getRefreshToken())
                                 .isNewUser(isNewUser)
                                 .user(userDto)
                                 .build();
@@ -126,10 +128,12 @@ public class AuthService {
          * @return
          */
         @Transactional
-        public RegisterNicknameDto registerNickname(RegisterNicknameRequestDto request) {
-                User user = userRepository
-                                .findByProviderAndSocialId(request.getProvider(), request.getSocialId())
-                                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        public RegisterNicknameDto registerNickname(Long id, RegisterNicknameRequestDto request) {
+                User user = userReferenceService.requireActiveUser(id);
+                String nickname = request.getNickname() == null ? "" : request.getNickname().trim();
+                if (!StringUtils.hasText(nickname) || nickname.length() > 30) {
+                        throw new BusinessException(ErrorCode.INVALID_PARAMETER, "닉네임은 1~30자로 입력해 주세요.");
+                }
 
                 // 60일 변경 제한 체크
                 if (user.getNicknameUpdateAt() != null) {
@@ -141,11 +145,11 @@ public class AuthService {
                 }
 
                 // 닉네임 중복체크
-                if (userRepository.existsByNickname(request.getNickname())) {
+                if (userRepository.existsByNickname(nickname)) {
                         throw new BusinessException(ErrorCode.NICKNAME_DUPLICATED);
                 }
             
-                user.changeNickname(request.getNickname());
+                user.changeNickname(nickname);
 
                 UserDto userDto = UserDto.builder()
                                 .id(user.getId())
@@ -168,8 +172,7 @@ public class AuthService {
          */
         public UserDto getProfile(Long id) {
 
-                User user = userRepository.findById(id)
-                                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                User user = userReferenceService.requireActiveUser(id);
                 return UserDto.builder()
                                 .id(user.getId())
                                 .socialId(user.getSocialId())
@@ -185,11 +188,11 @@ public class AuthService {
          */
         @Transactional
         public String deactivate(Long id) {
-                User user = userRepository.findById(id)
-                                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                User user = userReferenceService.requireActiveUser(id);
 
                 user.withdraw(); // deletedAt,status 세팅
                 userRepository.save(user);
+                tokenService.logout(id);
                 return "탈퇴 되었습니다.";
         }
 

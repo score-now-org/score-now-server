@@ -23,7 +23,7 @@ public class UserReferenceService {
 			.orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
 		if (user.getStatus() != UserStatus.ACTIVE) {
-			throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+			throw new BusinessException(ErrorCode.USER_INACTIVE);
 		}
 
 		return user;
