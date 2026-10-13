@@ -1,10 +1,12 @@
 package com.scorenow.scorenow_api.domain.match.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStandingSummary;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
@@ -21,6 +23,8 @@ import java.util.List;
 public class MatchAppItemResponse {
     @Schema(description = "경기 ID", example = "1001")
     private Long id;
+
+    private SportCode sportCode;
 
     @Schema(description = "경기 날짜", example = "2026-06-05")
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -71,6 +75,9 @@ public class MatchAppItemResponse {
 
     @Schema(description = "팀 표시 순서", example = "[\"HOME\", \"AWAY\"]")
     private List<String> teamDisplayOrder;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private MatchAppSportLiveSummaryResponse sportLiveSummary;
 
     @Getter
     @Builder
@@ -150,14 +157,17 @@ public class MatchAppItemResponse {
 
     public static MatchAppItemResponse from(
             Match match,
+            SportCode sportCode,
             Stadium registeredStadium,
             MatchDetailDocument matchDetail,
             MatchStatusDisplayResponse matchStatusDisplayResponse,
             List<TeamStandingSummary> homeTeamStandings,
-            List<TeamStandingSummary> awayTeamStandings) {
+            List<TeamStandingSummary> awayTeamStandings,
+            MatchAppSportLiveSummaryResponse sportLiveSummary) {
 
         return MatchAppItemResponse.builder()
                 .id(match.getId())
+                .sportCode(sportCode)
                 .date(match.getStartAt().toLocalDate())
                 .stadium(StadiumResponse.from(match, registeredStadium))
                 .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam(), homeTeamStandings))
@@ -170,6 +180,7 @@ public class MatchAppItemResponse {
                 .isCurrentCommentaryHighlighted(resolveCurrentCommentaryHighlighted(matchDetail))
                 .statusDisplay(matchStatusDisplayResponse)
                 .teamDisplayOrder(match.resolveTeamDisplayOrder())
+                .sportLiveSummary(sportLiveSummary)
                 .build();
     }
 

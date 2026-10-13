@@ -1,6 +1,8 @@
 package com.scorenow.scorenow_api.domain.match.controller;
 
+import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppDetailResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -8,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.LocalDate;
 
-@Tag(name = "Match App API", description = "앱 경기 목록 조회 API")
+@Tag(name = "Match App API", description = "앱 경기 조회 API")
 public interface MatchAppApiDocs {
 
     @Operation(
@@ -23,9 +25,18 @@ public interface MatchAppApiDocs {
     ApiResponse<MatchAppResponse> getMatches(
             @Parameter(description = "조회 날짜. yyyyMMdd 형식입니다. 값이 없으면 서버 기준 오늘 날짜로 조회합니다.", example = "20260605")
             LocalDate date,
-            @Parameter(description = "종목 ID", example = "1")
-            Long sportId,
+            @Parameter(description = "종목 코드", example = "FOOTBALL")
+            SportCode sportCode,
             @Parameter(description = "리그 ID", example = "2")
             Long leagueId
+    );
+
+    @Operation(
+            summary = "앱 경기 상세 조회",
+            description = "경기의 공통 정보와 지원 종목의 상세 정보를 조회합니다."
+    )
+    ApiResponse<MatchAppDetailResponse> getMatch(
+            @Parameter(description = "경기 ID", example = "1001")
+            Long matchId
     );
 }

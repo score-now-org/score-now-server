@@ -12,7 +12,9 @@ import com.scorenow.scorenow_api.domain.match.model.MatchAppStatusGroup;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.match.service.appresponse.MatchAppSportResponseMapperRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -39,6 +41,7 @@ import static java.util.stream.Collectors.toMap;
 public class MatchAppQueryService {
 
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
+    private final MatchAppSportResponseMapperRegistry matchAppSportResponseMapperRegistry;
 
     private final TeamStandingLookupService teamStandingLookupService;
 
@@ -47,7 +50,10 @@ public class MatchAppQueryService {
     private final FeaturedMatchRepository featuredMatchRepository;
     private final StadiumRepository stadiumRepository;
 
-    public MatchAppItemResponse getMatch(Long matchId) {
+    /**
+     * 앱 경기 상세 조회
+     */
+    public MatchAppDetailResponse getMatch(Long matchId) {
 
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
@@ -68,95 +74,25 @@ public class MatchAppQueryService {
         List<TeamStandingSummary> homeTeamStandings = teamStandings.getOrDefault(new LeagueTeamKey(leagueId, match.getHomeId()), List.of());
         List<TeamStandingSummary> awayTeamStandings = teamStandings.getOrDefault(new LeagueTeamKey(leagueId, match.getAwayId()), List.of());
 
-        return MatchAppItemResponse.from(
+        return MatchAppDetailResponse.from(
                 match,
                 stadium,
                 matchDetailDocument,
                 matchStatusDisplayResolver.resolve(match, matchDetailDocument),
                 homeTeamStandings,
-                awayTeamStandings);
-    }
-
-    List<MatchAppLeagueGroupResponse> getMatches(LocalDate date, Long sportId, Long leagueId) {
-        LocalDate targetDate = resolveDate(date);
-        LocalDateTime startAt = targetDate.atStartOfDay();
-        LocalDateTime endAt = targetDate.plusDays(1).atStartOfDay();
-
-        // 경기 목록을 조회
-        List<Match> matches = matchRepository.findAppMatches(
-                startAt,
-                endAt,
-                sportId,
-                leagueId,
-                MatchAppStatusGroup.allStatuses(),
-                MatchAppStatusGroup.IN_PLAY.getStatuses(),
-                MatchAppStatusGroup.SCHEDULED.getStatuses(),
-                MatchAppStatusGroup.ENDED.getStatuses()
+                awayTeamStandings,
+                matchAppSportResponseMapperRegistry.mapDetail(matchDetailDocument)
         );
-
-        if (matches.isEmpty()) {
-            log.info("해당 날짜 {} 에 대하여 조회되는 경기가 없습니다. sportId={}, leagueId={}", date, sportId, leagueId);
-            return List.of();
-        }
-
-        Map<Long, Stadium> stadiumById = loadStadiumsById(matches);
-
-        // 경기 목록 조회 결과 기반으로 경기 상세 정보를 조회
-        List<Long> matchIds = matches.stream()
-                .map(Match::getId)
-                .toList();
-
-        Map<Long, MatchDetailDocument> matchDetailById = matchDetailRepository.findAllById(matchIds).stream()
-                .collect(toMap(
-                        MatchDetailDocument::getId,
-                        Function.identity(),
-                        (first, second) -> first));
-
-        // 조회 정렬 순서를 유지하면서 리그별 경기 목록으로 그룹핑
-        Map<Long, List<Match>> matchesByLeague = new LinkedHashMap<>();
-        Map<Long, Set<Long>> teamIdsByLeague = new LinkedHashMap<>();
-
-        for (Match match : matches) {
-            matchesByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new ArrayList<>())
-                    .add(match);
-
-            Set<Long> teamIds = teamIdsByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new HashSet<>());
-            teamIds.add(match.getHomeId());
-            teamIds.add(match.getAwayId());
-        }
-
-        Map<LeagueTeamKey, List<TeamStandingSummary>> teamStandings = teamStandingLookupService.getTeamStandings(
-                teamIdsByLeague,
-                targetDate);
-
-        // 리그 정보를 최상위로 두고, 각 리그 하위에 경기 목록을 반환
-        return matchesByLeague.values().stream()
-                .map(leagueMatches -> {
-                    List<MatchAppItemResponse> appMatches = leagueMatches.stream()
-                            .map(match -> MatchAppItemResponse.from(
-                                    match,
-                                    findStadium(stadiumById, match.getStadiumId()),
-                                    matchDetailById.get(match.getId()),
-                                    matchStatusDisplayResolver.resolve(match, matchDetailById.get(match.getId())),
-                                    teamStandings.getOrDefault(
-                                            new LeagueTeamKey(match.getLeagueId(), match.getHomeId()),
-                                            List.of()),
-                                    teamStandings.getOrDefault(
-                                            new LeagueTeamKey(match.getLeagueId(), match.getAwayId()),
-                                            List.of()))
-                            )
-                            .toList();
-
-                    return MatchAppLeagueGroupResponse.from(leagueMatches.get(0).getLeague(), appMatches);
-                })
-                .toList();
     }
 
-    public MatchAppResponse getMatchesWithFeatured(LocalDate date, Long sportId, Long leagueId) {
+    /**
+     * 앱 경기 목록 조회 (상단고정/핫매치)
+     */
+    public MatchAppResponse getMatchesWithFeatured(LocalDate date, SportCode sportCode, Long leagueId) {
 
         LocalDate targetDate = resolveDate(date);
 
-        List<MatchAppLeagueGroupResponse> leagueGroupResponses = getMatches(targetDate, sportId, leagueId);
+        List<MatchAppLeagueGroupResponse> leagueGroupResponses = getMatches(targetDate, sportCode, leagueId);
 
         // Map<matchId, MatchAppLeagueGroupResponse> 생성 : matchId 로 해당 경기가 속한 리그 정보를 쉽게 찾기 위해
         Map<Long, MatchAppLeagueGroupResponse> leagueGroupByMatchId = new HashMap<>();
@@ -220,6 +156,95 @@ public class MatchAppQueryService {
                 .featuredMatches(featuredSectionResponse)
                 .leagueMatches(leagueGroupResponses)
                 .build();
+    }
+
+    /**
+     * 앱 경기 목록 조회
+     */
+    private List<MatchAppLeagueGroupResponse> getMatches(LocalDate date, SportCode sportCode, Long leagueId) {
+        LocalDate targetDate = resolveDate(date);
+        LocalDateTime startAt = targetDate.atStartOfDay();
+        LocalDateTime endAt = targetDate.plusDays(1).atStartOfDay();
+
+        // 경기 목록을 조회
+        List<Match> matches = matchRepository.findAppMatches(
+                startAt,
+                endAt,
+                sportCode,
+                leagueId,
+                MatchAppStatusGroup.allStatuses(),
+                MatchAppStatusGroup.IN_PLAY.getStatuses(),
+                MatchAppStatusGroup.SCHEDULED.getStatuses(),
+                MatchAppStatusGroup.ENDED.getStatuses()
+        );
+
+        if (matches.isEmpty()) {
+            log.info("🟠해당 날짜 {} 에 대하여 조회되는 경기가 없습니다. sportCode={}, leagueId={}", date, sportCode, leagueId);
+            return List.of();
+        }
+
+        Map<Long, Stadium> stadiumById = loadStadiumsById(matches);
+
+        // 경기 목록 조회 결과 기반으로 경기 상세 정보를 조회
+        List<Long> matchIds = matches.stream()
+                .map(Match::getId)
+                .toList();
+
+        Map<Long, MatchDetailDocument> matchDetailById = matchDetailRepository.findAllById(matchIds).stream()
+                .collect(toMap(
+                        MatchDetailDocument::getId,
+                        Function.identity(),
+                        (first, second) -> first));
+
+        // 조회 정렬 순서를 유지하면서 리그별 경기 목록으로 그룹핑
+        Map<Long, List<Match>> matchesByLeague = new LinkedHashMap<>();
+        Map<Long, Set<Long>> teamIdsByLeague = new LinkedHashMap<>();
+
+        for (Match match : matches) {
+            matchesByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new ArrayList<>())
+                    .add(match);
+
+            Set<Long> teamIds = teamIdsByLeague.computeIfAbsent(match.getLeagueId(), newLeagueId -> new HashSet<>());
+            teamIds.add(match.getHomeId());
+            teamIds.add(match.getAwayId());
+        }
+
+        Map<LeagueTeamKey, List<TeamStandingSummary>> teamStandings = teamStandingLookupService.getTeamStandings(
+                teamIdsByLeague,
+                targetDate);
+
+        // 리그 정보를 최상위로 두고, 각 리그 하위에 경기 목록을 반환
+        return matchesByLeague.values().stream()
+                .map(leagueMatches -> {
+                    List<MatchAppItemResponse> appMatches = leagueMatches.stream()
+                            .map(match -> {
+                                MatchDetailDocument matchDetail = matchDetailById.get(match.getId());
+
+                                return MatchAppItemResponse.from(
+                                        match,
+                                        match.getSport().getSportCode(),
+                                        findStadium(stadiumById, match.getStadiumId()),
+                                        matchDetail,
+                                        matchStatusDisplayResolver.resolve(match, matchDetail),
+                                        teamStandings.getOrDefault(
+                                                new LeagueTeamKey(match.getLeagueId(), match.getHomeId()),
+                                                List.of()),
+                                        teamStandings.getOrDefault(
+                                                new LeagueTeamKey(match.getLeagueId(), match.getAwayId()),
+                                                List.of()),
+                                        matchAppSportResponseMapperRegistry.mapLiveSummary(match, matchDetail)
+                                );
+                            })
+                            .toList();
+
+                    Match firstMatch = leagueMatches.get(0);
+                    return MatchAppLeagueGroupResponse.from(
+                            firstMatch.getLeague(),
+                            firstMatch.getSport().getSportCode(),
+                            appMatches
+                    );
+                })
+                .toList();
     }
 
     private LocalDate resolveDate(LocalDate date) {
