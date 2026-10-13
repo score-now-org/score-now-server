@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.match.dto.MatchCandidate;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -87,13 +88,14 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     @Query("""
             select distinct m
             from Match m
-            left join fetch m.league
-            left join fetch m.homeTeam
-            left join fetch m.awayTeam
+            join fetch m.league
+            join fetch m.homeTeam
+            join fetch m.awayTeam
+            join fetch m.sport s
             where m.isActive = true
               and m.startAt >= :startAt
               and m.startAt < :endAt
-              and (:sportId is null or m.sportId = :sportId)
+              and (:sportCode is null or s.sportCode = :sportCode)
               and (:leagueId is null or m.leagueId = :leagueId)
               and m.statusCode in :statuses
             order by
@@ -103,12 +105,13 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
                 when m.statusCode in :endedStatuses then 2
                 else 3
               end asc,
-              m.startAt asc
+              m.startAt asc,
+              m.id asc
             """)
     List<Match> findAppMatches(
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt,
-            @Param("sportId") Long sportId,
+            @Param("sportCode") SportCode sportCode,
             @Param("leagueId") Long leagueId,
             @Param("statuses") List<MatchStatus> statuses,
             @Param("inPlayStatuses") List<MatchStatus> inPlayStatuses,
