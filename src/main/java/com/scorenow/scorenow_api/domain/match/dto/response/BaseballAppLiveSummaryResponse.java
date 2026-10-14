@@ -26,7 +26,7 @@ public record BaseballAppLiveSummaryResponse(
     }
 
     private static List<BaseStateResponse> resolveBaseStates(BaseballBaseStates baseStates) {
-        if (baseStates == null) {
+        if (baseStates == null || baseStates.getBaseStates() == null) {
             return null;
         }
 

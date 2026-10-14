@@ -41,7 +41,7 @@ public record BaseballAppMatchDetailResponse(
     }
 
     private static List<InningScoreResponse> resolveInningScores(BaseballInningScores inningScores) {
-        if (inningScores == null) {
+        if (inningScores == null || inningScores.getScoresByHalfInning() == null) {
             return null;
         }
 
@@ -105,7 +105,7 @@ public record BaseballAppMatchDetailResponse(
         }
 
         private static List<BaseStateResponse> resolveBaseStates(BaseballBaseStates baseStates) {
-            if (baseStates == null) {
+            if (baseStates == null || baseStates.getBaseStates() == null) {
                 return null;
             }
 
