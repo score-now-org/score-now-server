@@ -31,11 +31,11 @@ public class MatchStatisticsResolverRegistry {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "경기 상세 종목 정보가 없습니다.");
         }
 
-        SportCode type = matchDetailDocument.getType();
+        SportCode sportCode = matchDetailDocument.getType();
 
-        MatchStatisticsResolver resolver = resolvers.get(type);
+        MatchStatisticsResolver resolver = resolvers.get(sportCode);
         if (resolver == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "지원하지 않는 종목입니다. type=" + type);
+            throw new BusinessException(ErrorCode.MATCH_STATISTICS_NOT_SUPPORTED);
         }
 
         return resolver.resolve(matchDetailDocument);
