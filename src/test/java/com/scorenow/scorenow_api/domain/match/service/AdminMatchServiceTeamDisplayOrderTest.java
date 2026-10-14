@@ -40,6 +40,9 @@ class AdminMatchServiceTeamDisplayOrderTest {
     private MatchDetailRepository matchDetailRepository;
 
     @Mock
+    private MatchDetailInitializationService matchDetailInitializationService;
+
+    @Mock
     private LeagueRepository leagueRepository;
 
     @Mock

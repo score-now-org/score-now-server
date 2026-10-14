@@ -2,7 +2,6 @@ package com.scorenow.scorenow_api.domain.match.repository.mongo;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
-import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -64,13 +63,14 @@ public class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     @Override
-    public void createInitialMatchDetailIfAbsent(Long matchId, SportCode type) {
-        Query query = new Query(Criteria.where("_id").is(matchId));
+    public void createInitialMatchDetailIfAbsent(MatchDetailDocument initialDocument) {
+        Query query = new Query(Criteria.where("_id").is(initialDocument.getId()));
         LocalDateTime now = LocalDateTime.now();
 
         Update update = new Update()
-                .setOnInsert("_id", matchId)
-                .setOnInsert("type", type)
+                .setOnInsert("_id", initialDocument.getId())
+                .setOnInsert("type", initialDocument.getType())
+                .setOnInsert("sportDetail", initialDocument.getSportDetail())
                 .setOnInsert("currentCommentaryHighlighted", false)    // boolean 타입이므로 기본값 세팅이 필요
                 .setOnInsert("created_at", now)
                 .setOnInsert("updated_at", now);

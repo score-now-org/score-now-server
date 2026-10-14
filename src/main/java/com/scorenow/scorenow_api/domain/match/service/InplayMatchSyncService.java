@@ -72,7 +72,12 @@ public class InplayMatchSyncService {
 
             LocalDateTime startAt = candidate.getStartAt();
             if (startAt.plusMinutes(MAX_GRACE_PERIOD_MINUTES).isBefore(now.toLocalDateTime())) {
-                log.warn("🟠유예 기간 초과. matchId:{}", candidate.getMatchId());
+                log.warn("🟠IN_PLAY 전환 유예 기간 초과. matchId:{}, sportId:{}, dataOrigin:{}, apiMatchId:{}",
+                        candidate.getMatchId(),
+                        candidate.getSportId(),
+                        candidate.getProvider(),
+                        candidate.getApiMatchId()
+                );
                 toBeFixedMatches.add(candidate);
             }
         }

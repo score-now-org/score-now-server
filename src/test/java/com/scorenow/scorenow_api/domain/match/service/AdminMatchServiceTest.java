@@ -41,6 +41,8 @@ class AdminMatchServiceTest {
     @Mock
     private MatchDetailRepository matchDetailRepository;
     @Mock
+    private MatchDetailInitializationService matchDetailInitializationService;
+    @Mock
     private LeagueRepository leagueRepository;
     @Mock
     private TeamRepository teamRepository;
@@ -130,8 +132,8 @@ class AdminMatchServiceTest {
 
         adminMatchService.createMatch(request);
 
-        then(matchDetailRepository).should()
-                .createInitialMatchDetailIfAbsent(match.getId(), SportCode.FOOTBALL);
+        then(matchDetailInitializationService).should()
+                .createIfAbsent(match.getId(), SportCode.FOOTBALL);
     }
 
     private MatchCreateRequest createCreateRequest() {
