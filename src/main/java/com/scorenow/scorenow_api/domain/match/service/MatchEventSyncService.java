@@ -7,7 +7,6 @@ import java.time.ZoneId;
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.constant.MatchConstants;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
-import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -42,7 +41,7 @@ public class MatchEventSyncService {
     private final BetsEventSideMapper betsEventSideMapper;
 
     private final MatchRepository matchRepository;
-    private final MatchDetailRepository matchDetailRepository;
+    private final MatchDetailInitializationService matchDetailInitializationService;
 
     /**
      * 개별 경기 동기화 - league → team → match 순서 보장
@@ -147,7 +146,7 @@ public class MatchEventSyncService {
         Match savedMatch = matchRepository.save(match);
 
         // 없으면 초기 MatchDetailDocument 생성
-        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), leagueTarget.sportCode());
+        matchDetailInitializationService.createIfAbsent(savedMatch.getId(), leagueTarget.sportCode());
 
         log.debug("경기 저장 - {}", savedMatch.getId());
     }
