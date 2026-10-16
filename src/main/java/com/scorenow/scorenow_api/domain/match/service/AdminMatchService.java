@@ -50,6 +50,7 @@ public class AdminMatchService {
 
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
+    private final MatchDetailInitializationService matchDetailInitializationService;
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
@@ -123,7 +124,7 @@ public class AdminMatchService {
         Match savedMatch = matchRepository.save(match);
 
         SportCode sportCode = sportCodeResolver.resolveByInternalSportId(savedMatch.getSportId());
-        matchDetailRepository.createInitialMatchDetailIfAbsent(savedMatch.getId(), sportCode);
+        matchDetailInitializationService.createIfAbsent(savedMatch.getId(), sportCode);
 
         log.info("수동 경기 등록 완료 - matchId: {}", match.getId());
     }

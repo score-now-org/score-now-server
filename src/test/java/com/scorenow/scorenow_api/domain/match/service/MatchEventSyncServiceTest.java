@@ -6,7 +6,6 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
-import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
@@ -48,7 +47,7 @@ class MatchEventSyncServiceTest {
     @Mock
     private MatchRepository matchRepository;
     @Mock
-    private MatchDetailRepository matchDetailRepository;
+    private MatchDetailInitializationService matchDetailInitializationService;
     @Test
     void 자동_동기화_경기_저장시_초기_MatchDetailDocument를_생성한다() {
         BetsEventResponse.Event event = createEvent();
@@ -85,8 +84,8 @@ class MatchEventSyncServiceTest {
         matchEventSyncService.syncEvent(leagueTarget, event);
 
         then(leagueService).should().getLeague(2L);
-        then(matchDetailRepository).should()
-                .createInitialMatchDetailIfAbsent(30L, SportCode.FOOTBALL);
+        then(matchDetailInitializationService).should()
+                .createIfAbsent(30L, SportCode.FOOTBALL);
     }
 
     @Test

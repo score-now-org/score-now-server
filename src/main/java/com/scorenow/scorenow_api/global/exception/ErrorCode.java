@@ -30,6 +30,9 @@ public enum ErrorCode {
 	MATCH_CLOCK_NOT_INITIALIZED(HttpStatus.CONFLICT, "MD002", "경기 시간 정보가 아직 생성되지 않았습니다."),
 	MATCH_CLOCK_NOT_RESUMABLE(HttpStatus.CONFLICT, "MD003", "현재 경기 구간에서는 타이머를 재개할 수 없습니다."),
 
+	// Match Statistics
+	MATCH_STATISTICS_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "MS001", "해당 종목은 경기 통계를 제공하지 않습니다."),
+
 	// FeaturedMatch
 	FEATURED_MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "FM001", "상단고정/핫매치 설정을 찾을 수 없습니다."),
 	FEATURED_MATCH_ALREADY_EXISTS(HttpStatus.CONFLICT, "FM002", "이미 상단고정/핫매치로 등록된 경기입니다."),
