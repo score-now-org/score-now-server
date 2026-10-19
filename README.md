@@ -78,22 +78,17 @@ docker-compose up -d
 ### 3. 환경 변수 설정
 `src/main/resources/application.yml`에서 BetsAPI 토큰 및 DB 접속 정보를 설정합니다.
 
-#### 로그인 설정
+#### 앱 로그인 설정
 
 아래 값은 실행 환경의 환경변수 또는 Spring 설정으로 주입합니다. `.env` 파일만 생성하면 Spring Boot가 자동으로 읽지는 않습니다.
 
 | 환경변수 | Spring 설정 | 설명 |
 |---|---|---|
-| `ADMIN_ID` | `admin.id` | 관리자 로그인 ID |
-| `ADMIN_PASSWORD_HASH` | `admin.password-hash` | 새 관리자 비밀번호의 BCrypt 해시. 평문 비밀번호는 지원하지 않음 |
-| `ADMIN_TOKEN_TTL_SECONDS` | `admin.token-ttl-seconds` | 관리자 토큰 유효기간(초). 기본값 28800(8시간) |
 | `GOOGLE_CLIENT_IDS` | `auth.social.google-client-ids` | 허용할 Google ID 토큰의 Client ID. 여러 개면 쉼표로 구분 |
 | `APPLE_CLIENT_IDS` | `auth.social.apple-client-ids` | 허용할 Apple ID 토큰의 Bundle ID/Services ID. 여러 개면 쉼표로 구분 |
 | `KAKAO_APP_ID` | `auth.social.kakao-app-id` | Kakao Developers에 등록한 숫자 앱 ID. REST API 키와 다름 |
 
-관리자 설정이 없으면 관리자 로그인은 503을 반환합니다. 소셜 로그인 설정은 사용하는 공급자의 값만 필요하며, 해당 값이 없으면 그 공급자의 로그인은 503을 반환합니다. 기존 소스에 있던 관리자 비밀번호는 재사용하지 않고 새 비밀번호의 해시를 설정합니다.
-
-BCrypt 해시는 Spring Security의 `new BCryptPasswordEncoder().encode(새비밀번호)`로 생성합니다. 비밀번호는 UTF-8 기준 72바이트 이하로 설정하며, 해시와 원문을 저장소에 커밋하지 않습니다.
+소셜 로그인 설정은 사용하는 공급자의 값만 필요하며, 해당 값이 없으면 그 공급자의 로그인은 503을 반환합니다.
 
 #### 앱 로그인 요청
 
@@ -121,19 +116,19 @@ AccessToken 인증 시 DB에서 회원 상태를 조회해 탈퇴·정지를 즉
 
 #### 관리자 인증과 회원 API
 
-- 로그인: `POST /api/v1/admin/login`, 본문 `{"id":"<관리자 ID>","password":"<새 비밀번호>"}`
+- 로그인: `POST /api/v1/admin/login`, 본문 `{"id":"<관리자 ID>","password":"<비밀번호>"}`
 - 로그인 성공 응답은 기존 `{"token":"<UUID 토큰>"}` 형식을 유지합니다.
-- 관리자 API는 `Authorization: Bearer <UUID 토큰>`을 사용합니다. 기존 클라이언트의 `Authorization: <UUID 토큰>`도 지원합니다.
-- 회원 목록: `GET /api/v1/admin/members?page=0&size=15`
-- 회원 기본정보: `GET /api/v1/admin/members/{id}`
-- 회원 로그인 이력: `GET /api/v1/admin/members/{id}/security`
-- 로그아웃: `POST /api/v1/admin/logout`. Redis의 관리자 토큰을 삭제합니다.
+- 로그인은 변경 전 관리자 계정을 사용하며 별도 관리자 환경변수 설정이 필요하지 않습니다.
+- `/api/v1/admin/test`와 `/admin/**` 요청에는 `Authorization: <UUID 토큰>`을 전달합니다.
+- 회원 목록: `GET /admin/members?page=0&size=15`
+- 회원 기본정보: `GET /admin/members/{id}`
+- 회원 로그인 이력: `GET /admin/members/{id}/security`
 
-기존 `/admin/members`, `/admin/members/{id}`, `/admin/members/{id}/security` 경로도 유지합니다. `/api/v1/admin/**`와 `/admin/**`는 로그인 API를 제외하고 관리자 토큰이 필요합니다. 앱 JWT는 관리자 API에 사용할 수 없습니다. 관리자 토큰은 Redis에 저장하므로 서버 인스턴스 간 공유되며 만료 후에는 다시 로그인해야 합니다. 존재하지 않는 회원의 기본정보·보안정보 조회는 모두 404를 반환합니다.
+관리자 인증은 PR #163 이전 방식으로 복원했습니다. `/api/v1/admin/**`는 Spring Security에서 접근을 허용하며, `/api/v1/admin/test`는 컨트롤러에서 토큰을 검증합니다. `/admin/**`는 기존 인터셉터에서 토큰을 검증합니다.
 
-관리자 경로는 우선 적용되는 전용 인증 체인에서 UUID 토큰을 검증합니다. 나머지 경로는 앱 JWT 인증 체인을 사용하며 관리자 UUID 토큰으로 회원 인증을 받을 수 없습니다.
+관리자 토큰은 서버 인스턴스별 메모리에 저장하며 서버 재시작 시 다시 로그인해야 합니다. 존재하지 않는 회원의 기본정보·보안정보 조회는 모두 404를 반환합니다. 앱 로그인 검증과 회원 정보 응답 개선은 유지합니다.
 
-관리자 로그인 성공과 기존 `/api/v1/admin/test` 성공 응답은 프론트 호환을 위해 기존 형식을 유지합니다. 인증 실패 응답과 나머지 회원 API는 `ApiResponse` 형식을 사용합니다.
+관리자 로그인과 `/api/v1/admin/test`는 기존 직접 응답 형식을 사용하며, 회원 API는 `ApiResponse` 형식을 사용합니다.
 
 검증 기준: [Google ID 토큰 검증](https://developers.google.com/identity/sign-in/web/backend-auth), [Apple 사용자 검증](https://developer.apple.com/documentation/signinwithapple/verifying-a-user), [Kakao 토큰 정보 조회](https://developers.kakao.com/docs/ko/kakaologin/rest-api#access-token-info).
 

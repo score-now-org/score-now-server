@@ -74,8 +74,6 @@ public enum ErrorCode {
 	SOCIAL_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A005", "소셜 인증 토큰이 올바르지 않습니다."),
 	SOCIAL_LOGIN_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "A006", "소셜 로그인 설정이 필요합니다."),
 	SOCIAL_AUTH_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "A007", "소셜 인증 서비스에 연결할 수 없습니다."),
-	ADMIN_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "A008", "관리자 로그인 정보가 올바르지 않습니다."),
-	ADMIN_LOGIN_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "A009", "관리자 로그인 설정이 필요합니다."),
 	AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A010", "로그인이 필요합니다."),
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "A011", "접근 권한이 없습니다."),
 

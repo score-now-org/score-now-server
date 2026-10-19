@@ -1,8 +1,6 @@
 package com.scorenow.scorenow_api.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenAuthenticationFilter;
-import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtAuthenticationFilter;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
@@ -16,12 +14,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -40,24 +36,9 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final CorsProperties corsProperties;
     private final UserRepository userRepository;
-    private final AdminTokenStore adminTokenStore;
     private final ObjectMapper objectMapper;
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
-        configureCommonSecurity(http)
-                .securityMatcher("/api/v1/admin/**", "/admin/**")
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/login", "/admin/login").permitAll()
-                        .anyRequest().hasRole("ADMIN"))
-                .addFilterBefore(new AdminTokenAuthenticationFilter(adminTokenStore),
-                        UsernamePasswordAuthenticationFilter.class);
-        return http.build();
-    }
-
-    @Bean
-    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         configureCommonSecurity(http)
                 .authorizeHttpRequests(auth -> auth
@@ -90,6 +71,7 @@ public class SecurityConfig {
                                 "/ws"
                         ).permitAll()
                         .requestMatchers("/api/v1/app/**").permitAll()    // 앱 전용 API 접근 허용
+                        .requestMatchers("/api/v1/admin/**", "/admin/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -109,11 +91,6 @@ public class SecurityConfig {
                                 writeError(response, ErrorCode.AUTHENTICATION_REQUIRED))
                         .accessDeniedHandler((request, response, exception) ->
                                 writeError(response, ErrorCode.ACCESS_DENIED)));
-    }
-
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     private void writeError(HttpServletResponse response, ErrorCode errorCode) throws IOException {
