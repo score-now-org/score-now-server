@@ -13,6 +13,7 @@ import com.scorenow.scorenow_api.domain.odds.enums.OddsRegistrationType;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsStatus;
 import com.scorenow.scorenow_api.domain.odds.repository.MatchOddsDisplayPolicyRepository;
 import com.scorenow.scorenow_api.domain.odds.repository.MatchOddsHistoryRepository;
+import com.scorenow.scorenow_api.domain.odds.value.OddsOrigin;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -107,7 +108,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory history = MatchOddsHistory.createWinDrawLoss(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.80"),
                 new BigDecimal("3.20"),
                 new BigDecimal("2.10"),
@@ -149,7 +150,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory winDrawLoss = MatchOddsHistory.createWinDrawLoss(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.80"),
                 new BigDecimal("3.20"),
                 new BigDecimal("2.10"),
@@ -158,7 +159,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory handicap = MatchOddsHistory.createHandicap(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.90"),
                 new BigDecimal("-1.50"),
                 new BigDecimal("1.95"),
@@ -248,7 +249,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory winDrawLoss = MatchOddsHistory.createWinDrawLoss(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.80"),
                 new BigDecimal("3.20"),
                 new BigDecimal("2.10"),
@@ -257,7 +258,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory handicap = MatchOddsHistory.createHandicap(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.90"),
                 new BigDecimal("-1.50"),
                 new BigDecimal("1.95"),
@@ -321,7 +322,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory beforeMatchStart = MatchOddsHistory.createWinDrawLoss(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.80"),
                 new BigDecimal("3.20"),
                 new BigDecimal("2.10"),
@@ -330,7 +331,7 @@ class AdminMatchOddsServiceTest {
         MatchOddsHistory afterMatchStart = MatchOddsHistory.createWinDrawLoss(
                 matchId,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.90"),
                 new BigDecimal("3.10"),
                 new BigDecimal("2.00"),

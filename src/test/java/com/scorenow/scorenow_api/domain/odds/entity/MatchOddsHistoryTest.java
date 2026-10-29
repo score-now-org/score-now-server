@@ -2,8 +2,8 @@ package com.scorenow.scorenow_api.domain.odds.entity;
 
 import com.scorenow.scorenow_api.domain.odds.enums.OddsCategory;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsMarketType;
-import com.scorenow.scorenow_api.domain.odds.enums.OddsRegistrationType;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsStatus;
+import com.scorenow.scorenow_api.domain.odds.value.OddsOrigin;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -20,7 +20,7 @@ class MatchOddsHistoryTest {
         MatchOddsHistory history = MatchOddsHistory.createWinDrawLoss(
                 1L,
                 OddsCategory.OVERSEAS,
-                OddsRegistrationType.MANUAL,
+                OddsOrigin.manual(),
                 new BigDecimal("1.80"),
                 null,
                 new BigDecimal("2.10"),
@@ -29,6 +29,9 @@ class MatchOddsHistoryTest {
 
         assertThat(history.getMarketType()).isEqualTo(OddsMarketType.WIN_DRAW_LOSS);
         assertThat(history.getStatus()).isEqualTo(OddsStatus.ACTIVE);
+        assertThat(history.getOrigin().isManual()).isTrue();
+        assertThat(history.getOrigin().getSource()).isNull();
+        assertThat(history.getOrigin().getBookmaker()).isNull();
         assertThat(history.getHomeOdds().value()).isEqualByComparingTo("1.80");
         assertThat(history.getDrawOdds()).isNull();
         assertThat(history.getAwayOdds().value()).isEqualByComparingTo("2.10");

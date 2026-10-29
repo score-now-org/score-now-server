@@ -2,12 +2,14 @@ package com.scorenow.scorenow_api.domain.odds.entity;
 
 import com.scorenow.scorenow_api.domain.odds.enums.OddsCategory;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsMarketType;
-import com.scorenow.scorenow_api.domain.odds.enums.OddsRegistrationType;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsStatus;
 import com.scorenow.scorenow_api.domain.odds.value.HandicapLine;
+import com.scorenow.scorenow_api.domain.odds.value.OddsOrigin;
 import com.scorenow.scorenow_api.domain.odds.value.OddsValue;
 import com.scorenow.scorenow_api.domain.odds.value.UnderOverLine;
 import com.scorenow.scorenow_api.global.entity.BaseEntity;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -41,9 +43,8 @@ public class MatchOddsHistory extends BaseEntity {
     @Column(name = "market_type", nullable = false)
     private OddsMarketType marketType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "registration_type", nullable = false)
-    private OddsRegistrationType registrationType;
+    @Embedded
+    private OddsOrigin origin;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -83,7 +84,7 @@ public class MatchOddsHistory extends BaseEntity {
     public static MatchOddsHistory createWinDrawLoss(
             Long matchId,
             OddsCategory category,
-            OddsRegistrationType registrationType,
+            OddsOrigin origin,
             BigDecimal homeOdds,
             BigDecimal drawOdds,
             BigDecimal awayOdds,
@@ -93,7 +94,7 @@ public class MatchOddsHistory extends BaseEntity {
                 matchId,
                 category,
                 OddsMarketType.WIN_DRAW_LOSS,
-                registrationType,
+                origin,
                 publishedAt
         );
 
@@ -107,7 +108,7 @@ public class MatchOddsHistory extends BaseEntity {
     public static MatchOddsHistory createHandicap(
             Long matchId,
             OddsCategory category,
-            OddsRegistrationType registrationType,
+            OddsOrigin origin,
             BigDecimal homeOdds,
             BigDecimal handicapLine,
             BigDecimal awayOdds,
@@ -117,7 +118,7 @@ public class MatchOddsHistory extends BaseEntity {
                 matchId,
                 category,
                 OddsMarketType.HANDICAP,
-                registrationType,
+                origin,
                 publishedAt
         );
 
@@ -131,7 +132,7 @@ public class MatchOddsHistory extends BaseEntity {
     public static MatchOddsHistory createUnderOver(
             Long matchId,
             OddsCategory category,
-            OddsRegistrationType registrationType,
+            OddsOrigin origin,
             BigDecimal underOdds,
             BigDecimal underOverLine,
             BigDecimal overOdds,
@@ -141,7 +142,7 @@ public class MatchOddsHistory extends BaseEntity {
                 matchId,
                 category,
                 OddsMarketType.UNDER_OVER,
-                registrationType,
+                origin,
                 publishedAt
         );
 
@@ -156,14 +157,18 @@ public class MatchOddsHistory extends BaseEntity {
             Long matchId,
             OddsCategory category,
             OddsMarketType marketType,
-            OddsRegistrationType registrationType,
+            OddsOrigin origin,
             Instant publishedAt
     ) {
         MatchOddsHistory history = new MatchOddsHistory();
         history.matchId = matchId;
         history.category = category;
         history.marketType = marketType;
-        history.registrationType = registrationType;
+        if (origin == null) {
+            throw new BusinessException(ErrorCode.ODDS_INVALID_STATE, "배당률 출처 정보는 필수입니다.");
+        }
+        origin.validateCategory(category);
+        history.origin = origin;
         history.status = OddsStatus.ACTIVE;
         history.publishedAt = publishedAt;
         return history;

@@ -14,6 +14,7 @@ import com.scorenow.scorenow_api.domain.odds.enums.OddsRegistrationType;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsStatus;
 import com.scorenow.scorenow_api.domain.odds.repository.MatchOddsDisplayPolicyRepository;
 import com.scorenow.scorenow_api.domain.odds.repository.MatchOddsHistoryRepository;
+import com.scorenow.scorenow_api.domain.odds.value.OddsOrigin;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -92,7 +93,7 @@ public class AdminMatchOddsService {
             MatchOddsHistory winDrawLoss = MatchOddsHistory.createWinDrawLoss(
                     matchId,
                     OddsCategory.OVERSEAS,
-                    OddsRegistrationType.MANUAL,
+                    OddsOrigin.manual(),
                     request.winDrawLoss().homeOdds(),
                     request.winDrawLoss().drawOdds(),
                     request.winDrawLoss().awayOdds(),
@@ -107,7 +108,7 @@ public class AdminMatchOddsService {
             MatchOddsHistory handicap = MatchOddsHistory.createHandicap(
                     matchId,
                     OddsCategory.OVERSEAS,
-                    OddsRegistrationType.MANUAL,
+                    OddsOrigin.manual(),
                     request.handicap().homeOdds(),
                     request.handicap().handicapLine(),
                     request.handicap().awayOdds(),
@@ -122,7 +123,7 @@ public class AdminMatchOddsService {
             MatchOddsHistory underOver = MatchOddsHistory.createUnderOver(
                     matchId,
                     OddsCategory.OVERSEAS,
-                    OddsRegistrationType.MANUAL,
+                    OddsOrigin.manual(),
                     request.underOver().underOdds(),
                     request.underOver().underOverLine(),
                     request.underOver().overOdds(),

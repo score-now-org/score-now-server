@@ -16,6 +16,14 @@ import java.util.Set;
 
 public interface MatchOddsHistoryRepository extends JpaRepository<MatchOddsHistory, Long> {
 
+    @Query("""
+            select moh
+            from MatchOddsHistory moh
+            where moh.matchId = :matchId
+              and moh.category = :category
+              and moh.origin.registrationType = :registrationType
+              and moh.marketType in :marketTypes
+            """)
     Page<MatchOddsHistory> findByMatchIdAndCategoryAndRegistrationTypeAndMarketTypeIn(
             Long matchId,
             OddsCategory category,
@@ -24,6 +32,14 @@ public interface MatchOddsHistoryRepository extends JpaRepository<MatchOddsHisto
             Pageable pageable
     );
 
+    @Query("""
+            select moh
+            from MatchOddsHistory moh
+            where moh.id = :historyId
+              and moh.matchId = :matchId
+              and moh.category = :category
+              and moh.origin.registrationType = :registrationType
+            """)
     Optional<MatchOddsHistory> findByIdAndMatchIdAndCategoryAndRegistrationType(
             Long historyId,
             Long matchId,
@@ -31,6 +47,14 @@ public interface MatchOddsHistoryRepository extends JpaRepository<MatchOddsHisto
             OddsRegistrationType registrationType
     );
 
+    @Query("""
+            select moh
+            from MatchOddsHistory moh
+            where moh.matchId = :matchId
+              and moh.category = :category
+              and moh.origin.registrationType = :registrationType
+              and moh.status = :status
+            """)
     List<MatchOddsHistory> findAllByMatchIdAndCategoryAndRegistrationTypeAndStatus(
             Long matchId,
             OddsCategory category,
@@ -43,7 +67,7 @@ public interface MatchOddsHistoryRepository extends JpaRepository<MatchOddsHisto
             from MatchOddsHistory moh
             where moh.matchId = :matchId
               and moh.category = :category
-              and moh.registrationType = :registrationType
+              and moh.origin.registrationType = :registrationType
               and moh.marketType = :marketType
               and moh.status = :status
             order by moh.publishedAt desc, moh.id desc
