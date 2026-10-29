@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
@@ -22,7 +21,6 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchCreateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchUpdateRequest;
-import com.scorenow.scorenow_api.domain.match.dto.response.MatchListResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
