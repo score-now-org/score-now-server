@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Objects;
 
 @Embeddable
 @Access(AccessType.FIELD)
@@ -37,18 +36,20 @@ public class UnderOverLine {
         return value;
     }
 
-    // TODO: 언더오버 관련 에러코드 추가 필요.
     private BigDecimal normalize(BigDecimal value) {
-        Objects.requireNonNull(value, "언더/오버 기준값은 필수입니다.");
+        if (value == null) {
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "언더/오버 기준값은 필수입니다.");
+        }
 
         BigDecimal normalized = value.setScale(SCALE, RoundingMode.DOWN);
 
         if (normalized.signum() <= 0) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "언더/오버 기준값은 0보다 커야 합니다.");
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "언더/오버 기준값은 0보다 커야 합니다.");
         }
 
+        // 현재 정책: 소수점 둘째 자리 절삭 후 정수가 되는 기준값은 허용하지 않는다.
         if (normalized.remainder(BigDecimal.ONE).signum() == 0) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "언더/오버 기준값은 정수일 수 없습니다.");
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "언더/오버 기준값은 정수일 수 없습니다.");
         }
 
         return normalized;

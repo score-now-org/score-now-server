@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Objects;
 
 @Embeddable
 @Access(AccessType.FIELD)
@@ -37,14 +36,15 @@ public class OddsValue {
         return value;
     }
 
-    // TODO: 배당률 관련 에러코드 추가 필요.
     private BigDecimal normalize(BigDecimal value) {
-        Objects.requireNonNull(value, "배당률은 필수입니다.");
+        if (value == null) {
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "배당률은 필수입니다.");
+        }
 
         BigDecimal normalized = value.setScale(SCALE, RoundingMode.DOWN);
 
         if (normalized.signum() <= 0) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "배당률은 0보다 커야 합니다.");
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "배당률은 0보다 커야 합니다.");
         }
 
         return normalized;

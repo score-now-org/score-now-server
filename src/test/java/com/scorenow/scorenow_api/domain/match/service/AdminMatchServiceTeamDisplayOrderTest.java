@@ -27,6 +27,7 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchMapper;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsDisplayPolicyInitializationService;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 
@@ -41,6 +42,9 @@ class AdminMatchServiceTeamDisplayOrderTest {
 
     @Mock
     private MatchDetailInitializationService matchDetailInitializationService;
+
+    @Mock
+    private MatchOddsDisplayPolicyInitializationService matchOddsDisplayPolicyInitializationService;
 
     @Mock
     private LeagueRepository leagueRepository;

@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.odds.value;
 
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
 import jakarta.persistence.Column;
@@ -10,7 +12,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Objects;
 
 @Embeddable
 @Access(AccessType.FIELD)
@@ -36,9 +37,10 @@ public class HandicapLine {
         return value;
     }
 
-    // TODO: 핸디캡 관련 에러코드 추가 필요.
     private BigDecimal normalize(BigDecimal value) {
-        Objects.requireNonNull(value, "핸디캡 기준값은 필수입니다.");
+        if (value == null) {
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "핸디캡 기준값은 필수입니다.");
+        }
         return value.setScale(SCALE, RoundingMode.DOWN);
     }
 }
