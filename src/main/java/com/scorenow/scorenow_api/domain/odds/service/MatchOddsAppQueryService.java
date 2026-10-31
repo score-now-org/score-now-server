@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MatchOddsAppQueryService {
+    private static final int DEFAULT_SLICE_SIZE = 20;
     private static final int MAX_HISTORY_SLICE_SIZE = 50;
 
     private final MatchOddsHistoryRepository matchOddsHistoryRepository;
@@ -164,11 +165,10 @@ public class MatchOddsAppQueryService {
      * 요청 크기가 허용 범위인지 검증한다.
      */
     private int normalizeHistorySliceSize(int size) {
-        if (size <= 0 || size > MAX_HISTORY_SLICE_SIZE) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        if (size <= 0) {
+            return DEFAULT_SLICE_SIZE;
         }
-
-        return size;
+        return Math.min(size, MAX_HISTORY_SLICE_SIZE);
     }
 
     /**

@@ -15,6 +15,7 @@ import com.scorenow.scorenow_api.domain.odds.enums.OddsStatus;
 import com.scorenow.scorenow_api.domain.odds.repository.MatchOddsDisplayPolicyRepository;
 import com.scorenow.scorenow_api.domain.odds.repository.MatchOddsHistoryRepository;
 import com.scorenow.scorenow_api.domain.odds.value.OddsOrigin;
+import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -253,6 +254,11 @@ public class AdminMatchOddsService {
     private void validateWinDrawLossBySport(Match match, ManualMatchOddsRegisterRequest.WinDrawLoss winDrawLoss) {
         if (winDrawLoss == null) {
             return;
+        }
+
+        Sport sport = match.getSport();
+        if (sport == null) {
+            throw new BusinessException(ErrorCode.SPORT_NOT_FOUND);
         }
 
         SportCode sportCode = match.getSport().getSportCode();
