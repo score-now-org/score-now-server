@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStand
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
@@ -75,6 +76,9 @@ public class MatchAppItemResponse {
 
     @Schema(description = "팀 표시 순서", example = "[\"HOME\", \"AWAY\"]")
     private List<String> teamDisplayOrder;
+
+    @Schema(description = "앱에 노출할 카테고리별 최신 승무패 배당률")
+    private List<MatchOddsCategoryResponse> odds;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private MatchAppSportLiveSummaryResponse sportLiveSummary;
@@ -163,7 +167,8 @@ public class MatchAppItemResponse {
             MatchStatusDisplayResponse matchStatusDisplayResponse,
             List<TeamStandingSummary> homeTeamStandings,
             List<TeamStandingSummary> awayTeamStandings,
-            MatchAppSportLiveSummaryResponse sportLiveSummary) {
+            MatchAppSportLiveSummaryResponse sportLiveSummary,
+            List<MatchOddsCategoryResponse> odds) {
 
         return MatchAppItemResponse.builder()
                 .id(match.getId())
@@ -180,6 +185,7 @@ public class MatchAppItemResponse {
                 .isCurrentCommentaryHighlighted(resolveCurrentCommentaryHighlighted(matchDetail))
                 .statusDisplay(matchStatusDisplayResponse)
                 .teamDisplayOrder(match.resolveTeamDisplayOrder())
+                .odds(List.copyOf(odds))
                 .sportLiveSummary(sportLiveSummary)
                 .build();
     }

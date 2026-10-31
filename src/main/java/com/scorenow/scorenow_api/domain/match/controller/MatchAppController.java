@@ -5,6 +5,10 @@ import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.statistics.MatchStatisticsResponse;
 import com.scorenow.scorenow_api.domain.match.service.MatchAppQueryService;
 import com.scorenow.scorenow_api.domain.match.service.MatchStatisticsAppQueryService;
+import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsHistorySliceResponse;
+import com.scorenow.scorenow_api.domain.odds.enums.OddsCategory;
+import com.scorenow.scorenow_api.domain.odds.enums.OddsMarketType;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsAppQueryService;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +21,11 @@ import java.time.LocalDate;
 @RequestMapping("/api/v1/app/matches")
 @RequiredArgsConstructor
 public class MatchAppController implements MatchAppApiDocs {
+    private static final String DEFAULT_ODDS_HISTORY_SIZE = "20";
 
     private final MatchAppQueryService matchAppQueryService;
     private final MatchStatisticsAppQueryService matchStatisticsAppQueryService;
+    private final MatchOddsAppQueryService matchOddsAppQueryService;
 
     /**
      * 앱 경기 목록 조회
@@ -48,6 +54,27 @@ public class MatchAppController implements MatchAppApiDocs {
     @GetMapping("/{matchId}/statistics")
     public ApiResponse<MatchStatisticsResponse> getMatchStatistics(@PathVariable Long matchId) {
         return ApiResponse.success(matchStatisticsAppQueryService.getStatistics(matchId));
+    }
+
+    /**
+     * 앱 경기의 카테고리·마켓별 배당률 이력 조회
+     */
+    @Override
+    @GetMapping("/{matchId}/odds/histories")
+    public ApiResponse<MatchOddsHistorySliceResponse> getMatchOddsHistories(
+            @PathVariable Long matchId,
+            @RequestParam OddsCategory category,
+            @RequestParam OddsMarketType marketType,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = DEFAULT_ODDS_HISTORY_SIZE) int size
+    ) {
+        return ApiResponse.success(matchOddsAppQueryService.getMatchOddsHistorySlice(
+                matchId,
+                category,
+                marketType,
+                cursor,
+                size
+        ));
     }
 
 }

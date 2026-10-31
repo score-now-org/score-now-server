@@ -14,6 +14,8 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchReposi
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.appresponse.MatchAppSportResponseMapperRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsAppQueryService;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
@@ -44,6 +46,7 @@ public class MatchAppQueryService {
     private final MatchAppSportResponseMapperRegistry matchAppSportResponseMapperRegistry;
 
     private final TeamStandingLookupService teamStandingLookupService;
+    private final MatchOddsAppQueryService matchOddsAppQueryService;
 
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
@@ -74,6 +77,9 @@ public class MatchAppQueryService {
         List<TeamStandingSummary> homeTeamStandings = teamStandings.getOrDefault(new LeagueTeamKey(leagueId, match.getHomeId()), List.of());
         List<TeamStandingSummary> awayTeamStandings = teamStandings.getOrDefault(new LeagueTeamKey(leagueId, match.getAwayId()), List.of());
 
+        Map<Long, MatchOddsCategoryResponse> overseasOddsByMatchId =
+                matchOddsAppQueryService.getOverseasWinDrawLossOddsByMatchIds(Set.of(matchId));
+
         return MatchAppDetailResponse.from(
                 match,
                 stadium,
@@ -81,7 +87,8 @@ public class MatchAppQueryService {
                 matchStatusDisplayResolver.resolve(match, matchDetailDocument),
                 homeTeamStandings,
                 awayTeamStandings,
-                matchAppSportResponseMapperRegistry.mapDetail(matchDetailDocument)
+                matchAppSportResponseMapperRegistry.mapDetail(matchDetailDocument),
+                createOddsResponses(matchId, overseasOddsByMatchId)
         );
     }
 
@@ -190,6 +197,10 @@ public class MatchAppQueryService {
                 .map(Match::getId)
                 .toList();
 
+        // 경기 해외 배당률 조회
+        Map<Long, MatchOddsCategoryResponse> overseasOddsByMatchId =
+                matchOddsAppQueryService.getOverseasWinDrawLossOddsByMatchIds(Set.copyOf(matchIds));
+
         Map<Long, MatchDetailDocument> matchDetailById = matchDetailRepository.findAllById(matchIds).stream()
                 .collect(toMap(
                         MatchDetailDocument::getId,
@@ -232,7 +243,8 @@ public class MatchAppQueryService {
                                         teamStandings.getOrDefault(
                                                 new LeagueTeamKey(match.getLeagueId(), match.getAwayId()),
                                                 List.of()),
-                                        matchAppSportResponseMapperRegistry.mapLiveSummary(match, matchDetail)
+                                        matchAppSportResponseMapperRegistry.mapLiveSummary(match, matchDetail),
+                                        createOddsResponses(match.getId(), overseasOddsByMatchId)
                                 );
                             })
                             .toList();
@@ -245,6 +257,17 @@ public class MatchAppQueryService {
                     );
                 })
                 .toList();
+    }
+
+    /**
+     * 현재 지원 중인 해외 배당률이 있으면 카테고리 목록으로 반환한다.
+     */
+    private List<MatchOddsCategoryResponse> createOddsResponses(
+            Long matchId,
+            Map<Long, MatchOddsCategoryResponse> overseasOddsByMatchId
+    ) {
+        MatchOddsCategoryResponse overseasOdds = overseasOddsByMatchId.get(matchId);
+        return overseasOdds == null ? List.of() : List.of(overseasOdds);
     }
 
     private LocalDate resolveDate(LocalDate date) {
