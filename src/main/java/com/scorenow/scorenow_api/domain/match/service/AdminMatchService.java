@@ -11,6 +11,7 @@ import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchSt
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsDisplayPolicyInitializationService;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
 import org.springframework.data.domain.Page;
@@ -51,6 +52,7 @@ public class AdminMatchService {
     private final MatchRepository matchRepository;
     private final MatchDetailRepository matchDetailRepository;
     private final MatchDetailInitializationService matchDetailInitializationService;
+    private final MatchOddsDisplayPolicyInitializationService matchOddsDisplayPolicyInitializationService;
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
@@ -122,6 +124,8 @@ public class AdminMatchService {
         match.updateTeamDisplayOrder(teamDisplayOrder);
 
         Match savedMatch = matchRepository.save(match);
+
+        matchOddsDisplayPolicyInitializationService.initialize(savedMatch.getId());
 
         SportCode sportCode = sportCodeResolver.resolveByInternalSportId(savedMatch.getSportId());
         matchDetailInitializationService.createIfAbsent(savedMatch.getId(), sportCode);

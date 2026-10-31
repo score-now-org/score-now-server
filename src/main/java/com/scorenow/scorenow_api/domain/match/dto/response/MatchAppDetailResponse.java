@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStand
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
 import com.scorenow.scorenow_api.domain.stadium.entity.TemporaryStadium;
@@ -29,6 +30,7 @@ public record MatchAppDetailResponse(
         Boolean isCurrentCommentaryHighlighted,
         MatchStatusDisplayResponse statusDisplay,
         List<String> teamDisplayOrder,
+        List<MatchOddsCategoryResponse> odds,
         @JsonInclude(JsonInclude.Include.NON_NULL) MatchAppSportDetailResponse sportDetail
 ) {
 
@@ -39,7 +41,8 @@ public record MatchAppDetailResponse(
             MatchStatusDisplayResponse statusDisplay,
             List<TeamStandingSummary> homeTeamStandings,
             List<TeamStandingSummary> awayTeamStandings,
-            MatchAppSportDetailResponse sportDetail) {
+            MatchAppSportDetailResponse sportDetail,
+            List<MatchOddsCategoryResponse> odds) {
 
         return new MatchAppDetailResponse(
                 match.getId(),
@@ -56,6 +59,7 @@ public record MatchAppDetailResponse(
                 resolveCurrentCommentaryHighlighted(matchDetail),
                 statusDisplay,
                 match.resolveTeamDisplayOrder(),
+                List.copyOf(odds),
                 sportDetail
         );
     }

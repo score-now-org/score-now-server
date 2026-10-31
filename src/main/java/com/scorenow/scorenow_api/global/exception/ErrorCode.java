@@ -25,6 +25,13 @@ public enum ErrorCode {
 		"임시 경기장이 할당된 경기에서만 매핑을 해제할 수 있습니다."
 	),
 
+	// Odds
+	ODDS_INVALID_VALUE(HttpStatus.BAD_REQUEST, "O001", "배당률 값이 올바르지 않습니다."),
+	ODDS_MANUAL_MARKET_REQUIRED(HttpStatus.BAD_REQUEST, "O002", "최소 한 개 이상의 배당 마켓을 입력해야 합니다."),
+	ODDS_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "O003", "배당률 이력을 찾을 수 없습니다."),
+	ODDS_INVALID_STATE(HttpStatus.CONFLICT, "O004", "현재 상태에서는 배당률을 변경할 수 없습니다."),
+	ODDS_DISPLAY_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "O005", "배당률 노출 정책을 찾을 수 없습니다."),
+
 	// Match Detail
 	MATCH_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MD001", "경기 중계 정보를 찾을 수 없습니다."),
 	MATCH_CLOCK_NOT_INITIALIZED(HttpStatus.CONFLICT, "MD002", "경기 시간 정보가 아직 생성되지 않았습니다."),

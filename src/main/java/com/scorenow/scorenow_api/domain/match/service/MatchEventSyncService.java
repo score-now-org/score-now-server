@@ -3,10 +3,12 @@ package com.scorenow.scorenow_api.domain.match.service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.constant.MatchConstants;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsDisplayPolicyInitializationService;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -42,6 +44,7 @@ public class MatchEventSyncService {
 
     private final MatchRepository matchRepository;
     private final MatchDetailInitializationService matchDetailInitializationService;
+    private final MatchOddsDisplayPolicyInitializationService matchOddsDisplayPolicyInitializationService;
 
     /**
      * 개별 경기 동기화 - league → team → match 순서 보장
@@ -107,8 +110,10 @@ public class MatchEventSyncService {
         DataOrigin dataOrigin = leagueTarget.dataOrigin();
         Long internalSportId = leagueTarget.internalSportId();
 
-        Match match = matchRepository.findByExternalInfo(dataOrigin, event.getId())
-                .orElseGet(() -> Match.builder()
+        Optional<Match> existingMatch = matchRepository.findByExternalInfo(dataOrigin, event.getId());
+        boolean isNewMatch = existingMatch.isEmpty();
+
+        Match match = existingMatch.orElseGet(() -> Match.builder()
                         .dataOrigin(dataOrigin)
                         .apiMatchId(event.getId())
                         .bet365Id(event.getBet365Id())
@@ -144,6 +149,11 @@ public class MatchEventSyncService {
         }
 
         Match savedMatch = matchRepository.save(match);
+
+        // 새로 등록하는 경기의 경우, 배당률 표기 정책 초기화를 진행한다.
+        if (isNewMatch) {
+            matchOddsDisplayPolicyInitializationService.initialize(savedMatch.getId());
+        }
 
         // 없으면 초기 MatchDetailDocument 생성
         matchDetailInitializationService.createIfAbsent(savedMatch.getId(), leagueTarget.sportCode());

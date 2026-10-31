@@ -11,6 +11,7 @@ import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublish
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsDisplayPolicyInitializationService;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.sport.service.SportCodeResolver;
@@ -42,6 +43,8 @@ class AdminMatchServiceTest {
     private MatchDetailRepository matchDetailRepository;
     @Mock
     private MatchDetailInitializationService matchDetailInitializationService;
+    @Mock
+    private MatchOddsDisplayPolicyInitializationService matchOddsDisplayPolicyInitializationService;
     @Mock
     private LeagueRepository leagueRepository;
     @Mock
@@ -107,7 +110,7 @@ class AdminMatchServiceTest {
     }
 
     @Test
-    void 수동_경기_생성시_초기_MatchDetailDocument를_생성한다() {
+    void 수동_경기_생성시_경기_상세와_배당률_노출_정책을_초기화한다() {
         MatchCreateRequest request = createCreateRequest();
         League league = League.builder()
                 .id(request.getLeagueId())
@@ -134,6 +137,8 @@ class AdminMatchServiceTest {
 
         then(matchDetailInitializationService).should()
                 .createIfAbsent(match.getId(), SportCode.FOOTBALL);
+        then(matchOddsDisplayPolicyInitializationService).should()
+                .initialize(match.getId());
     }
 
     private MatchCreateRequest createCreateRequest() {

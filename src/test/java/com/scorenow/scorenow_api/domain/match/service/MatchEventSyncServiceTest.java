@@ -7,6 +7,7 @@ import com.scorenow.scorenow_api.domain.league.service.LeagueService;
 import com.scorenow.scorenow_api.domain.match.dto.MatchSyncLeagueTarget;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsDisplayPolicyInitializationService;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
@@ -25,8 +26,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class MatchEventSyncServiceTest {
@@ -48,8 +51,11 @@ class MatchEventSyncServiceTest {
     private MatchRepository matchRepository;
     @Mock
     private MatchDetailInitializationService matchDetailInitializationService;
+    @Mock
+    private MatchOddsDisplayPolicyInitializationService matchOddsDisplayPolicyInitializationService;
+
     @Test
-    void 자동_동기화_경기_저장시_초기_MatchDetailDocument를_생성한다() {
+    void 자동_동기화로_신규_경기_저장시_초기_데이터를_생성한다() {
         BetsEventResponse.Event event = createEvent();
         MatchSyncLeagueTarget leagueTarget = new MatchSyncLeagueTarget(
                 DataOrigin.BETS,
@@ -86,6 +92,49 @@ class MatchEventSyncServiceTest {
         then(leagueService).should().getLeague(2L);
         then(matchDetailInitializationService).should()
                 .createIfAbsent(30L, SportCode.FOOTBALL);
+        then(matchOddsDisplayPolicyInitializationService).should()
+                .initialize(30L);
+    }
+
+    @Test
+    void 자동_동기화로_기존_경기_갱신시_배당률_노출_정책을_다시_초기화하지_않는다() {
+        BetsEventResponse.Event event = createEvent();
+        MatchSyncLeagueTarget leagueTarget = new MatchSyncLeagueTarget(
+                DataOrigin.BETS,
+                "1",
+                "100",
+                1L,
+                SportCode.FOOTBALL,
+                2L,
+                "Premier League"
+        );
+        League league = League.builder()
+                .id(2L)
+                .sportId(1L)
+                .build();
+        Team homeTeam = Team.builder().id(10L).build();
+        Team awayTeam = Team.builder().id(20L).build();
+        Match existingMatch = Match.builder()
+                .id(30L)
+                .dataOrigin(DataOrigin.BETS)
+                .apiMatchId(event.getId())
+                .build();
+
+        given(leagueService.getLeague(2L)).willReturn(league);
+        given(teamService.buildImageUrl("home-image")).willReturn("home-image-url");
+        given(teamService.buildImageUrl("away-image")).willReturn("away-image-url");
+        given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "10", "Home", "KR", "home-image-url"))
+                .willReturn(homeTeam);
+        given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "20", "Away", "JP", "away-image-url"))
+                .willReturn(awayTeam);
+        given(matchRepository.findByExternalInfo(DataOrigin.BETS, event.getId()))
+                .willReturn(Optional.of(existingMatch));
+        given(matchRepository.save(existingMatch)).willReturn(existingMatch);
+
+        matchEventSyncService.syncEvent(leagueTarget, event);
+
+        then(matchOddsDisplayPolicyInitializationService).should(never())
+                .initialize(anyLong());
     }
 
     @Test

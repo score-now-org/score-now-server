@@ -34,6 +34,9 @@ import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchReposi
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.appresponse.MatchAppSportResponseMapperRegistry;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
+import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
+import com.scorenow.scorenow_api.domain.odds.enums.OddsCategory;
+import com.scorenow.scorenow_api.domain.odds.service.MatchOddsAppQueryService;
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
@@ -83,6 +86,9 @@ class MatchAppQueryServiceTest {
     @Mock
     private StadiumRepository stadiumRepository;
 
+    @Mock
+    private MatchOddsAppQueryService matchOddsAppQueryService;
+
     @InjectMocks
     private MatchAppQueryService matchAppQueryService;
 
@@ -113,11 +119,14 @@ class MatchAppQueryServiceTest {
                 .build();
         MatchStatusDisplayResponse statusDisplay = statusDisplay("1회말");
         BaseballAppMatchDetailResponse sportDetailResponse = BaseballAppMatchDetailResponse.from(baseballDetail);
+        MatchOddsCategoryResponse odds = MatchOddsCategoryResponse.of(OddsCategory.OVERSEAS, List.of());
 
         given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(match.getId())).willReturn(Optional.of(matchDetail));
         given(matchStatusDisplayResolver.resolve(match, matchDetail)).willReturn(statusDisplay);
         given(matchAppSportResponseMapperRegistry.mapDetail(matchDetail)).willReturn(sportDetailResponse);
+        given(matchOddsAppQueryService.getOverseasWinDrawLossOddsByMatchIds(Set.of(match.getId())))
+                .willReturn(Map.of(match.getId(), odds));
         given(teamStandingLookupService.getTeamStandings(
                 Map.of(match.getLeagueId(), Set.of(match.getHomeId(), match.getAwayId())),
                 match.getStartAt().toLocalDate()
@@ -130,6 +139,7 @@ class MatchAppQueryServiceTest {
         assertThat(response.awayScore()).isEqualTo(1);
         assertThat(response.statusDisplay()).isSameAs(statusDisplay);
         assertThat(response.sportDetail()).isSameAs(sportDetailResponse);
+        assertThat(response.odds()).containsExactly(odds);
 
         BaseballAppMatchDetailResponse detail = (BaseballAppMatchDetailResponse) response.sportDetail();
         assertThat(detail.currentInning().code()).isEqualTo("FIRST_INNING_BOTTOM");
@@ -183,11 +193,14 @@ class MatchAppQueryServiceTest {
                 ),
                 1
         );
+        MatchOddsCategoryResponse odds = MatchOddsCategoryResponse.of(OddsCategory.OVERSEAS, List.of());
 
         givenAppMatches(date, null, null, match);
         given(matchDetailRepository.findAllById(List.of(match.getId()))).willReturn(List.of(matchDetail));
         given(matchStatusDisplayResolver.resolve(match, matchDetail)).willReturn(statusDisplay("1회말"));
         given(matchAppSportResponseMapperRegistry.mapLiveSummary(match, matchDetail)).willReturn(liveSummary);
+        given(matchOddsAppQueryService.getOverseasWinDrawLossOddsByMatchIds(Set.of(match.getId())))
+                .willReturn(Map.of(match.getId(), odds));
 
         MatchAppResponse response = matchAppQueryService.getMatchesWithFeatured(date, null, null);
 
@@ -197,6 +210,7 @@ class MatchAppQueryServiceTest {
         assertThat(leagueGroup.getSportCode()).isEqualTo(SportCode.BASEBALL);
         assertThat(matchItem.getSportCode()).isEqualTo(SportCode.BASEBALL);
         assertThat(matchItem.getSportLiveSummary()).isSameAs(liveSummary);
+        assertThat(matchItem.getOdds()).containsExactly(odds);
     }
 
     @Test
@@ -329,6 +343,7 @@ class MatchAppQueryServiceTest {
         assertThat(result.get(1).getLeagueName()).isEqualTo("La Liga");
         assertThat(result.get(1).getMatches()).extracting(MatchAppItemResponse::getId)
                 .containsExactly(2L);
+        verify(matchOddsAppQueryService).getOverseasWinDrawLossOddsByMatchIds(Set.of(1L, 2L, 3L));
     }
 
     @Test
