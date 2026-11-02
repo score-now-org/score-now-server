@@ -52,7 +52,7 @@ public class Player extends BaseEntity {
 	private Integer height;
 
 	@Builder.Default
-	private boolean teaguk = false; // 태극전사
+	private boolean taegeuk = false; // 태극전사
 
 	public void updateFromApi(String eName, String cc, LocalDate birthdate, Integer height) {
 		this.eName = eName;
@@ -61,4 +61,12 @@ public class Player extends BaseEntity {
 		this.height = height;
 	}
 
+	public void updateNames(String kName, String eName) {
+		this.kName = kName;
+		this.eName = eName;
+	}
+
+	public void updateTaegeuk(boolean taegeuk) {
+		this.taegeuk = taegeuk;
+	}
 }

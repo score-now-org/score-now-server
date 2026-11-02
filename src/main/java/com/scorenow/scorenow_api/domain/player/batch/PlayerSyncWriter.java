@@ -193,7 +193,7 @@ public class PlayerSyncWriter implements ItemWriter<PlayerSyncData> {
 			.cc(sp.getCc())
 			.birthdate(sp.getBirthdate())
 			.height(parseNullableInt(sp.getHeight()))
-			.teaguk(false)
+			.taegeuk(false)
 			.build();
 	}
 

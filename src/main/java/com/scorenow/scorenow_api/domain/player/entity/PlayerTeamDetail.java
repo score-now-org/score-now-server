@@ -62,7 +62,6 @@ public class PlayerTeamDetail extends BaseEntity {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(
 		name = "league_id",
-		nullable = false,
 		foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private League league;
 
@@ -83,5 +82,9 @@ public class PlayerTeamDetail extends BaseEntity {
 		this.availabilityStatus = availabilityStatus == null
 			? PlayerAvailabilityStatus.AVAILABLE
 			: availabilityStatus;
+	}
+
+	public void updateSquadOn(boolean squadOn) {
+		this.squadOn = squadOn;
 	}
 }

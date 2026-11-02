@@ -32,7 +32,7 @@ public class PlayerExternalMapping {
 	@Enumerated(EnumType.STRING)
 	private DataOrigin provider;
 
-	@Column(name = "api_player_id", nullable = false)
+	@Column(name = "api_player_id")
 	private String apiPlayerId;
 
 	@ManyToOne(fetch = FetchType.LAZY)
