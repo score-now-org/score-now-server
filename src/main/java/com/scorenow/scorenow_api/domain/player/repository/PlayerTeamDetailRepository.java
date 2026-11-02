@@ -83,4 +83,31 @@ public interface PlayerTeamDetailRepository extends JpaRepository<PlayerTeamDeta
 	List<PlayerTeamDetail> findAllByPlayerIds(
 		@Param("playerIds") List<Long> playerIds
 	);
+
+	@Query("""
+		SELECT ptd
+		FROM PlayerTeamDetail ptd
+		JOIN FETCH ptd.team t
+		LEFT JOIN FETCH ptd.league l
+		WHERE ptd.player.id IN :playerIds
+		  AND (:leagueId IS NULL OR l.id = :leagueId)
+		  AND (
+		      :teamKeyword IS NULL
+		      OR (:teamId IS NOT NULL AND t.id = :teamId)
+		      OR (
+		          :teamId IS NULL
+		          AND (
+		              LOWER(t.kName) LIKE LOWER(CONCAT('%', :teamKeyword, '%'))
+		              OR LOWER(t.eName) LIKE LOWER(CONCAT('%', :teamKeyword, '%'))
+		          )
+		      )
+		  )
+		ORDER BY ptd.id DESC
+		""")
+	List<PlayerTeamDetail> findAdminDetailsByPlayerIds(
+		@Param("playerIds") List<Long> playerIds,
+		@Param("leagueId") Long leagueId,
+		@Param("teamKeyword") String teamKeyword,
+		@Param("teamId") Long teamId
+	);
 }
