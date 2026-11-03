@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.model;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +35,9 @@ public class LineupPlayer {
 	 * - 경기 종료 시 cleanup 대상
 	 */
 	private boolean temp;
+
+	@JsonGetter("eName")
+	public String getEName() {
+		return eName;
+	}
 }

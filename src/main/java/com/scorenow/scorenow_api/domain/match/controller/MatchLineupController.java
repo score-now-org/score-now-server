@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/matches")
+@RequestMapping("/api/v1/admin/matches")
 public class MatchLineupController {
 
 	private final MatchLineupCommandService lineupCommandSvc;
