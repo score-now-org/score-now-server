@@ -49,8 +49,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.join(detail.team, team)
 			.where(
 				player.id.eq(playerId),
-				team.id.eq(teamId),
-				detail.squadOn.isTrue()
+				team.id.eq(teamId)
 			)
 			.fetchOne();
 
@@ -78,8 +77,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.join(detail.player, player)
 			.join(detail.team, team)
 			.where(
-				team.id.eq(teamId),
-				detail.squadOn.isTrue()
+				team.id.eq(teamId)
 			)
 			.limit(limit)
 			.fetch();
@@ -106,8 +104,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.join(detail.player, player)
 			.join(detail.team, team)
 			.where(
-				keywordCondition(keyword),
-				detail.squadOn.isTrue()
+				keywordCondition(keyword)
 			)
 			.limit(limit)
 			.fetch();
