@@ -8,6 +8,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Instant;
+import java.util.Optional;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -143,6 +146,24 @@ public class BetsApiClient {
 
         log.debug("BetsAPI 호출: {}", maskToken(url));
         return restTemplate.getForObject(url, BetsSquadResponse.class);
+    }
+
+    /**
+     * 배당률 조회
+     */
+    public BetsEventOddsResponse getBet365EventOdds(String eventId, Instant sinceTime) {
+        String url = buildUrl("/v2/event/odds")
+                .queryParam("event_id", eventId)
+                .queryParam("source", "bet365")
+                .queryParam("odds_market", "1,2,3")
+                .queryParamIfPresent(
+                        "since_time",
+                        Optional.ofNullable(sinceTime).map(Instant::getEpochSecond)
+                )
+                .build().toUriString();
+
+        log.debug("BetsAPI 배당률 호출: {}", maskToken(url));
+        return restTemplate.getForObject(url, BetsEventOddsResponse.class);
     }
 
     /**
