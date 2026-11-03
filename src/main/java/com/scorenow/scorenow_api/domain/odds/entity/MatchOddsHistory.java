@@ -46,6 +46,9 @@ public class MatchOddsHistory extends BaseEntity {
     @Embedded
     private OddsOrigin origin;
 
+    @Column(name = "api_odds_id")
+    private String apiOddsId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OddsStatus status;
@@ -90,11 +93,34 @@ public class MatchOddsHistory extends BaseEntity {
             BigDecimal awayOdds,
             Instant publishedAt
     ) {
+        return createWinDrawLoss(
+                matchId,
+                category,
+                origin,
+                homeOdds,
+                drawOdds,
+                awayOdds,
+                null,
+                publishedAt
+        );
+    }
+
+    public static MatchOddsHistory createWinDrawLoss(
+            Long matchId,
+            OddsCategory category,
+            OddsOrigin origin,
+            BigDecimal homeOdds,
+            BigDecimal drawOdds,
+            BigDecimal awayOdds,
+            String apiOddsId,
+            Instant publishedAt
+    ) {
         MatchOddsHistory history = initialize(
                 matchId,
                 category,
                 OddsMarketType.WIN_DRAW_LOSS,
                 origin,
+                apiOddsId,
                 publishedAt
         );
 
@@ -114,11 +140,34 @@ public class MatchOddsHistory extends BaseEntity {
             BigDecimal awayOdds,
             Instant publishedAt
     ) {
+        return createHandicap(
+                matchId,
+                category,
+                origin,
+                homeOdds,
+                handicapLine,
+                awayOdds,
+                null,
+                publishedAt
+        );
+    }
+
+    public static MatchOddsHistory createHandicap(
+            Long matchId,
+            OddsCategory category,
+            OddsOrigin origin,
+            BigDecimal homeOdds,
+            BigDecimal handicapLine,
+            BigDecimal awayOdds,
+            String apiOddsId,
+            Instant publishedAt
+    ) {
         MatchOddsHistory history = initialize(
                 matchId,
                 category,
                 OddsMarketType.HANDICAP,
                 origin,
+                apiOddsId,
                 publishedAt
         );
 
@@ -138,11 +187,34 @@ public class MatchOddsHistory extends BaseEntity {
             BigDecimal overOdds,
             Instant publishedAt
     ) {
+        return createUnderOver(
+                matchId,
+                category,
+                origin,
+                underOdds,
+                underOverLine,
+                overOdds,
+                null,
+                publishedAt
+        );
+    }
+
+    public static MatchOddsHistory createUnderOver(
+            Long matchId,
+            OddsCategory category,
+            OddsOrigin origin,
+            BigDecimal underOdds,
+            BigDecimal underOverLine,
+            BigDecimal overOdds,
+            String apiOddsId,
+            Instant publishedAt
+    ) {
         MatchOddsHistory history = initialize(
                 matchId,
                 category,
                 OddsMarketType.UNDER_OVER,
                 origin,
+                apiOddsId,
                 publishedAt
         );
 
@@ -158,6 +230,7 @@ public class MatchOddsHistory extends BaseEntity {
             OddsCategory category,
             OddsMarketType marketType,
             OddsOrigin origin,
+            String apiOddsId,
             Instant publishedAt
     ) {
         MatchOddsHistory history = new MatchOddsHistory();
@@ -169,6 +242,10 @@ public class MatchOddsHistory extends BaseEntity {
         }
         origin.validateCategory(category);
         history.origin = origin;
+        if (apiOddsId != null && apiOddsId.isBlank()) {
+            throw new BusinessException(ErrorCode.ODDS_INVALID_VALUE, "외부 배당률 ID는 빈 값일 수 없습니다.");
+        }
+        history.apiOddsId = apiOddsId;
         history.status = OddsStatus.ACTIVE;
         history.publishedAt = publishedAt;
         return history;
