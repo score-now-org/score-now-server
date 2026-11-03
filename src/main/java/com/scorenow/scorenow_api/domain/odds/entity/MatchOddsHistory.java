@@ -18,15 +18,24 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * TODO: 자동/라이브 배당 이력 증가 전 조회 성능을 위해
- *      (match_id, category, registration_type, published_at) 복합 인덱스 추가를 검토한다.
- */
-
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "match_odds_history")
+@Table(
+        name = "match_odds_history",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_match_odds_provider_market_api_id",
+                        columnNames = {
+                                "match_id",
+                                "odds_source",
+                                "bookmaker",
+                                "market_type",
+                                "api_odds_id"
+                        }
+                )
+        }
+)
 public class MatchOddsHistory extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
