@@ -88,6 +88,45 @@ public interface MatchOddsHistoryRepository extends JpaRepository<MatchOddsHisto
             OddsStatus status
     );
 
+    @Query("""
+            select max(moh.publishedAt)
+            from MatchOddsHistory moh
+            where moh.matchId = :matchId
+              and moh.category = :category
+              and moh.origin.registrationType = :registrationType
+              and moh.origin.source = :source
+              and moh.origin.bookmaker = :bookmaker
+              and moh.marketType in :marketTypes
+            group by moh.marketType
+            """)
+    List<Instant> findLatestPublishedAtPerMarket(
+            @Param("matchId") Long matchId,
+            @Param("category") OddsCategory category,
+            @Param("registrationType") OddsRegistrationType registrationType,
+            @Param("source") OddsSource source,
+            @Param("bookmaker") OddsBookmaker bookmaker,
+            @Param("marketTypes") Collection<OddsMarketType> marketTypes
+    );
+
+    @Query("""
+            select moh
+            from MatchOddsHistory moh
+            where moh.matchId = :matchId
+              and moh.category = :category
+              and moh.origin.registrationType = :registrationType
+              and moh.origin.source = :source
+              and moh.origin.bookmaker = :bookmaker
+              and moh.apiOddsId in :apiOddsIds
+            """)
+    List<MatchOddsHistory> findAllByProviderOddsIds(
+            @Param("matchId") Long matchId,
+            @Param("category") OddsCategory category,
+            @Param("registrationType") OddsRegistrationType registrationType,
+            @Param("source") OddsSource source,
+            @Param("bookmaker") OddsBookmaker bookmaker,
+            @Param("apiOddsIds") Collection<String> apiOddsIds
+    );
+
     @Query(value = """
             select moh.*
             from match_odds_history moh
