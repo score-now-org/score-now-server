@@ -281,6 +281,18 @@ public class BetsEventOddsNormalizer {
             return List.of();
         }
 
+        List<BetsEventOddsResponse.OddsRecord> marketRows = matchedMarkets.get(0).getValue();
+
+        if (marketRows == null) {
+            log.warn("BetsAPI 배당률 정규화 스킵 - 마켓 row 목록이 null입니다. matchId:{}, marketSuffix:{}, marketKey:{}",
+                    matchId,
+                    marketSuffix,
+                    matchedMarkets.get(0).getKey()
+            );
+
+            return List.of();
+        }
+
         return matchedMarkets.get(0).getValue();
     }
 
