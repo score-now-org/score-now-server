@@ -86,7 +86,7 @@ public class MatchLineupMapper {
 			.build();
 	}
 
-	private String mapPosition(String pos) {
+	public String mapPosition(String pos) {
 		if (pos == null)
 			return null;
 

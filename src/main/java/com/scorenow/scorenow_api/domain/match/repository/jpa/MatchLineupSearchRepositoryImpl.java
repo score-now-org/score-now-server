@@ -12,6 +12,7 @@ import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
 import com.scorenow.scorenow_api.domain.player.entity.QPlayer;
+import com.scorenow.scorenow_api.domain.player.entity.QPlayerExternalMapping;
 import com.scorenow.scorenow_api.domain.player.entity.QPlayerTeamDetail;
 import com.scorenow.scorenow_api.domain.team.entity.QTeam;
 
@@ -26,6 +27,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 	private static final QPlayer player = QPlayer.player;
 	private static final QPlayerTeamDetail detail = QPlayerTeamDetail.playerTeamDetail;
 	private static final QTeam team = QTeam.team;
+	private static final QPlayerExternalMapping externalMapping = QPlayerExternalMapping.playerExternalMapping;
 
 	@Override
 	public Optional<MatchLineupPlayerResponse> findPlayerByIdAndTeamId(
@@ -36,6 +38,8 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
+				externalMapping.provider,
+				externalMapping.apiPlayerId,
 				player.kName,
 				player.eName,
 				detail.position,
@@ -47,6 +51,8 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.from(detail)
 			.join(detail.player, player)
 			.join(detail.team, team)
+			.leftJoin(externalMapping)
+			.on(externalMapping.player.eq(player))
 			.where(
 				player.id.eq(playerId),
 				team.id.eq(teamId)
@@ -65,6 +71,8 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
+				externalMapping.provider,
+				externalMapping.apiPlayerId,
 				player.kName,
 				player.eName,
 				detail.position,
@@ -76,6 +84,8 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.from(detail)
 			.join(detail.player, player)
 			.join(detail.team, team)
+			.leftJoin(externalMapping)
+			.on(externalMapping.player.eq(player))
 			.where(
 				team.id.eq(teamId)
 			)
@@ -92,6 +102,8 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.select(Projections.constructor(
 				MatchLineupPlayerResponse.class,
 				player.id,
+				externalMapping.provider,
+				externalMapping.apiPlayerId,
 				player.kName,
 				player.eName,
 				detail.position,
@@ -103,6 +115,8 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.from(detail)
 			.join(detail.player, player)
 			.join(detail.team, team)
+			.leftJoin(externalMapping)
+			.on(externalMapping.player.eq(player))
 			.where(
 				keywordCondition(keyword)
 			)

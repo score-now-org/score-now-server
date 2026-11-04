@@ -10,6 +10,7 @@ import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRe
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
+import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchLineupSearchRepository;
@@ -25,6 +26,7 @@ public class MatchLineupCommandService {
 
 	private final MatchLineupRepository matchLineupRepo;
 	private final MatchLineupSearchRepository matchLineupSearchRepository;
+	private final MatchLineupMapper lineupMapper;
 
 	/**
 	 * 라인업에 선수 반영
@@ -88,7 +90,7 @@ public class MatchLineupCommandService {
 			.eName(playerInfo.getEName())
 			.kName(playerInfo.getKName())
 			.shirtNumber(playerInfo.getShirtNumber())
-			.position(playerInfo.getPosition())
+			.position(lineupMapper.mapPosition(playerInfo.getPosition()))
 			.goals(0)
 			.temp(false)
 			.build();

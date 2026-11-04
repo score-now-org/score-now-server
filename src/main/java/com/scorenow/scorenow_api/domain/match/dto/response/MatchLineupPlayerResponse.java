@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.dto.response;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,6 +10,8 @@ import lombok.Getter;
 public class MatchLineupPlayerResponse {
 
 	private Long playerId;
+	private DataOrigin provider;
+	private String apiPlayerId;
 	private String kName;
 	private String eName;
 	private String position;

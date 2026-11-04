@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
+import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchLineupSearchRepository;
@@ -25,6 +26,7 @@ public class MatchLineupQueryService {
 
 	private final MatchLineupSearchRepository matchLineupSearchRepository;
 	private final MatchLineupRepository matchLineupRepo;
+	private final MatchLineupMapper lineupMapper;
 
 	/**
 	 * matchId 기준으로 라인업 조회
@@ -77,9 +79,11 @@ public class MatchLineupQueryService {
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
 				player.getPlayerId(),
+				player.getProvider(),
+				player.getApiPlayerId(),
 				player.getKName(),
 				player.getEName(),
-				player.getPosition(),
+				lineupMapper.mapPosition(player.getPosition()),
 				player.getTeamId(),
 				player.getTeamName(),
 				player.getShirtNumber(),
@@ -134,9 +138,11 @@ public class MatchLineupQueryService {
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
 				player.getPlayerId(),
+				player.getProvider(),
+				player.getApiPlayerId(),
 				player.getKName(),
 				player.getEName(),
-				player.getPosition(),
+				lineupMapper.mapPosition(player.getPosition()),
 				player.getTeamId(),
 				player.getTeamName(),
 				player.getShirtNumber(),
