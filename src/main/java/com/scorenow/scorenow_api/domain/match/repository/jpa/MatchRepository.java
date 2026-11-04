@@ -22,6 +22,37 @@ public interface MatchRepository extends JpaRepository<Match, Long>, MatchReposi
     List<Match> findByStatusCode(MatchStatus statusCode);
 
     @Query("""
+            select m
+            from Match m
+            left join fetch m.sport
+            where m.id = :matchId
+            """)
+    Optional<Match> findByIdWithSport(@Param("matchId") Long matchId);
+
+    @Query("""
+            select m.id
+            from Match m
+            join m.sport s
+            where m.dataOrigin = :dataOrigin
+              and m.statusCode = :status
+              and m.isActive = true
+              and m.isManual = false
+              and m.apiMatchId is not null
+              and trim(m.apiMatchId) <> ''
+              and s.sportCode in :sportCodes
+              and m.startAt > :startExclusive
+              and m.startAt <= :endInclusive
+            order by m.startAt asc, m.id asc
+            """)
+    List<Long> findPrematchOddsCollectionTargetIds(
+            @Param("dataOrigin") DataOrigin dataOrigin,
+            @Param("status") MatchStatus status,
+            @Param("sportCodes") Collection<SportCode> sportCodes,
+            @Param("startExclusive") LocalDateTime startExclusive,
+            @Param("endInclusive") LocalDateTime endInclusive
+    );
+
+    @Query("""
             	select new com.scorenow.scorenow_api.domain.match.dto.InplayScanDto(
             		m.id,
             		m.apiMatchId,
