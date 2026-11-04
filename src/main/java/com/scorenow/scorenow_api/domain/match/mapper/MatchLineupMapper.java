@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.match.mapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -87,14 +88,15 @@ public class MatchLineupMapper {
 	}
 
 	public String mapPosition(String pos) {
-		if (pos == null)
+		if (pos == null) {
 			return null;
+		}
 
-		return switch (pos) {
-			case "Guard" -> "GK";
-			case "Defender" -> "DF";
-			case "Midfielder" -> "MF";
-			case "Forward" -> "FW";
+		return switch (pos.toUpperCase(Locale.ROOT)) {
+			case "GUARD" -> "GK";
+			case "DEFENDER" -> "DF";
+			case "MIDFIELDER" -> "MF";
+			case "FORWARD" -> "FW";
 			default -> "SUB";
 		};
 	}

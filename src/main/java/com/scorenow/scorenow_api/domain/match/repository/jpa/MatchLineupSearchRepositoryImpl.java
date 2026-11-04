@@ -64,8 +64,7 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 
 	@Override
 	public List<MatchLineupPlayerResponse> findPlayersByTeamId(
-		Long teamId,
-		int limit
+		Long teamId
 	) {
 		return jpaQueryFactory
 			.select(Projections.constructor(
@@ -89,14 +88,12 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.where(
 				team.id.eq(teamId)
 			)
-			.limit(limit)
 			.fetch();
 	}
 
 	@Override
 	public List<MatchLineupPlayerResponse> searchSelectablePlayers(
-		String keyword,
-		int limit
+		String keyword
 	) {
 		return jpaQueryFactory
 			.select(Projections.constructor(
@@ -120,7 +117,6 @@ public class MatchLineupSearchRepositoryImpl implements MatchLineupSearchReposit
 			.where(
 				keywordCondition(keyword)
 			)
-			.limit(limit)
 			.fetch();
 	}
 

@@ -7,15 +7,9 @@ import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResp
 
 public interface MatchLineupSearchRepository {
 
-	List<MatchLineupPlayerResponse> findPlayersByTeamId(
-		Long teamId,
-		int limit
-	);
+	List<MatchLineupPlayerResponse> findPlayersByTeamId(Long teamId);
 
-	List<MatchLineupPlayerResponse> searchSelectablePlayers(
-		String keyword,
-		int limit
-	);
+	List<MatchLineupPlayerResponse> searchSelectablePlayers(String keyword);
 
 	Optional<MatchLineupPlayerResponse> findPlayerByIdAndTeamId(
 		Long playerId,
