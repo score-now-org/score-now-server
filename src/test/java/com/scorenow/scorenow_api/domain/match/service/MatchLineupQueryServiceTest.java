@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,8 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
+import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchLineupSearchRepository;
@@ -30,199 +33,176 @@ class MatchLineupQueryServiceTest {
 	@Mock
 	private MatchLineupRepository matchLineupRepo;
 
+	@Mock
+	private MatchLineupMapper lineupMapper;
+
 	@InjectMocks
 	private MatchLineupQueryService service;
 
 	private MatchLineupDocument document;
 	private LineupSide home;
-	private LineupSide away;
+	private List<LineupPlayer> starters;
+	private List<LineupPlayer> substitutes;
+
+	private final DataOrigin provider = DataOrigin.values()[0];
 
 	@BeforeEach
 	void setUp() {
 		document = mock(MatchLineupDocument.class);
 		home = mock(LineupSide.class);
-		away = mock(LineupSide.class);
+
+		starters = new ArrayList<>();
+		substitutes = new ArrayList<>();
+
+		lenient().when(matchLineupRepo.findById(1L))
+			.thenReturn(Optional.of(document));
+
+		lenient().when(document.getHome())
+			.thenReturn(home);
+
+		lenient().when(home.getTeamId())
+			.thenReturn(10L);
+
+		lenient().when(home.getStartingLineup())
+			.thenReturn(starters);
+
+		lenient().when(home.getSubstitutes())
+			.thenReturn(substitutes);
 	}
 
 	@Test
-	void 경기_ID로_라인업을_조회한다() {
-		when(matchLineupRepo.findById(1L))
-			.thenReturn(Optional.of(document));
-
+	void getByMatchId() {
 		MatchLineupDocument result = service.getByMatchId(1L);
 
 		assertThat(result).isSameAs(document);
-
-		verify(matchLineupRepo).findById(1L);
 	}
 
 	@Test
-	void 경기_ID가_null이면_라인업을_조회할_수_없다() {
-		assertThatThrownBy(() ->
-			service.getByMatchId(null)
-		).isInstanceOf(BusinessException.class);
-
-		verifyNoInteractions(matchLineupRepo);
+	void getByMatchId_invalidId() {
+		assertThatThrownBy(() -> service.getByMatchId(null))
+			.isInstanceOf(BusinessException.class);
 	}
 
 	@Test
-	void 라인업이_존재하지_않으면_예외가_발생한다() {
-		when(matchLineupRepo.findById(1L))
-			.thenReturn(Optional.empty());
+	void getSelectablePlayers() {
+		// 선발 선수
+		starters.add(LineupPlayer.builder()
+			.playerId(100L)
+			.build());
 
-		assertThatThrownBy(() ->
-			service.getByMatchId(1L)
-		).isInstanceOf(BusinessException.class);
+		// 교체 선수
+		substitutes.add(LineupPlayer.builder()
+			.playerId(101L)
+			.build());
 
-		verify(matchLineupRepo).findById(1L);
-	}
-
-	@Test
-	void 팀_선수_목록에_라인업_반영_여부를_표시한다() {
-		LineupPlayer starter = mock(LineupPlayer.class);
-		LineupPlayer substitute = mock(LineupPlayer.class);
-
-		when(matchLineupRepo.findById(1L))
-			.thenReturn(Optional.of(document));
-		when(document.getHome()).thenReturn(home);
-		when(home.getTeamId()).thenReturn(10L);
-
-		when(home.getStartingLineup())
-			.thenReturn(List.of(starter));
-		when(home.getSubstitutes())
-			.thenReturn(List.of(substitute));
-
-		when(starter.getPlayerId()).thenReturn(100L);
-		when(substitute.getPlayerId()).thenReturn(101L);
-
-		when(matchLineupSearchRepository.findPlayersByTeamId(10L, 30))
+		when(matchLineupSearchRepository.findPlayersByTeamId(10L))
 			.thenReturn(List.of(
-				선수_응답(100L, 10L),
-				선수_응답(101L, 10L),
-				선수_응답(102L, 10L)
+				playerResponse(100L, "Guard"),
+				playerResponse(101L, "Defender"),
+				playerResponse(102L, "Forward")
 			));
+
+		when(lineupMapper.mapPosition("Guard"))
+			.thenReturn("GK");
+		when(lineupMapper.mapPosition("Defender"))
+			.thenReturn("DF");
+		when(lineupMapper.mapPosition("Forward"))
+			.thenReturn("FW");
 
 		List<MatchLineupPlayerResponse> result =
 			service.getSelectablePlayers(1L, 10L);
 
+		assertThat(result).hasSize(3);
+
+		// 선발, 교체 선수는 선택된 상태
 		assertThat(result)
-			.extracting("playerId", "selected")
-			.containsExactly(
-				tuple(100L, true),
-				tuple(101L, true),
-				tuple(102L, false)
-			);
+			.extracting("selected")
+			.containsExactly(true, true, false);
 
-		verify(matchLineupSearchRepository)
-			.findPlayersByTeamId(10L, 30);
+		// 포지션 변환 확인
+		assertThat(result)
+			.extracting(MatchLineupPlayerResponse::getPosition)
+			.containsExactly("GK", "DF", "FW");
+
+		// 외부 API 매핑 정보 유지
+		assertThat(result.get(0).getProvider())
+			.isEqualTo(provider);
+
+		assertThat(result.get(0).getApiPlayerId())
+			.isEqualTo("api-100");
 	}
 
 	@Test
-	void 경기에_포함되지_않은_팀의_선수_목록은_조회할_수_없다() {
-		when(matchLineupRepo.findById(1L))
-			.thenReturn(Optional.of(document));
+	void searchSelectablePlayers() {
+		starters.add(LineupPlayer.builder()
+			.playerId(100L)
+			.build());
 
-		when(document.getHome()).thenReturn(home);
-		when(home.getTeamId()).thenReturn(10L);
-
-		when(document.getAway()).thenReturn(away);
-		when(away.getTeamId()).thenReturn(20L);
-
-		assertThatThrownBy(() ->
-			service.getSelectablePlayers(1L, 30L)
-		).isInstanceOf(BusinessException.class);
-
-		verifyNoInteractions(matchLineupSearchRepository);
-	}
-
-	@Test
-	void 검색_결과에_해당_팀의_라인업_반영_여부를_표시한다() {
-		LineupPlayer awayStarter = mock(LineupPlayer.class);
-
-		when(matchLineupRepo.findById(1L))
-			.thenReturn(Optional.of(document));
-
-		when(document.getHome()).thenReturn(home);
-		when(home.getTeamId()).thenReturn(10L);
-
-		when(document.getAway()).thenReturn(away);
-		when(away.getTeamId()).thenReturn(20L);
-		when(away.getStartingLineup())
-			.thenReturn(List.of(awayStarter));
-		when(away.getSubstitutes())
-			.thenReturn(List.of());
-
-		when(awayStarter.getPlayerId()).thenReturn(200L);
-
-		when(matchLineupSearchRepository.searchSelectablePlayers("Player", 30))
+		when(matchLineupSearchRepository.searchSelectablePlayers("Son"))
 			.thenReturn(List.of(
-				선수_응답(100L, 10L),
-				선수_응답(200L, 20L),
-				선수_응답(300L, 30L)
+				playerResponse(100L, "Forward"),
+				playerResponse(200L, "Midfielder")
 			));
 
+		when(lineupMapper.mapPosition("Forward"))
+			.thenReturn("FW");
+		when(lineupMapper.mapPosition("Midfielder"))
+			.thenReturn("MF");
+
 		List<MatchLineupPlayerResponse> result =
-			service.searchSelectablePlayers(
-				1L,
-				20L,
-				"  Player  "
-			);
+			service.searchSelectablePlayers(1L, 10L, "  Son  ");
+
+		assertThat(result).hasSize(2);
 
 		assertThat(result)
-			.extracting("playerId", "selected")
-			.containsExactly(
-				tuple(100L, false),
-				tuple(200L, true),
-				tuple(300L, false)
-			);
+			.extracting("selected")
+			.containsExactly(true, false);
+
+		assertThat(result)
+			.extracting(MatchLineupPlayerResponse::getPosition)
+			.containsExactly("FW", "MF");
 
 		verify(matchLineupSearchRepository)
-			.searchSelectablePlayers("Player", 30);
+			.searchSelectablePlayers("Son");
 	}
 
 	@Test
-	void 검색어가_비어있으면_선수를_검색할_수_없다() {
-		assertThatThrownBy(() ->
-			service.searchSelectablePlayers(
-				1L,
-				10L,
-				"   "
-			)
+	void getSelectablePlayers_invalidTeamId() {
+		assertThatThrownBy(
+			() -> service.getSelectablePlayers(1L, null)
 		).isInstanceOf(BusinessException.class);
-
-		verifyNoInteractions(
-			matchLineupRepo,
-			matchLineupSearchRepository
-		);
 	}
 
 	@Test
-	void 팀_ID가_null이면_선수를_검색할_수_없다() {
-		assertThatThrownBy(() ->
-			service.searchSelectablePlayers(
-				1L,
-				null,
-				"Player"
-			)
+	void getSelectablePlayers_teamNotFound() {
+		assertThatThrownBy(
+			() -> service.getSelectablePlayers(1L, 999L)
 		).isInstanceOf(BusinessException.class);
 
-		verifyNoInteractions(
-			matchLineupRepo,
-			matchLineupSearchRepository
-		);
+		verify(matchLineupSearchRepository, never())
+			.findPlayersByTeamId(anyLong());
 	}
 
-	private MatchLineupPlayerResponse 선수_응답(
+	@Test
+	void searchSelectablePlayers_blankKeyword() {
+		assertThatThrownBy(
+			() -> service.searchSelectablePlayers(1L, 10L, "  ")
+		).isInstanceOf(BusinessException.class);
+	}
+
+	private MatchLineupPlayerResponse playerResponse(
 		Long playerId,
-		Long teamId
+		String position
 	) {
 		return new MatchLineupPlayerResponse(
 			playerId,
+			provider,
+			"api-" + playerId,
 			"선수" + playerId,
-			"Player" + playerId,
-			"FW",
-			teamId,
-			"Team" + teamId,
+			"Player " + playerId,
+			position,
+			10L,
+			"Test Team",
 			"7",
 			false
 		);

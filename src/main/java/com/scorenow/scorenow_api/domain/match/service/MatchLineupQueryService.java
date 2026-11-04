@@ -74,7 +74,7 @@ public class MatchLineupQueryService {
 		Set<Long> selectedPlayerIds = extractSelectedPlayerIds(side);
 
 		List<MatchLineupPlayerResponse> players =
-			matchLineupSearchRepository.findPlayersByTeamId(teamId, 30);
+			matchLineupSearchRepository.findPlayersByTeamId(teamId);
 
 		return players.stream()
 			.map(player -> new MatchLineupPlayerResponse(
@@ -131,8 +131,7 @@ public class MatchLineupQueryService {
 
 		List<MatchLineupPlayerResponse> players =
 			matchLineupSearchRepository.searchSelectablePlayers(
-				trimmedKeyword,
-				30
+				trimmedKeyword
 			);
 
 		return players.stream()

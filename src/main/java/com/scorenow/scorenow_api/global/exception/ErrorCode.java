@@ -51,6 +51,15 @@ public enum ErrorCode {
 	MATCH_LINEUP_PLAYER_ALREADY_EXISTS(HttpStatus.CONFLICT, "ML004", "이미 라인업에 존재하는 선수입니다."),
 	MATCH_LINEUP_INVALID_MATCH_SPORT(HttpStatus.BAD_REQUEST, "ML003", "matchId/sportId가 일치하지 않습니다."),
 
+	// Player
+	PLAYER_NOT_FOUND(HttpStatus.NOT_FOUND, "PL001", "선수를 찾을 수 없습니다."),
+	PLAYER_TEAM_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "PL002", "선수 팀 정보를 찾을 수 없습니다."),
+	PLAYER_SPORT_MISMATCH(HttpStatus.BAD_REQUEST, "PL003", "선수와 팀의 종목이 일치하지 않습니다."),
+	PLAYER_PROVIDER_REQUIRED(HttpStatus.BAD_REQUEST, "PL004", "Provider를 선택해 주세요."),
+	PLAYER_MANUAL_API_ID_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "PL005", "수동 등록 시에는 API Player ID를 입력할 수 없습니다."),
+	PLAYER_API_ID_REQUIRED(HttpStatus.BAD_REQUEST, "PL006", "API Player ID를 입력해 주세요."),
+	PLAYER_API_ID_ALREADY_EXISTS(HttpStatus.CONFLICT, "PL007", "이미 등록된 API Player ID입니다. 기존 선수 정보를 확인해 주세요."),
+
 	// League
 	LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "L001", "리그를 찾을 수 없습니다."),
 	LEAGUE_ALREADY_EXISTS(HttpStatus.CONFLICT, "L002", "이미 존재하는 리그입니다."),
@@ -106,9 +115,9 @@ public enum ErrorCode {
 	COMMUNITY_IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "CO009", "이미지는 최대 10개까지 첨부할 수 있습니다."),
 	COMMUNITY_REPORT_DUPLICATED(HttpStatus.CONFLICT, "CO010", "이미 신고한 대상입니다."),
 
-    // File Storage
-    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일 업로드에 실패했습니다."),
-    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "F002", "파일 삭제에 실패했습니다.");
+	// File Storage
+	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일 업로드에 실패했습니다."),
+	FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "F002", "파일 삭제에 실패했습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;

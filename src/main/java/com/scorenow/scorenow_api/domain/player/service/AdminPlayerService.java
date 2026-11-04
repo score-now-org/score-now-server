@@ -27,8 +27,9 @@ import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -44,25 +45,27 @@ public class AdminPlayerService {
 	private final PlayerTeamDetailRepository playerTeamDetailRepository;
 	private final PlayerExternalMappingRepository playerExternalMappingRepository;
 
-	// 선수 수동 등록
+	// 관리자 선수 등록
 	@Transactional
 	public Long createPlayer(AdminPlayerCreateRequest request) {
 
 		// 종목 조회
 		Sport sport = sportRepository.findById(request.sportId())
 			.orElseThrow(() ->
-				new EntityNotFoundException("종목을 찾을 수 없습니다.")
+				new BusinessException(ErrorCode.SPORT_NOT_FOUND)
 			);
 
 		// 팀 조회
 		Team team = teamRepository.findById(request.teamId())
 			.orElseThrow(() ->
-				new EntityNotFoundException("팀을 찾을 수 없습니다.")
+				new BusinessException(ErrorCode.TEAM_NOT_FOUND)
 			);
 
 		// 팀과 선수의 종목 일치 여부
 		if (!team.getSport().getId().equals(sport.getId())) {
-			throw new IllegalArgumentException("선수와 팀의 종목이 일치하지 않습니다.");
+			throw new BusinessException(
+				ErrorCode.PLAYER_SPORT_MISMATCH
+			);
 		}
 
 		// 리그 조회 (선택값)
@@ -71,45 +74,55 @@ public class AdminPlayerService {
 		if (request.leagueId() != null) {
 			league = leagueRepository.findById(request.leagueId())
 				.orElseThrow(() ->
-					new EntityNotFoundException("리그를 찾을 수 없습니다.")
+					new BusinessException(ErrorCode.LEAGUE_NOT_FOUND)
 				);
 		}
 
-		// Provider 및 외부 API ID 검증
-		DataOrigin provider = request.provider() != null
-			? request.provider()
-			: DataOrigin.MANUAL;
+		// Provider 검증
+		DataOrigin provider = request.provider();
 
+		if (provider == null) {
+			throw new BusinessException(
+				ErrorCode.PLAYER_PROVIDER_REQUIRED
+			);
+		}
+
+		// API Player ID 정규화
 		String apiPlayerId = request.apiPlayerId() == null
 			? null
 			: request.apiPlayerId().trim();
 
-		if (provider == DataOrigin.BETS) {
-			if (apiPlayerId == null || apiPlayerId.isBlank()) {
-				throw new IllegalArgumentException(
-					"BETS 선수는 API Player ID를 입력해야 합니다."
+		if (apiPlayerId != null && apiPlayerId.isBlank()) {
+			apiPlayerId = null;
+		}
+
+		// MANUAL은 외부 API ID를 사용하지 않음
+		if (provider == DataOrigin.MANUAL) {
+
+			if (apiPlayerId != null) {
+				throw new BusinessException(
+					ErrorCode.PLAYER_MANUAL_API_ID_NOT_ALLOWED
 				);
 			}
 
-			// 동일한 외부 API 선수의 중복 등록 방지
+		} else {
+
+			// 외부 API Provider는 API Player ID 필수
+			if (apiPlayerId == null) {
+				throw new BusinessException(
+					ErrorCode.PLAYER_API_ID_REQUIRED
+				);
+			}
+
+			// 동일 Provider + API Player ID 중복 검사
 			if (playerExternalMappingRepository
 				.findByProviderAndApiPlayerId(provider, apiPlayerId)
 				.isPresent()) {
-				throw new IllegalArgumentException(
-					"이미 등록된 BETS 선수 ID입니다."
+
+				throw new BusinessException(
+					ErrorCode.PLAYER_API_ID_ALREADY_EXISTS
 				);
 			}
-		} else if (provider == DataOrigin.MANUAL) {
-			if (apiPlayerId != null && !apiPlayerId.isBlank()) {
-				throw new IllegalArgumentException(
-					"MANUAL 선수는 API Player ID를 입력할 수 없습니다."
-				);
-			}
-			apiPlayerId = null;
-		} else {
-			throw new IllegalArgumentException(
-				"지원하지 않는 Provider입니다."
-			);
 		}
 
 		// 선수 생성 및 저장
@@ -125,14 +138,16 @@ public class AdminPlayerService {
 
 		Player savedPlayer = playerRepository.save(player);
 
-		// 외부 매핑 정보 저장
-		PlayerExternalMapping mapping = new PlayerExternalMapping(
-			provider,
-			apiPlayerId,
-			savedPlayer
-		);
+		// 외부 API ID가 있는 경우에만 매핑 저장
+		if (apiPlayerId != null) {
+			PlayerExternalMapping mapping = new PlayerExternalMapping(
+				provider,
+				apiPlayerId,
+				savedPlayer
+			);
 
-		playerExternalMappingRepository.save(mapping);
+			playerExternalMappingRepository.save(mapping);
+		}
 
 		// 선수 팀 소속 정보 저장
 		PlayerTeamDetail detail = PlayerTeamDetail.builder()
@@ -144,7 +159,6 @@ public class AdminPlayerService {
 
 		playerTeamDetailRepository.save(detail);
 
-		// 생성된 내부 선수 ID 반환
 		return savedPlayer.getId();
 	}
 
@@ -157,22 +171,33 @@ public class AdminPlayerService {
 		PlayerTeamDetail detail = playerTeamDetailRepository
 			.findById(playerTeamDetailId)
 			.orElseThrow(() ->
-				new EntityNotFoundException("선수 팀 정보를 찾을 수 없습니다.")
+				new BusinessException(
+					ErrorCode.PLAYER_TEAM_DETAIL_NOT_FOUND
+				)
 			);
 
 		detail.updateSquadOn(request.squadOn());
 	}
 
-	// 선수 정보 수정(이름, 태극)
+	// 선수 정보 수정 (이름, 태극)
 	@Transactional
-	public void updatePlayer(Long playerId, AdminPlayerUpdateRequest request) {
+	public void updatePlayer(
+		Long playerId,
+		AdminPlayerUpdateRequest request
+	) {
 		Player player = playerRepository.findById(playerId)
-			.orElseThrow(() -> new EntityNotFoundException("선수를 찾을 수 없습니다."));
+			.orElseThrow(() ->
+				new BusinessException(ErrorCode.PLAYER_NOT_FOUND)
+			);
 
 		if (request.kName() != null || request.eName() != null) {
 			player.updateNames(
-				request.kName() != null ? request.kName() : player.getKName(),
-				request.eName() != null ? request.eName() : player.getEName()
+				request.kName() != null
+					? request.kName()
+					: player.getKName(),
+				request.eName() != null
+					? request.eName()
+					: player.getEName()
 			);
 		}
 
@@ -187,12 +212,15 @@ public class AdminPlayerService {
 		PlayerTeamDetail detail = playerTeamDetailRepository
 			.findById(playerTeamDetailId)
 			.orElseThrow(() ->
-				new EntityNotFoundException("선수 팀 정보를 찾을 수 없습니다.")
+				new BusinessException(
+					ErrorCode.PLAYER_TEAM_DETAIL_NOT_FOUND
+				)
 			);
 
 		playerTeamDetailRepository.delete(detail);
 	}
 
+	// 관리자 선수 검색
 	public Page<AdminPlayerResponse> searchPlayers(
 		Long sportId,
 		Long leagueId,
