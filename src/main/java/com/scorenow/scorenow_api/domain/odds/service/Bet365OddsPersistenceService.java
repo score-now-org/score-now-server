@@ -36,8 +36,13 @@ public class Bet365OddsPersistenceService {
     private final MatchOddsHistoryRepository matchOddsHistoryRepository;
 
     /**
-     * 마켓타입별 최신 제공 시각 가운데 가장 오래된 시각을 다음 조회 기준으로 사용한다.
-     * 아직 저장된 마켓이 없으면 since_time을 생략할 수 있도록 null을 반환한다.
+     * 이력이 존재하는 마켓별 최신 제공 시각 가운데 가장 오래된 시각을 다음 조회 기준으로 사용한다.
+     * 일부 마켓의 이력이 없더라도, 해당 마켓 때문에 매 수집 시 전체 이력을 다시 조회하지 않도록
+     * 이력이 존재하는 마켓의 시각만 비교한다.
+     *
+     * 따라서 제공자가 조회 기준보다 과거인 add_time으로 마켓을 뒤늦게 추가하면 누락될 수 있지만,
+     * 제공되지 않는 마켓으로 인한 반복적인 전체 조회를 방지하는 것을 우선한다.
+     * 저장된 자동 Bet365 이력이 하나도 없을 때만 since_time을 생략할 수 있도록 null을 반환한다.
      */
     @Transactional(readOnly = true)
     public Instant resolveSinceTime(Long matchId) {

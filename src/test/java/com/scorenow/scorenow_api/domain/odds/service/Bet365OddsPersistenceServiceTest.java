@@ -39,7 +39,7 @@ class Bet365OddsPersistenceServiceTest {
     private MatchOddsHistoryRepository matchOddsHistoryRepository;
 
     @Test
-    void 존재하는_마켓별_최신_시각_중_가장_오래된_시각을_반환한다() {
+    void 일부_마켓_이력이_없어도_존재하는_마켓의_최신_시각_중_가장_오래된_시각을_반환한다() {
         long matchId = 1L;
         Instant winDrawLossLatest = Instant.parse("2026-11-03T01:30:00Z");
         Instant handicapLatest = Instant.parse("2026-11-03T01:00:00Z");
@@ -59,8 +59,29 @@ class Bet365OddsPersistenceServiceTest {
     }
 
     @Test
-    void 저장된_자동_Bet365_마켓이_없으면_since_time은_null이다() {
+    void 모든_마켓_이력이_있으면_마켓별_최신_시각_중_가장_오래된_시각을_반환한다() {
         long matchId = 2L;
+        Instant winDrawLossLatest = Instant.parse("2026-11-03T01:30:00Z");
+        Instant handicapLatest = Instant.parse("2026-11-03T01:00:00Z");
+        Instant underOverLatest = Instant.parse("2026-11-03T01:20:00Z");
+
+        given(matchOddsHistoryRepository.findLatestPublishedAtPerMarket(
+                matchId,
+                OddsCategory.OVERSEAS,
+                OddsRegistrationType.AUTOMATIC,
+                OddsSource.BETS_API,
+                OddsBookmaker.BET365,
+                OddsMarketType.getAllTypes()
+        )).willReturn(List.of(winDrawLossLatest, handicapLatest, underOverLatest));
+
+        Instant sinceTime = persistenceService.resolveSinceTime(matchId);
+
+        assertThat(sinceTime).isEqualTo(handicapLatest);
+    }
+
+    @Test
+    void 저장된_자동_Bet365_마켓이_하나도_없으면_since_time은_null이다() {
+        long matchId = 3L;
 
         given(matchOddsHistoryRepository.findLatestPublishedAtPerMarket(
                 matchId,
