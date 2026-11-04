@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -266,6 +267,26 @@ class BetsEventOddsNormalizerTest {
         assertThat(result)
                 .extracting(MatchOddsHistory::getApiOddsId)
                 .containsExactly("600", "602");
+    }
+
+    @Test
+    void 마켓_row_목록이_null이면_해당_마켓만_제외하고_다른_마켓은_정상적으로_변환한다() {
+        Map<String, List<BetsEventOddsResponse.OddsRecord>> oddsByMarket = new HashMap<>();
+        oddsByMarket.put("1_1", null);
+        oddsByMarket.put("1_2", List.of(handicapRow(
+                "611", "1.90", "-0.5", "1.90", "610", null
+        )));
+        BetsEventOddsResponse response = response(1, oddsByMarket);
+
+        List<MatchOddsHistory> result = normalizer.normalize(61L, SportCode.FOOTBALL, response);
+
+        assertThat(result)
+                .singleElement()
+                .satisfies(history -> {
+                    assertThat(history.getMarketType()).isEqualTo(OddsMarketType.HANDICAP);
+                    assertThat(history.getApiOddsId()).isEqualTo("611");
+                    assertThat(history.getHandicapLine().value()).isEqualByComparingTo("-0.50");
+                });
     }
 
     @Test
