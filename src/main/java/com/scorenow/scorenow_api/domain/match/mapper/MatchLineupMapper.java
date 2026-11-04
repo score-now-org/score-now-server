@@ -92,11 +92,11 @@ public class MatchLineupMapper {
 			return null;
 		}
 
-		return switch (pos.trim().toUpperCase(Locale.ROOT)) {
-			case "Guard", "GK" -> "GK";
-			case "Defender", "DF" -> "DF";
-			case "Midfielder", "MF" -> "MF";
-			case "Forward", "FW" -> "FW";
+		return switch (pos.toUpperCase(Locale.ROOT)) {
+			case "GUARD" -> "GK";
+			case "DEFENDER" -> "DF";
+			case "MIDFIELDER" -> "MF";
+			case "FORWARD" -> "FW";
 			default -> "SUB";
 		};
 	}

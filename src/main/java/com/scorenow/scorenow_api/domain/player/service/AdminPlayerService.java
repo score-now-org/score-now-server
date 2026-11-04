@@ -62,7 +62,9 @@ public class AdminPlayerService {
 			);
 
 		// 팀과 선수의 종목 일치 여부
-		if (!team.getSport().getId().equals(sport.getId())) {
+		Sport teamSport = team.getSport();
+
+		if (teamSport == null || !teamSport.getId().equals(sport.getId())) {
 			throw new BusinessException(
 				ErrorCode.PLAYER_SPORT_MISMATCH
 			);
