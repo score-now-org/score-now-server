@@ -6,13 +6,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.scorenow.scorenow_api.domain.push.dto.AdminPushHistoryResponse;
 import com.scorenow.scorenow_api.domain.push.dto.AdminPushSendRequest;
@@ -33,6 +36,18 @@ import lombok.RequiredArgsConstructor;
 public class AdminPushController {
 
 	private final AdminPushService adminPushService;
+
+	@PostMapping(
+		value = "/images",
+		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+	)
+	public ApiResponse<String> uploadImage(
+		@RequestPart("file") MultipartFile file
+	) {
+		return ApiResponse.success(
+			adminPushService.uploadImage(file)
+		);
+	}
 
 	@PostMapping("/common")
 	public ApiResponse<List<String>> sendCommon(

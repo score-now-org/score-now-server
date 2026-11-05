@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -19,6 +20,7 @@ import com.scorenow.scorenow_api.domain.push.enums.PushPlatform;
 import com.scorenow.scorenow_api.domain.push.repository.PushSendHistoryRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +35,23 @@ public class AdminPushService {
 	private final FirebaseMessaging firebaseMessaging;
 	private final MatchRepository matchRepository;
 	private final PushSendHistoryRepository pushSendHistoryRepository;
+	private final FileStorage fileStorage;
+
+	public String uploadImage(MultipartFile image) {
+		if (image == null || image.isEmpty()) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"업로드할 이미지를 선택해 주세요."
+			);
+		}
+
+		String imageKey = fileStorage.uploadFileAndReturnKey(
+			image,
+			"pushes"
+		);
+
+		return fileStorage.getFileUrl(imageKey);
+	}
 
 	public String send(
 		AdminPushSendRequest request,
