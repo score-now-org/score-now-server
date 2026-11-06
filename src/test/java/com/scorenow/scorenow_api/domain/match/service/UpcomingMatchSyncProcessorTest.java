@@ -12,13 +12,11 @@ import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.service.TeamService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
-import com.scorenow.scorenow_api.external.betsapi.mapper.BetsEventSideMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -32,10 +30,10 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
-class MatchEventSyncServiceTest {
+class UpcomingMatchSyncProcessorTest {
 
     @InjectMocks
-    private MatchEventSyncService matchEventSyncService;
+    private UpcomingMatchSyncProcessor processor;
 
     @Mock
     private LeagueService leagueService;
@@ -45,8 +43,6 @@ class MatchEventSyncServiceTest {
     private AdminFeaturedMatchService adminFeaturedMatchService;
     @Mock
     private MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
-    @Spy
-    private BetsEventSideMapper betsEventSideMapper;
     @Mock
     private MatchRepository matchRepository;
     @Mock
@@ -87,7 +83,7 @@ class MatchEventSyncServiceTest {
             ReflectionTestUtils.setField(match, "id", 30L);
             return match;
         });
-        matchEventSyncService.syncEvent(leagueTarget, event);
+        processor.process(leagueTarget, event);
 
         then(leagueService).should().getLeague(2L);
         then(matchDetailInitializationService).should()
@@ -131,14 +127,14 @@ class MatchEventSyncServiceTest {
                 .willReturn(Optional.of(existingMatch));
         given(matchRepository.save(existingMatch)).willReturn(existingMatch);
 
-        matchEventSyncService.syncEvent(leagueTarget, event);
+        processor.process(leagueTarget, event);
 
         then(matchOddsDisplayPolicyInitializationService).should(never())
                 .initialize(anyLong());
     }
 
     @Test
-    void 야구는_Bets의_팀과_점수_순서를_반대로_저장한다() {
+    void 야구_예정_경기는_Bets의_팀_순서를_그대로_저장하고_점수는_갱신하지_않는다() {
         BetsEventResponse.Event event = createEvent();
         event.setSs("4-1");
 
@@ -155,16 +151,16 @@ class MatchEventSyncServiceTest {
                 .id(2L)
                 .sportId(1L)
                 .build();
-        Team actualHomeTeam = Team.builder().id(20L).build();
-        Team actualAwayTeam = Team.builder().id(10L).build();
+        Team homeTeam = Team.builder().id(10L).build();
+        Team awayTeam = Team.builder().id(20L).build();
 
         given(leagueService.getLeague(2L)).willReturn(league);
         given(teamService.buildImageUrl("home-image")).willReturn("home-image-url");
         given(teamService.buildImageUrl("away-image")).willReturn("away-image-url");
-        given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "20", "Away", "JP", "away-image-url"))
-                .willReturn(actualHomeTeam);
         given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "10", "Home", "KR", "home-image-url"))
-                .willReturn(actualAwayTeam);
+                .willReturn(homeTeam);
+        given(teamService.getOrCreateTeam(DataOrigin.BETS, 1L, "20", "Away", "JP", "away-image-url"))
+                .willReturn(awayTeam);
         given(matchTeamDisplayOrderPolicy.decide(league)).willReturn(TeamDisplayOrder.HOME_AWAY);
         given(matchRepository.findByExternalInfo(DataOrigin.BETS, event.getId())).willReturn(Optional.empty());
         given(matchRepository.save(any(Match.class))).willAnswer(invocation -> {
@@ -173,16 +169,16 @@ class MatchEventSyncServiceTest {
             return match;
         });
 
-        matchEventSyncService.syncEvent(leagueTarget, event);
+        processor.process(leagueTarget, event);
 
         ArgumentCaptor<Match> matchCaptor = ArgumentCaptor.forClass(Match.class);
         then(matchRepository).should().save(matchCaptor.capture());
         Match savedMatch = matchCaptor.getValue();
 
-        assertThat(savedMatch.getHomeId()).isEqualTo(20L);
-        assertThat(savedMatch.getAwayId()).isEqualTo(10L);
-        assertThat(savedMatch.getHomeScore()).isEqualTo(1);
-        assertThat(savedMatch.getAwayScore()).isEqualTo(4);
+        assertThat(savedMatch.getHomeId()).isEqualTo(10L);
+        assertThat(savedMatch.getAwayId()).isEqualTo(20L);
+        assertThat(savedMatch.getHomeScore()).isNull();
+        assertThat(savedMatch.getAwayScore()).isNull();
     }
 
     private BetsEventResponse.Event createEvent() {

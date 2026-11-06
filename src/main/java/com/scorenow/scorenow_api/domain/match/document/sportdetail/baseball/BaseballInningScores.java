@@ -55,6 +55,27 @@ public class BaseballInningScores {
     }
 
     /**
+     * 외부 API가 이번 응답에서 제공한 점수만 기존 데이터에 반영한다.
+     * null은 데이터 미제공으로 간주하여 기존 값을 보존한다.
+     */
+    public BaseballInningScores mergeProvided(BaseballInningScores incoming) {
+        if (incoming == null) {
+            return this;
+        }
+
+        Map<BaseballHalfInning, Integer> merged = new EnumMap<>(BaseballHalfInning.class);
+        merged.putAll(scoresByHalfInning);
+
+        incoming.getScoresByHalfInning().forEach((halfInning, score) -> {
+            if (score != null) {
+                merged.put(halfInning, score);
+            }
+        });
+
+        return BaseballInningScores.of(merged);
+    }
+
+    /**
      * 홈팀 총점을 계산한다. (Bottom)
      */
     public int totalHomeScore() {

@@ -22,8 +22,6 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
-import com.scorenow.scorenow_api.external.betsapi.mapper.BetsEventSideMapper;
-import com.scorenow.scorenow_api.external.betsapi.mapper.BetsEventSideMapper.MappedSides;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -32,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MatchEventSyncService {
+public class UpcomingMatchSyncProcessor {
 
     private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of(MatchConstants.SEOUL_TIME_ZONE);
 
@@ -40,21 +38,17 @@ public class MatchEventSyncService {
     private final TeamService teamService;
     private final AdminFeaturedMatchService adminFeaturedMatchService;
     private final MatchTeamDisplayOrderPolicy matchTeamDisplayOrderPolicy;
-    private final BetsEventSideMapper betsEventSideMapper;
 
     private final MatchRepository matchRepository;
     private final MatchDetailInitializationService matchDetailInitializationService;
     private final MatchOddsDisplayPolicyInitializationService matchOddsDisplayPolicyInitializationService;
 
     /**
-     * 개별 경기 동기화 - league → team → match 순서 보장
+     * 개별 예정 경기 동기화 - league → team → match 순서 보장
      * REQUIRES_NEW: 경기 1건 실패가 다른 경기에 영향 없음
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void syncEvent(
-            MatchSyncLeagueTarget leagueTarget,
-            BetsEventResponse.Event event
-    ) {
+    public void process(MatchSyncLeagueTarget leagueTarget, BetsEventResponse.Event event) {
         // API 응답에 리그 정보가 없거나, 요청보낸 리그와 응답받은 리그 정보가 불일치 하는 경우
         if (event.getLeague() == null || !leagueTarget.apiLeagueId().equals(event.getLeague().getId())) {
             String targetApiLeagueId = leagueTarget.apiLeagueId();
@@ -67,20 +61,11 @@ public class MatchEventSyncService {
         DataOrigin dataOrigin = leagueTarget.dataOrigin();
         Long internalSportId = leagueTarget.internalSportId();
         League league = leagueService.getLeague(leagueTarget.internalLeagueId());
-        MappedSides mappedSides = betsEventSideMapper.map(leagueTarget.sportCode(), event);
 
-        Team homeTeam = saveTeam(dataOrigin, mappedSides.homeTeam(), internalSportId);
-        Team awayTeam = saveTeam(dataOrigin, mappedSides.awayTeam(), internalSportId);
+        Team homeTeam = saveTeam(dataOrigin, event.getHome(), internalSportId);
+        Team awayTeam = saveTeam(dataOrigin, event.getAway(), internalSportId);
 
-        saveMatch(
-                event,
-                leagueTarget,
-                league,
-                homeTeam,
-                awayTeam,
-                mappedSides.homeScore(),
-                mappedSides.awayScore()
-        );
+        saveMatch(event, leagueTarget, league, homeTeam, awayTeam);
     }
 
     private Team saveTeam(DataOrigin dataOrigin, BetsEventResponse.Team betsTeam, Long internalSportId) {
@@ -98,9 +83,7 @@ public class MatchEventSyncService {
             MatchSyncLeagueTarget leagueTarget,
             League league,
             Team homeTeam,
-            Team awayTeam,
-            Integer homeScore,
-            Integer awayScore) {
+            Team awayTeam) {
 
         if (event.getLeague() == null || event.getHome() == null || event.getAway() == null) {
             log.warn("경기 저장 스킵 - 필수 정보 누락 (league/home/away) eventId: {}", event.getId());
@@ -114,11 +97,11 @@ public class MatchEventSyncService {
         boolean isNewMatch = existingMatch.isEmpty();
 
         Match match = existingMatch.orElseGet(() -> Match.builder()
-                        .dataOrigin(dataOrigin)
-                        .apiMatchId(event.getId())
-                        .bet365Id(event.getBet365Id())
-                        .teamDisplayOrder(matchTeamDisplayOrderPolicy.decide(league))
-                        .build());
+                .dataOrigin(dataOrigin)
+                .apiMatchId(event.getId())
+                .bet365Id(event.getBet365Id())
+                .teamDisplayOrder(matchTeamDisplayOrderPolicy.decide(league))
+                .build());
 
         match.updateSportId(internalSportId);
         match.updateLeagueId(league.getId());
@@ -141,11 +124,6 @@ public class MatchEventSyncService {
             } catch (NumberFormatException e) {
                 log.warn("Invalid timestamp format for eventId {}: time='{}'", event.getId(), event.getTime());
             }
-        }
-
-        if (homeScore != null && awayScore != null) {
-            match.updateHomeScore(homeScore);
-            match.updateAwayScore(awayScore);
         }
 
         Match savedMatch = matchRepository.save(match);

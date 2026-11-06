@@ -10,6 +10,8 @@ public record MatchDetailSyncSnapshot(
         SportCode sportCode,
         Long matchId,
         String externalSportId,
+        String externalHomeTeamId,
+        String externalAwayTeamId,
         Integer homeScore,
         Integer awayScore,
         MatchStatus status,

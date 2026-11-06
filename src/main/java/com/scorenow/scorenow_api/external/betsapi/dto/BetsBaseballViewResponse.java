@@ -22,7 +22,6 @@ public class BetsBaseballViewResponse {
     public static class ViewResult {
         private static final String RUN_SCORE_KEY = "run";
         private static final String HIT_SCORE_KEY = "hit";
-        private static final String EXTRA_INNING_SCORE_KEY = "ot";
 
         private String id;
 
@@ -98,10 +97,6 @@ public class BetsBaseballViewResponse {
 
         public Score getHitScore() {
             return getScore(HIT_SCORE_KEY);
-        }
-
-        public Score getExtraInningScore() {
-            return getScore(EXTRA_INNING_SCORE_KEY);
         }
 
         public boolean hasLineup() {
