@@ -3,6 +3,8 @@ package com.scorenow.scorenow_api.domain.match.service;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.SportDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballInningScores;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.*;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.dto.sync.MatchDetailSyncSnapshot;
@@ -16,6 +18,8 @@ import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.Spor
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
+import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.domain.team.service.TeamExternalLookupService;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
@@ -25,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -41,6 +47,7 @@ public class MatchDetailService {
     private final SportDetailEventProcessorRegistry eventProcessorRegistry;
 
     private final MatchStatusDisplayResolver matchStatusDisplayResolver;
+    private final TeamExternalLookupService teamExternalLookupService;
 
     @Transactional
     public void updateInplayMatchDetail(MatchDetailSyncSnapshot snapshot) {
@@ -50,6 +57,8 @@ public class MatchDetailService {
 
         Match inplayMatch = matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        validateAndCorrectBaseballSides(inplayMatch, snapshot);
 
         MatchDetailDocument currentMatchDetailDocument = matchDetailRepository.findById(inplayMatch.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_DETAIL_NOT_FOUND));
@@ -132,16 +141,90 @@ public class MatchDetailService {
         BaseballDetail currentBaseballDetail = resolveBaseballDetail(currentSportDetail);
         BaseballDetail newBaseballDetail = resolveBaseballDetail(newSportDetail);
 
+        BaseballInningScores mergedInningScores = mergeBaseballInningScores(
+                currentBaseballDetail.getInningScores(),
+                newBaseballDetail.getInningScores()
+        );
+        BaseballHalfInning mergedCurrentHalfInning = mergedInningScores == null
+                ? currentBaseballDetail.getCurrentHalfInning()
+                : mergedInningScores.resolveCurrentHalfInning();
+
         BaseballDetail merged = currentBaseballDetail;
-        if (newBaseballDetail.getInningScores() != null) {
-            merged = merged.withInningScores(newBaseballDetail.getInningScores());
+        if (mergedInningScores != null) {
+            merged = merged.withInningScores(mergedInningScores);
         }
 
-        if (newBaseballDetail.getCurrentHalfInning() != null) {
-            merged = merged.withCurrentHalfInning(newBaseballDetail.getCurrentHalfInning());
+        if (mergedCurrentHalfInning != null) {
+            merged = merged.withCurrentHalfInning(mergedCurrentHalfInning);
         }
 
         return merged;
+    }
+
+    private BaseballInningScores mergeBaseballInningScores(BaseballInningScores current, BaseballInningScores incoming) {
+        if (current == null) {
+            return incoming;
+        }
+
+        return current.mergeProvided(incoming);
+    }
+
+    private void validateAndCorrectBaseballSides(Match match, MatchDetailSyncSnapshot snapshot) {
+        if (snapshot.sportCode() != SportCode.BASEBALL) {
+            return;
+        }
+
+        String externalHomeTeamId = snapshot.externalHomeTeamId();
+        String externalAwayTeamId = snapshot.externalAwayTeamId();
+        if (externalHomeTeamId == null || externalHomeTeamId.isBlank()
+                || externalAwayTeamId == null || externalAwayTeamId.isBlank()) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_PARAMETER,
+                    "야구 View API의 홈·원정 팀 정보가 누락되었습니다."
+            );
+        }
+
+        Map<String, Team> teamsByExternalId = teamExternalLookupService.findTeamsByExternalInfo(
+                snapshot.dataOrigin(),
+                List.of(externalHomeTeamId, externalAwayTeamId)
+        );
+        Team viewHomeTeam = teamsByExternalId.get(externalHomeTeamId);
+        Team viewAwayTeam = teamsByExternalId.get(externalAwayTeamId);
+        if (viewHomeTeam == null || viewAwayTeam == null) {
+            throw new BusinessException(
+                    ErrorCode.TEAM_NOT_FOUND,
+                    "야구 View API의 팀 외부 매핑을 찾을 수 없습니다."
+            );
+        }
+
+        Long viewHomeId = viewHomeTeam.getId();
+        Long viewAwayId = viewAwayTeam.getId();
+
+        // 기존 Match 에 저장되어 있는 홈-원정 팀 ID 와 View API 로 들어온 홈-원정 팀 ID가 동일하다면 검증 종료
+        if (Objects.equals(match.getHomeId(), viewHomeId) && Objects.equals(match.getAwayId(), viewAwayId)) {
+            return;
+        }
+
+        // 기존 Match 에 저장되어 있는 홈-원정 팀 ID 와 View API 로 들어온 홈-원정 팀 ID가 거꾸로 매핑되어 있다면 보정
+        if (Objects.equals(match.getHomeId(), viewAwayId) && Objects.equals(match.getAwayId(), viewHomeId)) {
+            Long previousHomeId = match.getHomeId();
+            Long previousAwayId = match.getAwayId();
+            match.updateHomeId(viewHomeId);
+            match.updateAwayId(viewAwayId);
+
+            log.warn(
+                    "🟠야구 경기 홈·원정 자동 교정. matchId:{}, apiMatchId:{}, before:[home={}, away={}], after:[home={}, away={}]",
+                    match.getId(),
+                    match.getApiMatchId(),
+                    previousHomeId,
+                    previousAwayId,
+                    viewHomeId,
+                    viewAwayId
+            );
+            return;
+        }
+
+        throw new BusinessException(ErrorCode.INVALID_PARAMETER, "야구 View API 경기 팀 정보가 기존 Match와 일치하지 않습니다.");
     }
 
     private FootballDetail mergeFootballDetail(SportDetail currentSportDetail, SportDetail newSportDetail) {

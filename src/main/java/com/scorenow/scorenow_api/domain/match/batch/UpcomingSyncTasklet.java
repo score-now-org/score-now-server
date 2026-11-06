@@ -4,14 +4,20 @@ import java.time.LocalDate;
 
 import org.springframework.core.task.TaskExecutor;
 
-import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
+import com.scorenow.scorenow_api.domain.match.service.UpcomingMatchSyncService;
 
 public class UpcomingSyncTasklet extends DateRangeSyncTasklet {
 
 	private static final String UPCOMING = "예정 경기 동기화";
+	private final UpcomingMatchSyncService upcomingMatchSyncService;
 
-	public UpcomingSyncTasklet(MatchSyncService matchSyncService, TaskExecutor taskExecutor, int days) {
-		super(matchSyncService, taskExecutor, days);
+	public UpcomingSyncTasklet(
+		UpcomingMatchSyncService upcomingMatchSyncService,
+		TaskExecutor taskExecutor,
+		int days
+	) {
+		super(taskExecutor, days);
+		this.upcomingMatchSyncService = upcomingMatchSyncService;
 	}
 
 	@Override
@@ -26,6 +32,6 @@ public class UpcomingSyncTasklet extends DateRangeSyncTasklet {
 
 	@Override
 	protected int syncForDate(LocalDate localDate) {
-		return matchSyncService.syncUpcomingMatches(localDate);
+		return upcomingMatchSyncService.sync(localDate);
 	}
 }
