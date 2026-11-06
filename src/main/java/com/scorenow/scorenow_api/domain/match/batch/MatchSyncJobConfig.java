@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
+import com.scorenow.scorenow_api.domain.match.service.UpcomingMatchSyncService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +22,7 @@ public class MatchSyncJobConfig {
 	private static final int UPCOMING_DAYS = 2;	// TODO: 이것도 여기서 지워야 할 듯. MatchSyncJobConfig 는 배치 실행 계획서 같은 느낌인데 해당 필드가 여기 있는게 부적절함.
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
-	private final MatchSyncService matchSyncService;
+	private final UpcomingMatchSyncService upcomingMatchSyncService;
 
 	@Bean
 	public Job matchSyncJob(
@@ -36,7 +36,7 @@ public class MatchSyncJobConfig {
 	@Bean
 	public Step upcomingSyncStep(@Qualifier("batchTaskExecutor") TaskExecutor taskExecutor) {
 		return new StepBuilder("upcomingSyncStep", jobRepository)
-			.tasklet(new UpcomingSyncTasklet(matchSyncService, taskExecutor, UPCOMING_DAYS), transactionManager)
+			.tasklet(new UpcomingSyncTasklet(upcomingMatchSyncService, taskExecutor, UPCOMING_DAYS), transactionManager)
 			.build();
 	}
 }

@@ -13,8 +13,6 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.core.task.TaskExecutor;
 
-import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public abstract class DateRangeSyncTasklet implements Tasklet {
 
-    protected final MatchSyncService matchSyncService;
     protected final TaskExecutor taskExecutor;
     protected final int days;
 

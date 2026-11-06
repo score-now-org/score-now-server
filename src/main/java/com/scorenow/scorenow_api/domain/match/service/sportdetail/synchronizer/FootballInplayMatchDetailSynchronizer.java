@@ -105,6 +105,8 @@ public class FootballInplayMatchDetailSynchronizer implements InplayMatchDetailS
                         sportCode,
                         matchId,
                         footballViewResult.getSportId(),
+                        null,
+                        null,
                         footballViewResult.getHomeScore(),
                         footballViewResult.getAwayScore(),
                         MatchStatus.fromCode(footballViewResult.getTimeStatus()),

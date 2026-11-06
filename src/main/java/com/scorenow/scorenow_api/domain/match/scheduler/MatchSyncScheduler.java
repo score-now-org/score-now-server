@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import com.scorenow.scorenow_api.domain.match.service.InplayMatchCandidateLoadService;
 import com.scorenow.scorenow_api.domain.match.service.InplayMatchSyncService;
-import com.scorenow.scorenow_api.domain.match.service.MatchSyncService;
+import com.scorenow.scorenow_api.domain.match.service.EndedMatchSyncService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MatchSyncScheduler {
     private final JobLauncher jobLauncher;
     private final Job matchSyncJob;
-    private final MatchSyncService matchSyncService;
+    private final EndedMatchSyncService endedMatchSyncService;
 
     private final InplayMatchCandidateLoadService inplayMatchCandidateLoadService;
     private final InplayMatchSyncService inplayMatchSyncService;
@@ -54,14 +54,14 @@ public class MatchSyncScheduler {
     }
 
     /**
-     * Ended - 10분마다 (UTC 전일 및 당일 경기, 종료 후 30분 내 반영)
+     * Ended - 30분마다 (UTC 전일 및 당일 경기의 종료 상태 보정)
      */
-    @Scheduled(fixedDelay = 600000, zone = "Asia/Seoul")
+    @Scheduled(fixedDelay = 1800000, zone = "Asia/Seoul")
     public void syncEndedMatches() {
         log.info("=== [ENDED] 종료 경기 동기화 ===");
 
         try {
-            int count = matchSyncService.syncRecentEndedMatches();
+            int count = endedMatchSyncService.syncRecent();
             log.info("[ENDED] 동기화 완료 - {}건", count);
         } catch (Exception e) {
             log.error("[ENDED] 동기화 실패", e);

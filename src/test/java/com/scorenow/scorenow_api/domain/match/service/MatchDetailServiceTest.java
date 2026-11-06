@@ -22,9 +22,12 @@ import com.scorenow.scorenow_api.domain.match.service.sportdetail.processor.Spor
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.service.StadiumCacheService;
+import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.domain.team.service.TeamExternalLookupService;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -59,6 +62,8 @@ class MatchDetailServiceTest {
     private SportDetailEventProcessorRegistry eventProcessorRegistry;
     @Mock
     private MatchStatusDisplayResolver matchStatusDisplayResolver;
+    @Mock
+    private TeamExternalLookupService teamExternalLookupService;
 
     @Test
     void 진행중_경기_상세_동기화시_MatchDetailDocument가_없으면_예외가_발생한다() {
@@ -74,6 +79,8 @@ class MatchDetailServiceTest {
                 SportCode.FOOTBALL,
                 matchId,
                 "1",
+                null,
+                null,
                 0,
                 0,
                 MatchStatus.IN_PLAY,
@@ -96,6 +103,8 @@ class MatchDetailServiceTest {
                 .id(matchId)
                 .apiMatchId("api-1000")
                 .sportId(9L)
+                .homeId(1L)
+                .awayId(2L)
                 .homeScore(2)
                 .awayScore(1)
                 .statusCode(MatchStatus.IN_PLAY)
@@ -136,6 +145,8 @@ class MatchDetailServiceTest {
                 SportCode.BASEBALL,
                 matchId,
                 "3",
+                "view-home",
+                "view-away",
                 2,
                 1,
                 MatchStatus.IN_PLAY,
@@ -144,6 +155,7 @@ class MatchDetailServiceTest {
 
         given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
+        givenBaseballTeamMapping();
 
         matchDetailService.updateInplayMatchDetail(snapshot);
 
@@ -155,7 +167,8 @@ class MatchDetailServiceTest {
 
         assertThat(mergedDetail.getCurrentHalfInning())
                 .isEqualTo(BaseballHalfInning.SECOND_INNING_BOTTOM);
-        assertThat(mergedDetail.getInningScores()).isSameAs(incomingScores);
+        assertThat(mergedDetail.getInningScores().getScoresByHalfInning())
+                .isEqualTo(incomingScores.getScoresByHalfInning());
         assertThat(mergedDetail.isDetailedBroadcastEnabled()).isTrue();
         assertThat(mergedDetail.getPitcher()).isEqualTo("현재 투수");
         assertThat(mergedDetail.getBatter()).isEqualTo("현재 타자");
@@ -177,6 +190,8 @@ class MatchDetailServiceTest {
                 .id(matchId)
                 .apiMatchId("api-1000")
                 .sportId(9L)
+                .homeId(1L)
+                .awayId(2L)
                 .homeScore(0)
                 .awayScore(0)
                 .statusCode(MatchStatus.IN_PLAY)
@@ -191,6 +206,8 @@ class MatchDetailServiceTest {
                 SportCode.BASEBALL,
                 matchId,
                 "3",
+                "view-home",
+                "view-away",
                 2,
                 3,
                 MatchStatus.ENDED,
@@ -202,6 +219,7 @@ class MatchDetailServiceTest {
 
         given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
+        givenBaseballTeamMapping();
         given(stadiumCacheService.getOrCreateStadiumId(
                 DataOrigin.BETS,
                 "3",
@@ -225,6 +243,153 @@ class MatchDetailServiceTest {
         then(matchDetailRepository).should().upsertMatchDetail(any(MatchDetailDocument.class));
     }
 
+    @Test
+    void 야구_View의_팀이_정확히_반대이면_팀만_교정하고_실시간_이벤트는_발행하지_않는다() {
+        Long matchId = 10L;
+        Match match = Match.builder()
+                .id(matchId)
+                .apiMatchId("api-1000")
+                .sportId(9L)
+                .homeId(2L)
+                .awayId(1L)
+                .homeScore(3)
+                .awayScore(2)
+                .statusCode(MatchStatus.IN_PLAY)
+                .build();
+        MatchDetailDocument currentDocument = baseballDocument(matchId, BaseballDetail.empty());
+        MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
+                DataOrigin.BETS,
+                SportCode.BASEBALL,
+                matchId,
+                "3",
+                "view-home",
+                "view-away",
+                3,
+                2,
+                MatchStatus.IN_PLAY,
+                null,
+                BaseballDetail.empty());
+
+        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
+        givenBaseballTeamMapping();
+
+        matchDetailService.updateInplayMatchDetail(snapshot);
+
+        assertThat(match.getHomeId()).isEqualTo(1L);
+        assertThat(match.getAwayId()).isEqualTo(2L);
+        assertThat(match.getHomeScore()).isEqualTo(3);
+        assertThat(match.getAwayScore()).isEqualTo(2);
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void 야구_View의_팀이_기존_팀과_다르면_교정하지_않고_예외가_발생한다() {
+        Long matchId = 10L;
+        Match match = Match.builder()
+                .id(matchId)
+                .apiMatchId("api-1000")
+                .sportId(9L)
+                .homeId(3L)
+                .awayId(4L)
+                .homeScore(0)
+                .awayScore(0)
+                .statusCode(MatchStatus.IN_PLAY)
+                .build();
+        MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
+                DataOrigin.BETS,
+                SportCode.BASEBALL,
+                matchId,
+                "3",
+                "view-home",
+                "view-away",
+                3,
+                2,
+                MatchStatus.IN_PLAY,
+                null,
+                BaseballDetail.empty());
+
+        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        givenBaseballTeamMapping();
+
+        assertThatThrownBy(() -> matchDetailService.updateInplayMatchDetail(snapshot))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("야구 View API 경기 팀 정보가 기존 Match와 일치하지 않습니다.");
+
+        assertThat(match.getHomeId()).isEqualTo(3L);
+        assertThat(match.getAwayId()).isEqualTo(4L);
+        assertThat(match.getHomeScore()).isZero();
+        assertThat(match.getAwayScore()).isZero();
+        then(matchDetailRepository).shouldHaveNoInteractions();
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void 야구_View에서_연장_이닝이_사라져도_기존_10회부터_12회까지_보존한다() {
+        Long matchId = 10L;
+        Match match = Match.builder()
+                .id(matchId)
+                .apiMatchId("api-1000")
+                .sportId(9L)
+                .homeId(1L)
+                .awayId(2L)
+                .homeScore(1)
+                .awayScore(1)
+                .statusCode(MatchStatus.IN_PLAY)
+                .build();
+
+        EnumMap<BaseballHalfInning, Integer> currentValues = new EnumMap<>(BaseballHalfInning.class);
+        for (int inning = 1; inning <= 12; inning++) {
+            currentValues.put(BaseballHalfInning.getTopInning(inning), 0);
+            currentValues.put(BaseballHalfInning.getBottomInning(inning), 0);
+        }
+        BaseballDetail currentDetail = BaseballDetail.builder()
+                .currentHalfInning(BaseballHalfInning.TWELFTH_INNING_BOTTOM)
+                .inningScores(BaseballInningScores.of(currentValues))
+                .build();
+
+        EnumMap<BaseballHalfInning, Integer> incomingValues = new EnumMap<>(BaseballHalfInning.class);
+        for (int inning = 1; inning <= 9; inning++) {
+            incomingValues.put(BaseballHalfInning.getTopInning(inning), 0);
+            incomingValues.put(BaseballHalfInning.getBottomInning(inning), 0);
+        }
+        BaseballDetail incomingDetail = BaseballDetail.builder()
+                .currentHalfInning(BaseballHalfInning.NINTH_INNING_BOTTOM)
+                .inningScores(BaseballInningScores.of(incomingValues))
+                .build();
+        MatchDetailDocument currentDocument = baseballDocument(matchId, currentDetail);
+        MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
+                DataOrigin.BETS,
+                SportCode.BASEBALL,
+                matchId,
+                "3",
+                "view-home",
+                "view-away",
+                1,
+                1,
+                MatchStatus.IN_PLAY,
+                null,
+                incomingDetail);
+
+        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
+        givenBaseballTeamMapping();
+
+        matchDetailService.updateInplayMatchDetail(snapshot);
+
+        ArgumentCaptor<MatchDetailDocument> documentCaptor =
+                ArgumentCaptor.forClass(MatchDetailDocument.class);
+        then(matchDetailRepository).should().upsertMatchDetail(documentCaptor.capture());
+        BaseballDetail mergedDetail = (BaseballDetail) documentCaptor.getValue().getSportDetail();
+
+        assertThat(mergedDetail.getInningScores()
+                .getHalfInningScore(BaseballHalfInning.TENTH_INNING_TOP)).isZero();
+        assertThat(mergedDetail.getInningScores()
+                .getHalfInningScore(BaseballHalfInning.TWELFTH_INNING_BOTTOM)).isZero();
+        assertThat(mergedDetail.getCurrentHalfInning())
+                .isEqualTo(BaseballHalfInning.TWELFTH_INNING_BOTTOM);
+    }
+
     private MatchDetailDocument baseballDocument(Long matchId, BaseballDetail baseballDetail) {
         return MatchDetailDocument.builder()
                 .id(matchId)
@@ -237,6 +402,16 @@ class MatchDetailServiceTest {
         EnumMap<BaseballHalfInning, Integer> scores = new EnumMap<>(BaseballHalfInning.class);
         scores.putAll(values);
         return BaseballInningScores.of(scores);
+    }
+
+    private void givenBaseballTeamMapping() {
+        given(teamExternalLookupService.findTeamsByExternalInfo(
+                DataOrigin.BETS,
+                List.of("view-home", "view-away")))
+                .willReturn(Map.of(
+                        "view-home", Team.builder().id(1L).build(),
+                        "view-away", Team.builder().id(2L).build()
+                ));
     }
 
 }

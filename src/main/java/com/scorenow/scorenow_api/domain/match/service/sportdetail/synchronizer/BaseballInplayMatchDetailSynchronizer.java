@@ -90,6 +90,8 @@ public class BaseballInplayMatchDetailSynchronizer implements InplayMatchDetailS
                         sportCode,
                         matchId,
                         baseballViewResult.getSportId(),
+                        resolveExternalTeamId(baseballViewResult.getHomeTeam()),
+                        resolveExternalTeamId(baseballViewResult.getAwayTeam()),
                         baseballViewResult.getHomeScore(),
                         baseballViewResult.getAwayScore(),
                         MatchStatus.fromCode(baseballViewResult.getTimeStatus()),
@@ -135,5 +137,9 @@ public class BaseballInplayMatchDetailSynchronizer implements InplayMatchDetailS
 
         BetsBaseballViewResponse.StadiumData stadiumData = extra.getStadiumData();
         return new MatchDetailSyncStadium(stadiumData.getId(), stadiumData.getName(), stadiumData.getCity());
+    }
+
+    private String resolveExternalTeamId(BetsBaseballViewResponse.Team team) {
+        return team == null ? null : team.getId();
     }
 }

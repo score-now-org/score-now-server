@@ -35,7 +35,7 @@ public class BaseballDetailNormalizer {
             BetsBaseballViewResponse.Score currentInningScore = viewResult.getInningScore(inning);
 
             if (currentInningScore == null) {
-                break;
+                continue;
             }
 
             Integer awayScore = parseScore(currentInningScore.getAway());

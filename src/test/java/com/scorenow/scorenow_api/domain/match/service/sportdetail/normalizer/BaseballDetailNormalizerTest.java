@@ -2,6 +2,9 @@ package com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer;
 
 import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.FIRST_INNING_BOTTOM;
 import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.FIRST_INNING_TOP;
+import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.ELEVENTH_INNING_BOTTOM;
+import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.ELEVENTH_INNING_TOP;
+import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.NINTH_INNING_BOTTOM;
 import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.TENTH_INNING_BOTTOM;
 import static com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning.TENTH_INNING_TOP;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +77,33 @@ class BaseballDetailNormalizerTest {
         assertThat(result.getInningScores().getHalfInningScore(TENTH_INNING_TOP)).isEqualTo(1);
         assertThat(result.getInningScores().getHalfInningScore(TENTH_INNING_BOTTOM)).isNull();
         assertThat(result.getCurrentHalfInning()).isEqualTo(TENTH_INNING_TOP);
+    }
+
+    @Test
+    void 중간_숫자_이닝이_없어도_뒤의_숫자_이닝은_정규화한다() {
+        Map<String, BetsBaseballViewResponse.Score> scores = new LinkedHashMap<>();
+        scores.put("1", score("0", "0"));
+        scores.put("11", score("2", "1"));
+
+        BaseballDetail result = normalizer.normalize(viewResult(scores));
+
+        assertThat(result.getInningScores().getHalfInningScore(ELEVENTH_INNING_TOP)).isEqualTo(1);
+        assertThat(result.getInningScores().getHalfInningScore(ELEVENTH_INNING_BOTTOM)).isEqualTo(2);
+    }
+
+    @Test
+    void ot_일괄_점수는_이닝_정보로_사용하지_않는다() {
+        Map<String, BetsBaseballViewResponse.Score> scores = new LinkedHashMap<>();
+        for (int inning = 1; inning <= 9; inning++) {
+            scores.put(String.valueOf(inning), score("0", "0"));
+        }
+        scores.put("ot", score("3", "4"));
+
+        BaseballDetail result = normalizer.normalize(viewResult(scores));
+
+        assertThat(result.getInningScores().getHalfInningScore(TENTH_INNING_TOP)).isNull();
+        assertThat(result.getInningScores().getHalfInningScore(TENTH_INNING_BOTTOM)).isNull();
+        assertThat(result.getCurrentHalfInning()).isEqualTo(NINTH_INNING_BOTTOM);
     }
 
     private BetsBaseballViewResponse.ViewResult viewResult(

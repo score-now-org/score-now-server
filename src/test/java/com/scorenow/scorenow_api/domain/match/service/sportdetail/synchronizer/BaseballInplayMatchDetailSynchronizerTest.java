@@ -102,6 +102,8 @@ class BaseballInplayMatchDetailSynchronizerTest {
         assertThat(snapshot.sportCode()).isEqualTo(SportCode.BASEBALL);
         assertThat(snapshot.matchId()).isEqualTo(1L);
         assertThat(snapshot.externalSportId()).isEqualTo("3");
+        assertThat(snapshot.externalHomeTeamId()).isEqualTo("view-home");
+        assertThat(snapshot.externalAwayTeamId()).isEqualTo("view-away");
         assertThat(snapshot.homeScore()).isEqualTo(1);
         assertThat(snapshot.awayScore()).isEqualTo(4);
         assertThat(snapshot.status()).isEqualTo(MatchStatus.IN_PLAY);
@@ -198,10 +200,17 @@ class BaseballInplayMatchDetailSynchronizerTest {
         BetsBaseballViewResponse.Extra extra = new BetsBaseballViewResponse.Extra();
         extra.setStadiumData(stadiumData);
 
+        BetsBaseballViewResponse.Team homeTeam = new BetsBaseballViewResponse.Team();
+        homeTeam.setId("view-home");
+        BetsBaseballViewResponse.Team awayTeam = new BetsBaseballViewResponse.Team();
+        awayTeam.setId("view-away");
+
         BetsBaseballViewResponse.ViewResult viewResult = new BetsBaseballViewResponse.ViewResult();
         viewResult.setId(id);
         viewResult.setSportId("3");
         viewResult.setTimeStatus("1");
+        viewResult.setHomeTeam(homeTeam);
+        viewResult.setAwayTeam(awayTeam);
         viewResult.setScores(Map.of("run", runScore));
         viewResult.setExtra(extra);
         return viewResult;
