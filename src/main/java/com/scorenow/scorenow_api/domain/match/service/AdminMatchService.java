@@ -185,6 +185,8 @@ public class AdminMatchService {
     }
 
     private void applyUpdates(Match match, MatchUpdateRequest request) {
+        validateScheduledStartAtUpdate(match, request);
+
         if (request.getStartAt() != null) {
             matchScheduledStartAtUpdater.update(match, request.getStartAt());
         }
@@ -216,6 +218,19 @@ public class AdminMatchService {
 
         if (request.getTeamDisplayOrder() != null) {
             match.updateTeamDisplayOrder(request.getTeamDisplayOrder());
+        }
+    }
+
+    private void validateScheduledStartAtUpdate(Match match, MatchUpdateRequest request) {
+        if (request.getStartAt() == null || Objects.equals(match.getStartAt(), request.getStartAt())) {
+            return;
+        }
+
+        if (!match.isManual() || Boolean.FALSE.equals(request.getIsManual())) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_PARAMETER,
+                    "데이터 관리를 수동으로 먼저 저장한 후 경기 날짜와 시간을 변경할 수 있습니다."
+            );
         }
     }
 

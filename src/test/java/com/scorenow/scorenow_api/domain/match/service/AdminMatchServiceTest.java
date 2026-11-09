@@ -70,6 +70,7 @@ class AdminMatchServiceTest {
         Match match = Match.builder()
                 .id(matchId)
                 .startAt(LocalDateTime.of(2026, 7, 23, 19, 0))
+                .isManual(true)
                 .build();
 
         MatchUpdateRequest request = new MatchUpdateRequest();
@@ -81,6 +82,29 @@ class AdminMatchServiceTest {
 
         then(matchScheduledStartAtUpdater).should()
                 .update(match, LocalDateTime.of(2026, 7, 24, 19, 0));
+    }
+
+    @Test
+    void 자동_경기에서_수동_전환과_시작_시각_변경을_한번에_처리할_수_없다() {
+        Long matchId = 1L;
+        Match match = Match.builder()
+                .id(matchId)
+                .startAt(LocalDateTime.of(2026, 7, 23, 19, 0))
+                .isManual(false)
+                .build();
+
+        MatchUpdateRequest request = new MatchUpdateRequest();
+        request.setStartAt(LocalDateTime.of(2026, 7, 24, 19, 0));
+        request.setIsManual(true);
+
+        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+
+        assertThatThrownBy(() -> adminMatchService.updateMatch(matchId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("데이터 관리를 수동으로 먼저 저장한 후 경기 날짜와 시간을 변경할 수 있습니다.");
+
+        then(matchScheduledStartAtUpdater).should(never())
+                .update(match, request.getStartAt());
     }
 
     @Test
