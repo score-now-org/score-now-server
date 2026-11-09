@@ -121,6 +121,64 @@ class FootballAdminMatchDetailServiceTest {
     }
 
     @Test
+    void 양팀_점유율이_모두_미입력이면_합계_검증을_생략한다() {
+        FootballStatsUpdateRequest request = createStatsRequest();
+        given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(footballDocument(null)));
+
+        service.updateFootballStats(MATCH_ID, request);
+
+        then(footballMatchDetailRepository).should().updateStats(
+                eq(MATCH_ID),
+                any(FootballStats.class),
+                any(FootballStats.class)
+        );
+    }
+
+    @Test
+    void 한팀_점유율만_입력하면_저장을_거절한다() {
+        FootballStatsUpdateRequest request = createStatsRequest();
+        ReflectionTestUtils.setField(request.getHomeStats(), "possession", 55);
+
+        assertThatThrownBy(() -> service.updateFootballStats(MATCH_ID, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("점유율은 양 팀 모두 입력해야 하며 합계가 100이어야 합니다.");
+
+        then(footballMatchDetailRepository).should(never())
+                .updateStats(eq(MATCH_ID), any(FootballStats.class), any(FootballStats.class));
+    }
+
+    @Test
+    void 양팀_점유율_합계가_100이_아니면_저장을_거절한다() {
+        FootballStatsUpdateRequest request = createStatsRequest();
+        ReflectionTestUtils.setField(request.getHomeStats(), "possession", 55);
+        ReflectionTestUtils.setField(request.getAwayStats(), "possession", 40);
+
+        assertThatThrownBy(() -> service.updateFootballStats(MATCH_ID, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("점유율은 양 팀 모두 입력해야 하며 합계가 100이어야 합니다.");
+
+        then(footballMatchDetailRepository).should(never())
+                .updateStats(eq(MATCH_ID), any(FootballStats.class), any(FootballStats.class));
+    }
+
+    @Test
+    void 양팀_점유율_합계가_100이면_저장한다() {
+        FootballStatsUpdateRequest request = createStatsRequest();
+        ReflectionTestUtils.setField(request.getHomeStats(), "possession", 55);
+        ReflectionTestUtils.setField(request.getAwayStats(), "possession", 45);
+        given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(footballDocument(null)));
+
+        service.updateFootballStats(MATCH_ID, request);
+
+        ArgumentCaptor<FootballStats> homeCaptor = ArgumentCaptor.forClass(FootballStats.class);
+        ArgumentCaptor<FootballStats> awayCaptor = ArgumentCaptor.forClass(FootballStats.class);
+        then(footballMatchDetailRepository).should()
+                .updateStats(eq(MATCH_ID), homeCaptor.capture(), awayCaptor.capture());
+        assertThat(homeCaptor.getValue().getPossession()).isEqualTo(55);
+        assertThat(awayCaptor.getValue().getPossession()).isEqualTo(45);
+    }
+
+    @Test
     void Clock이_없으면_일시정지를_거절한다() {
         given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(footballDocument(FootballDetail.empty())));
 

@@ -139,6 +139,7 @@ public class FootballAdminMatchDetailService {
      */
     @Transactional
     public void updateFootballStats(Long matchId, FootballStatsUpdateRequest request) {
+        validatePossession(request);
 
         MatchDetailDocument matchDetailDocument = findFootballMatchDetailDocumentByMatchId(matchId);
 
@@ -148,6 +149,31 @@ public class FootballAdminMatchDetailService {
         FootballStats newAwayStats = request.getAwayStats().toFootballStats();
 
         footballMatchDetailRepository.updateStats(matchId, newHomeStats, newAwayStats);
+    }
+
+    /**
+     * 점유율 합산 값이 100인지 검증
+     */
+    private void validatePossession(FootballStatsUpdateRequest request) {
+        Integer homePossession = request.getHomeStats().getPossession();
+        Integer awayPossession = request.getAwayStats().getPossession();
+
+        if (homePossession == null && awayPossession == null) {
+            return;
+        }
+
+        if (homePossession == null
+                || awayPossession == null
+                || homePossession < 0
+                || homePossession > 100
+                || awayPossession < 0
+                || awayPossession > 100
+                || homePossession + awayPossession != 100) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_PARAMETER,
+                    "점유율의 합계가 100이어야 합니다."
+            );
+        }
     }
 
     /**
