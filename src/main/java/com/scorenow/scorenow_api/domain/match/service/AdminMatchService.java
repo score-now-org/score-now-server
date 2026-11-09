@@ -89,11 +89,17 @@ public class AdminMatchService {
     /**
      * 경기 등록용 팀 후보 검색
      */
-    public List<MatchTeamCandidateResponse> getTeamCandidates(String keyword, Long sportId) {
+    public List<MatchTeamCandidateResponse> getTeamCandidates(String keyword, Long teamId, Long sportId) {
+        String normalizedKeyword = teamId == null ? normalize(keyword) : null;
+
+        if (teamId == null && normalizedKeyword == null) {
+            return List.of();
+        }
 
         return teamRepository.searchMatchTeamCandidates(
                         sportId,
-                        normalize(keyword),
+                        teamId,
+                        normalizedKeyword,
                         PageRequest.of(0, TEAM_CANDIDATE_LIMIT)
                 )
                 .stream()

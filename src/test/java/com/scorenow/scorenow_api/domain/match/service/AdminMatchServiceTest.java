@@ -22,8 +22,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,6 +65,44 @@ class AdminMatchServiceTest {
     private MatchStatusDisplayResolver matchStatusDisplayResolver;
     @Mock
     private SportCodeResolver sportCodeResolver;
+
+    @Test
+    void 경기_등록용_팀을_이름으로_검색한다() {
+        given(teamRepository.searchMatchTeamCandidates(
+                1L,
+                null,
+                "김해 FC 2008",
+                PageRequest.of(0, 10)
+        )).willReturn(List.of());
+
+        adminMatchService.getTeamCandidates(" 김해 FC 2008 ", null, 1L);
+
+        then(teamRepository).should().searchMatchTeamCandidates(
+                1L,
+                null,
+                "김해 FC 2008",
+                PageRequest.of(0, 10)
+        );
+    }
+
+    @Test
+    void 경기_등록용_팀을_ID로_검색한다() {
+        given(teamRepository.searchMatchTeamCandidates(
+                1L,
+                2008L,
+                null,
+                PageRequest.of(0, 10)
+        )).willReturn(List.of());
+
+        adminMatchService.getTeamCandidates(null, 2008L, 1L);
+
+        then(teamRepository).should().searchMatchTeamCandidates(
+                1L,
+                2008L,
+                null,
+                PageRequest.of(0, 10)
+        );
+    }
 
     @Test
     void 경기_시작_시각_수정을_공통_업데이터에_위임한다() {
