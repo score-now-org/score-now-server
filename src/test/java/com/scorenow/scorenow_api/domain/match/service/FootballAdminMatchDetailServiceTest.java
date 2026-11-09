@@ -141,7 +141,7 @@ class FootballAdminMatchDetailServiceTest {
 
         assertThatThrownBy(() -> service.updateFootballStats(MATCH_ID, request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("점유율은 양 팀 모두 입력해야 하며 합계가 100이어야 합니다.");
+                .hasMessage("점유율의 합계가 100이어야 합니다.");
 
         then(footballMatchDetailRepository).should(never())
                 .updateStats(eq(MATCH_ID), any(FootballStats.class), any(FootballStats.class));
@@ -155,7 +155,7 @@ class FootballAdminMatchDetailServiceTest {
 
         assertThatThrownBy(() -> service.updateFootballStats(MATCH_ID, request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("점유율은 양 팀 모두 입력해야 하며 합계가 100이어야 합니다.");
+                .hasMessage("점유율의 합계가 100이어야 합니다.");
 
         then(footballMatchDetailRepository).should(never())
                 .updateStats(eq(MATCH_ID), any(FootballStats.class), any(FootballStats.class));
