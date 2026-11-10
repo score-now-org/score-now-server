@@ -20,6 +20,6 @@ public class MatchAppResponse {
     @Schema(description = "상단고정 및 핫매치 경기 목록")
     private MatchAppFeaturedSectionResponse featuredMatches;
 
-    @Schema(description = "리그별 경기 목록. v1 경기 목록과 동일한 구조입니다.")
+    @Schema(description = "리그별 일반 경기 목록. 상단고정 및 핫매치에 포함된 경기는 제외됩니다.")
     private List<MatchAppLeagueGroupResponse> leagueMatches;
 }

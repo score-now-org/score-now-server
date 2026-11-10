@@ -21,7 +21,7 @@ public interface MatchAppApiDocs {
             description = """
                     리그별 경기 목록과 상단고정/핫매치 경기 목록을 함께 조회합니다.
                     featuredMatches에는 동일한 조회 조건으로 조회된 경기 중 상단고정 및 핫매치로 설정된 경기만 구분하여 반환합니다.
-                    leagueMatches에는 경기 목록을 리그별로 그룹핑하여 반환합니다.
+                    leagueMatches에는 상단고정 또는 핫매치로 반환된 경기를 제외한 일반 경기 목록을 리그별로 그룹핑하여 반환합니다.
                     각 경기에는 매핑된 경기장이 있으면 경기장명과 도시명을 반환하고, 없으면 stadium을 null로 반환합니다.
                     """
     )

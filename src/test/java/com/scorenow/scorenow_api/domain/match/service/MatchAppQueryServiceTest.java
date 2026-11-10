@@ -543,24 +543,28 @@ class MatchAppQueryServiceTest {
     }
 
     @Test
-    void v2의_Featured_경기는_기존_리그별_경기_목록에도_유지된다() {
+    void v2의_Featured_경기는_일반_경기_목록에서_제외하고_빈_리그도_제거한다() {
         LocalDate date = LocalDate.of(2026, 6, 2);
-        Match match = createMatch(31L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+        Match featured = createMatch(31L, 2L, "Premier League", MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+        Match regular = createMatch(32L, 3L, "La Liga", MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 21, 0), 0, 0);
 
-        givenAppMatches(date, SportCode.FOOTBALL, 2L, match);
-        givenMatchResponseData(match);
-        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(31L)))
+        givenAppMatches(date, SportCode.FOOTBALL, null, featured, regular);
+        givenMatchResponseData(featured, regular);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(31L, 32L)))
                 .willReturn(List.of(featuredMatch(31L, date, FeaturedMatchType.PINNED, 1)));
 
-        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, SportCode.FOOTBALL, 2L);
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, SportCode.FOOTBALL, null);
 
-        MatchAppItemResponse leagueMatch = result.getLeagueMatches().get(0).getMatches().get(0);
         MatchAppItemResponse featuredMatch = result.getFeaturedMatches().getPinnedMatches().get(0).getMatch();
 
         assertThat(result.getLeagueMatches()).hasSize(1);
-        assertThat(leagueMatch.getId()).isEqualTo(31L);
+        assertThat(result.getLeagueMatches().get(0).getLeagueId()).isEqualTo(3L);
+        assertThat(result.getLeagueMatches().get(0).getMatches())
+                .extracting(MatchAppItemResponse::getId)
+                .containsExactly(32L);
         assertThat(featuredMatch.getId()).isEqualTo(31L);
-        assertThat(featuredMatch).isSameAs(leagueMatch);
     }
 
     @Test
