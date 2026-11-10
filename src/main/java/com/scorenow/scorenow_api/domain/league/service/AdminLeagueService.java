@@ -26,8 +26,12 @@ import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.repository.LeagueRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
 
 import static java.lang.Boolean.TRUE;
 
@@ -37,9 +41,12 @@ import static java.lang.Boolean.TRUE;
 @Transactional(readOnly = true)
 public class AdminLeagueService {
 
+    private static final String LEAGUE_EMBLEM_DIRECTORY = "league-emblems";
+
     private final LeagueRepository leagueRepository;
     private final LeagueExternalMappingRepository leagueExternalMappingRepository;
     private final SportRepository sportRepository;
+    private final FileStorage fileStorage;
 
     /**
      * 리그 등록 시 옵션 조회 (종목)
@@ -76,26 +83,39 @@ public class AdminLeagueService {
      */
     @Transactional
     public AdminLeagueResponse createLeague(AdminLeagueCreateRequest request) {
+        return createLeague(request, null);
+    }
+
+    @Transactional
+    public AdminLeagueResponse createLeague(AdminLeagueCreateRequest request, MultipartFile image) {
         Sport sport = sportRepository.findById(request.getSportId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND));
+
+        DataOrigin dataOrigin = resolveLeagueDataOrigin(request);
+        Boolean syncEnabled = TRUE.equals(request.getExternalLinked())
+                ? TRUE.equals(request.getSyncEnabled())
+                : null;
+        String apiLeagueId = TRUE.equals(request.getExternalLinked())
+                ? normalizeApiLeagueId(request.getApiLeagueId())
+                : null;
+        UploadedEmblem uploadedEmblem = uploadEmblem(image);
 
         League league = League.builder()
                 .sportId(sport.getId())
                 .eName(request.getEName())
                 .kName(request.getKName())
                 .sName(request.getSName())
+                .imageUrl(uploadedEmblem == null ? null : uploadedEmblem.url())
                 .teamDisplayOrder(resolveTeamDisplayOrder(request.getTeamDisplayOrder()))
-                .dataOrigin(resolveLeagueDataOrigin(request))
+                .dataOrigin(dataOrigin)
                 .build();
 
         League savedLeague = leagueRepository.save(league);
 
-        Boolean syncEnabled = null;
         if (TRUE.equals(request.getExternalLinked())) {
-            syncEnabled = TRUE.equals(request.getSyncEnabled());
             leagueExternalMappingRepository.save(LeagueExternalMapping.of(
                     request.getDataOrigin(),
-                    normalizeApiLeagueId(request.getApiLeagueId()),
+                    apiLeagueId,
                     savedLeague.getId(),
                     syncEnabled
             ));
@@ -109,10 +129,17 @@ public class AdminLeagueService {
      */
     @Transactional
     public void updateLeague(Long leagueId, AdminLeagueUpdateRequest request) {
+        updateLeague(leagueId, request, null);
+    }
+
+    @Transactional
+    public void updateLeague(Long leagueId, AdminLeagueUpdateRequest request, MultipartFile image) {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.LEAGUE_NOT_FOUND));
 
+        validateEmblemUpdate(request, image);
         applyUpdates(league, request);
+        updateEmblem(league, request, image);
 
         log.info("리그 정보 수정 완료 - leagueId: {}", leagueId);
     }
@@ -190,6 +217,118 @@ public class AdminLeagueService {
         if (request.getTeamDisplayOrder() != null) {
             league.updateTeamDisplayOrder(request.getTeamDisplayOrder());
         }
+    }
+
+    private void validateEmblemUpdate(AdminLeagueUpdateRequest request, MultipartFile image) {
+        if (request != null && TRUE.equals(request.getRemoveEmblem()) && hasImage(image)) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_PARAMETER,
+                    "엠블럼 제거와 새 이미지 등록을 동시에 요청할 수 없습니다."
+            );
+        }
+    }
+
+    /**
+     * 엠블럼 수정 (삭제 포함)
+     */
+    private void updateEmblem(League league, AdminLeagueUpdateRequest request, MultipartFile image) {
+        String previousImageUrl = league.getImageUrl();
+
+        // 엠블럼 삭제
+        if (request != null && TRUE.equals(request.getRemoveEmblem())) {
+            league.removeImageUrl();
+            registerPreviousEmblemDeletionAfterCommit(previousImageUrl);
+            return;
+        }
+
+        if (!hasImage(image)) {
+            return;
+        }
+
+        UploadedEmblem uploadedEmblem = uploadEmblem(image);
+        league.updateImageUrl(uploadedEmblem.url());
+        registerPreviousEmblemDeletionAfterCommit(previousImageUrl);
+    }
+
+    /**
+     * 엠블럼 파일 서버에 업로드
+     */
+    private UploadedEmblem uploadEmblem(MultipartFile image) {
+        if (!hasImage(image)) {
+            return null;
+        }
+
+        String key = fileStorage.uploadFileAndReturnKey(image, LEAGUE_EMBLEM_DIRECTORY);
+        registerNewEmblemDeletionOnRollback(key);
+        return new UploadedEmblem(key, fileStorage.getFileUrl(key));
+    }
+
+    /**
+     * DB 트랜잭션 롤백 시 새로 업로드한 엠블럼을 삭제하도록 등록
+     */
+    private void registerNewEmblemDeletionOnRollback(String newEmblemKey) {
+        // 현재 스레드에 콜백을 등록할 수 있는 트랜잭션 동기화가 활성화되어 있는지 확인
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    safelyDeleteFile(newEmblemKey);
+                    return;
+                }
+
+                if (status == TransactionSynchronization.STATUS_UNKNOWN) {
+                    log.error("트랜잭션 결과를 확인할 수 없어 신규 리그 엠블럼을 삭제하지 않았습니다. key={}", newEmblemKey);
+                }
+            }
+        });
+    }
+
+    /**
+     * DB 트랜잭션 커밋 후 기존 엠블럼을 삭제하도록 등록
+     */
+    private void registerPreviousEmblemDeletionAfterCommit(String previousImageUrl) {
+        if (!fileStorage.isManagedFileUrl(previousImageUrl)) {
+            return;
+        }
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            safelyDeleteFileByUrl(previousImageUrl);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                safelyDeleteFileByUrl(previousImageUrl);
+            }
+        });
+    }
+
+    private void safelyDeleteFile(String key) {
+        try {
+            fileStorage.deleteFile(key);
+        } catch (RuntimeException exception) {
+            log.error("GCS 리그 엠블럼 보상 삭제 실패. key={}", key, exception);
+        }
+    }
+
+    private void safelyDeleteFileByUrl(String imageUrl) {
+        try {
+            fileStorage.deleteFileByUrl(imageUrl);
+        } catch (RuntimeException exception) {
+            log.error("GCS 기존 리그 엠블럼 정리 실패. imageUrl={}", imageUrl, exception);
+        }
+    }
+
+    private boolean hasImage(MultipartFile image) {
+        return image != null && !image.isEmpty();
+    }
+
+    private record UploadedEmblem(String key, String url) {
     }
 
     private DataOrigin resolveLeagueDataOrigin(AdminLeagueCreateRequest request) {

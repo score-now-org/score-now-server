@@ -142,6 +142,7 @@ public class MatchAppQueryService {
             MatchAppFeaturedItemResponse featuredItem = MatchAppFeaturedItemResponse.builder()
                     .leagueId(leagueGroup.getLeagueId())
                     .leagueName(leagueGroup.getLeagueName())
+                    .leagueImageUrl(leagueGroup.getLeagueImageUrl())
                     .match(matchItem)
                     .build();
 
@@ -192,6 +193,7 @@ public class MatchAppQueryService {
                     return MatchAppLeagueGroupResponse.builder()
                             .leagueId(leagueGroup.getLeagueId())
                             .leagueName(leagueGroup.getLeagueName())
+                            .leagueImageUrl(leagueGroup.getLeagueImageUrl())
                             .sportCode(leagueGroup.getSportCode())
                             .matches(regularMatches)
                             .build();

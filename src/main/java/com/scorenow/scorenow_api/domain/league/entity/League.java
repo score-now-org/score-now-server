@@ -75,6 +75,14 @@ public class League extends BaseEntity {
         this.sName = sName;
     }
 
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public void removeImageUrl() {
+        this.imageUrl = null;
+    }
+
     public void updateTeamDisplayOrder(TeamDisplayOrder teamDisplayOrder) {
         this.teamDisplayOrder = teamDisplayOrder != null ? teamDisplayOrder : TeamDisplayOrder.HOME_AWAY;
     }

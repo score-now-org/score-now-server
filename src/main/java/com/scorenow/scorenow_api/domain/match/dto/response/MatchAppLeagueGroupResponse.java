@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,6 +19,10 @@ public class MatchAppLeagueGroupResponse {
     @Schema(description = "리그 이름", example = "프리미어리그")
     private String leagueName;
 
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @Schema(description = "리그 엠블럼 이미지 URL. 미등록 시 null", nullable = true)
+    private String leagueImageUrl;
+
     private SportCode sportCode;
 
     @Schema(description = "리그에 속한 경기 목록")
@@ -31,6 +36,7 @@ public class MatchAppLeagueGroupResponse {
         return MatchAppLeagueGroupResponse.builder()
                 .leagueId(league.getId())
                 .leagueName(league.resolveLeagueName())
+                .leagueImageUrl(league.getImageUrl())
                 .sportCode(sportCode)
                 .matches(matches)
                 .build();

@@ -137,6 +137,9 @@ class MatchAppQueryServiceTest {
         MatchAppDetailResponse response = matchAppQueryService.getMatch(match.getId());
 
         assertThat(response.sportCode()).isEqualTo(SportCode.BASEBALL);
+        assertThat(response.leagueId()).isEqualTo(20L);
+        assertThat(response.leagueName()).isEqualTo("KBO");
+        assertThat(response.leagueImageUrl()).isEqualTo("league-20.png");
         assertThat(response.homeScore()).isEqualTo(2);
         assertThat(response.awayScore()).isEqualTo(1);
         assertThat(response.statusDisplay()).isSameAs(statusDisplay);
@@ -590,10 +593,13 @@ class MatchAppQueryServiceTest {
 
         assertThat(result.getLeagueMatches()).hasSize(1);
         assertThat(result.getLeagueMatches().get(0).getLeagueId()).isEqualTo(3L);
+        assertThat(result.getLeagueMatches().get(0).getLeagueImageUrl()).isEqualTo("league-3.png");
         assertThat(result.getLeagueMatches().get(0).getMatches())
                 .extracting(MatchAppItemResponse::getId)
                 .containsExactly(32L);
         assertThat(featuredMatch.getId()).isEqualTo(31L);
+        assertThat(result.getFeaturedMatches().getPinnedMatches().get(0).getLeagueImageUrl())
+                .isEqualTo("league-2.png");
     }
 
     @ParameterizedTest
@@ -742,6 +748,7 @@ class MatchAppQueryServiceTest {
                         .id(leagueId)
                         .sName(leagueName)
                         .eName(leagueName)
+                        .imageUrl("league-" + leagueId + ".png")
                         .build())
                 .homeId(10L)
                 .homeTeam(Team.builder()
@@ -776,6 +783,7 @@ class MatchAppQueryServiceTest {
                         .id(20L)
                         .sName("KBO")
                         .eName("KBO")
+                        .imageUrl("league-20.png")
                         .build())
                 .homeId(100L)
                 .homeTeam(Team.builder()
