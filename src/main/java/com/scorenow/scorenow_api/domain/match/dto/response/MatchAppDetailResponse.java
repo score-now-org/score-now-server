@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStand
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.match.model.MatchAppScorePolicy;
 import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
@@ -22,8 +23,8 @@ public record MatchAppDetailResponse(
         StadiumResponse stadium,
         TeamResponse homeTeam,
         TeamResponse awayTeam,
-        Integer homeScore,
-        Integer awayScore,
+        @JsonInclude(JsonInclude.Include.ALWAYS) Integer homeScore,
+        @JsonInclude(JsonInclude.Include.ALWAYS) Integer awayScore,
         String statusCode,
         String statusName,
         String currentCommentary,
@@ -51,8 +52,8 @@ public record MatchAppDetailResponse(
                 StadiumResponse.from(match, registeredStadium),
                 TeamResponse.from(match.getHomeId(), match.getHomeTeam(), homeTeamStandings),
                 TeamResponse.from(match.getAwayId(), match.getAwayTeam(), awayTeamStandings),
-                match.getHomeScore(),
-                match.getAwayScore(),
+                MatchAppScorePolicy.resolveScore(match.getStatusCode(), match.getHomeScore()),
+                MatchAppScorePolicy.resolveScore(match.getStatusCode(), match.getAwayScore()),
                 match.getStatusCode().name(),
                 match.getStatusCode().getDescription(),
                 resolveCurrentCommentary(matchDetail),

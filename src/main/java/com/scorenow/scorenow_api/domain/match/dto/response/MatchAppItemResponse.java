@@ -6,6 +6,7 @@ import com.scorenow.scorenow_api.domain.league.service.standings.model.TeamStand
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.match.model.MatchAppScorePolicy;
 import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.domain.stadium.entity.Stadium;
@@ -40,10 +41,12 @@ public class MatchAppItemResponse {
     @Schema(description = "어웨이팀 정보")
     private TeamResponse awayTeam;
 
-    @Schema(description = "홈팀 점수", example = "1")
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @Schema(description = "홈팀 점수. 연기·취소 경기이면 null입니다.", example = "1", nullable = true)
     private Integer homeScore;
 
-    @Schema(description = "어웨이팀 점수", example = "0")
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @Schema(description = "어웨이팀 점수. 연기·취소 경기이면 null입니다.", example = "0", nullable = true)
     private Integer awayScore;
 
     @Schema(
@@ -177,8 +180,8 @@ public class MatchAppItemResponse {
                 .stadium(StadiumResponse.from(match, registeredStadium))
                 .homeTeam(TeamResponse.from(match.getHomeId(), match.getHomeTeam(), homeTeamStandings))
                 .awayTeam(TeamResponse.from(match.getAwayId(), match.getAwayTeam(), awayTeamStandings))
-                .homeScore(match.getHomeScore())
-                .awayScore(match.getAwayScore())
+                .homeScore(MatchAppScorePolicy.resolveScore(match.getStatusCode(), match.getHomeScore()))
+                .awayScore(MatchAppScorePolicy.resolveScore(match.getStatusCode(), match.getAwayScore()))
                 .statusCode(match.getStatusCode().name())
                 .statusName(match.getStatusCode().getDescription())
                 .currentCommentary(resolveCurrentCommentary(matchDetail))
