@@ -34,9 +34,9 @@ public class MatchAppLeagueGroupResponse {
             List<MatchAppItemResponse> matches) {
 
         return MatchAppLeagueGroupResponse.builder()
-                .leagueId(league.getId())
-                .leagueName(league.resolveLeagueName())
-                .leagueImageUrl(league.getImageUrl())
+                .leagueId(league != null ? league.getId() : null)
+                .leagueName(league != null ? league.resolveLeagueName() : null)
+                .leagueImageUrl(league != null ? league.getImageUrl() : null)
                 .sportCode(sportCode)
                 .matches(matches)
                 .build();
