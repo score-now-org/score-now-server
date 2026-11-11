@@ -91,11 +91,11 @@ public class GcsService implements FileStorage {
         try {
             boolean deleted = storage.delete(bucketName, objectName);
             if (!deleted) {
-                log.warn("GCS에서 삭제할 파일을 찾을 수 없습니다. objectName: {}", objectName);
+                log.warn("🟠GCS에서 삭제할 파일을 찾을 수 없습니다. objectName: {}", objectName);
             }
 
         } catch (StorageException e) {
-            log.error("GCS 파일 삭제 실패. objectName: {}", objectName, e);
+            log.error("🔴GCS 파일 삭제 실패. objectName: {}", objectName, e);
 
             throw new BusinessException(ErrorCode.FILE_DELETE_FAILED);
         }
@@ -110,6 +110,20 @@ public class GcsService implements FileStorage {
         String objectName = extractObjectName(fileUrl);
 
         deleteFile(objectName);
+    }
+
+    @Override
+    public boolean isManagedFileUrl(String fileUrl) {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            return false;
+        }
+
+        String prefix = String.format(
+                "https://storage.googleapis.com/%s/",
+                bucketName
+        );
+
+        return fileUrl.startsWith(prefix) && fileUrl.length() > prefix.length();
     }
 
     private void validateImageFile(MultipartFile file) {

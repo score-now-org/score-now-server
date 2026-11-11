@@ -142,6 +142,7 @@ public class MatchAppQueryService {
             MatchAppFeaturedItemResponse featuredItem = MatchAppFeaturedItemResponse.builder()
                     .leagueId(leagueGroup.getLeagueId())
                     .leagueName(leagueGroup.getLeagueName())
+                    .leagueImageUrl(leagueGroup.getLeagueImageUrl())
                     .match(matchItem)
                     .build();
 
@@ -152,7 +153,17 @@ public class MatchAppQueryService {
             }
         }
 
-        // 응답 조립
+        // 상단고정,핫매치 경기 ID 추출
+        Set<Long> featuredMatchIds = featuredMatches.stream()
+                .map(FeaturedMatch::getMatchId)
+                .filter(matchItemByMatchId::containsKey)
+                .collect(Collectors.toSet());
+
+        // 기존 경기 응답에서 상단고정,핫매치 경기 제외
+        List<MatchAppLeagueGroupResponse> regularLeagueGroupResponses =
+                excludeFeaturedMatches(leagueGroupResponses, featuredMatchIds);
+
+        // 상단고정,핫매치 응답 조립
         MatchAppFeaturedSectionResponse featuredSectionResponse = MatchAppFeaturedSectionResponse.builder()
                 .pinnedMatches(pinnedMatches)
                 .hotMatches(hotMatches)
@@ -161,8 +172,34 @@ public class MatchAppQueryService {
         return MatchAppResponse.builder()
                 .date(targetDate)
                 .featuredMatches(featuredSectionResponse)
-                .leagueMatches(leagueGroupResponses)
+                .leagueMatches(regularLeagueGroupResponses)
                 .build();
+    }
+
+    private List<MatchAppLeagueGroupResponse> excludeFeaturedMatches(
+            List<MatchAppLeagueGroupResponse> leagueGroupResponses,
+            Set<Long> featuredMatchIds
+    ) {
+        if (featuredMatchIds.isEmpty()) {
+            return leagueGroupResponses;
+        }
+
+        return leagueGroupResponses.stream()
+                .map(leagueGroup -> {
+                    List<MatchAppItemResponse> regularMatches = leagueGroup.getMatches().stream()
+                            .filter(match -> !featuredMatchIds.contains(match.getId()))
+                            .toList();
+
+                    return MatchAppLeagueGroupResponse.builder()
+                            .leagueId(leagueGroup.getLeagueId())
+                            .leagueName(leagueGroup.getLeagueName())
+                            .leagueImageUrl(leagueGroup.getLeagueImageUrl())
+                            .sportCode(leagueGroup.getSportCode())
+                            .matches(regularMatches)
+                            .build();
+                })
+                .filter(leagueGroup -> !leagueGroup.getMatches().isEmpty())
+                .toList();
     }
 
     /**

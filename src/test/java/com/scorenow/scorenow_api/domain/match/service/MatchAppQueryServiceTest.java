@@ -45,6 +45,8 @@ import com.scorenow.scorenow_api.domain.stadium.repository.StadiumRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -135,6 +137,9 @@ class MatchAppQueryServiceTest {
         MatchAppDetailResponse response = matchAppQueryService.getMatch(match.getId());
 
         assertThat(response.sportCode()).isEqualTo(SportCode.BASEBALL);
+        assertThat(response.leagueId()).isEqualTo(20L);
+        assertThat(response.leagueName()).isEqualTo("KBO");
+        assertThat(response.leagueImageUrl()).isEqualTo("league-20.png");
         assertThat(response.homeScore()).isEqualTo(2);
         assertThat(response.awayScore()).isEqualTo(1);
         assertThat(response.statusDisplay()).isSameAs(statusDisplay);
@@ -171,6 +176,33 @@ class MatchAppQueryServiceTest {
         assertThat(response.inningScores()).hasSize(20);
         assertThat(response.detailedBroadcastEnabled()).isFalse();
         assertThat(response.detailed()).isNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchStatus.class, names = {"POSTPONED", "CANCELLED", "ABANDONED"})
+    void 연기와_취소_경기_상세는_저장된_점수를_노출하지_않는다(MatchStatus status) {
+        Match match = createMatch(90L, status, LocalDateTime.of(2026, 6, 2, 20, 0), 3, 2);
+        MatchDetailDocument matchDetail = MatchDetailDocument.builder()
+                .id(match.getId())
+                .type(SportCode.FOOTBALL)
+                .build();
+        MatchStatusDisplayResponse statusDisplay = statusDisplay(status.getDescription());
+
+        given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
+        given(matchDetailRepository.findById(match.getId())).willReturn(Optional.of(matchDetail));
+        given(matchStatusDisplayResolver.resolve(match, matchDetail)).willReturn(statusDisplay);
+        given(matchOddsAppQueryService.getOverseasWinDrawLossOddsByMatchIds(Set.of(match.getId())))
+                .willReturn(Map.of());
+        given(teamStandingLookupService.getTeamStandings(
+                Map.of(match.getLeagueId(), Set.of(match.getHomeId(), match.getAwayId())),
+                match.getStartAt().toLocalDate()
+        )).willReturn(Map.of());
+
+        MatchAppDetailResponse response = matchAppQueryService.getMatch(match.getId());
+
+        assertThat(response.homeScore()).isNull();
+        assertThat(response.awayScore()).isNull();
+        assertThat(response.statusCode()).isEqualTo(status.name());
     }
 
     @Test
@@ -543,24 +575,56 @@ class MatchAppQueryServiceTest {
     }
 
     @Test
-    void v2의_Featured_경기는_기존_리그별_경기_목록에도_유지된다() {
+    void v2의_Featured_경기는_일반_경기_목록에서_제외하고_빈_리그도_제거한다() {
         LocalDate date = LocalDate.of(2026, 6, 2);
-        Match match = createMatch(31L, MatchStatus.NOT_STARTED, LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+        Match featured = createMatch(31L, 2L, "Premier League", MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 20, 0), 0, 0);
+        Match regular = createMatch(32L, 3L, "La Liga", MatchStatus.NOT_STARTED,
+                LocalDateTime.of(2026, 6, 2, 21, 0), 0, 0);
 
-        givenAppMatches(date, SportCode.FOOTBALL, 2L, match);
-        givenMatchResponseData(match);
-        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(31L)))
+        givenAppMatches(date, SportCode.FOOTBALL, null, featured, regular);
+        givenMatchResponseData(featured, regular);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(31L, 32L)))
                 .willReturn(List.of(featuredMatch(31L, date, FeaturedMatchType.PINNED, 1)));
 
-        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, SportCode.FOOTBALL, 2L);
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, SportCode.FOOTBALL, null);
 
-        MatchAppItemResponse leagueMatch = result.getLeagueMatches().get(0).getMatches().get(0);
         MatchAppItemResponse featuredMatch = result.getFeaturedMatches().getPinnedMatches().get(0).getMatch();
 
         assertThat(result.getLeagueMatches()).hasSize(1);
-        assertThat(leagueMatch.getId()).isEqualTo(31L);
+        assertThat(result.getLeagueMatches().get(0).getLeagueId()).isEqualTo(3L);
+        assertThat(result.getLeagueMatches().get(0).getLeagueImageUrl()).isEqualTo("league-3.png");
+        assertThat(result.getLeagueMatches().get(0).getMatches())
+                .extracting(MatchAppItemResponse::getId)
+                .containsExactly(32L);
         assertThat(featuredMatch.getId()).isEqualTo(31L);
-        assertThat(featuredMatch).isSameAs(leagueMatch);
+        assertThat(result.getFeaturedMatches().getPinnedMatches().get(0).getLeagueImageUrl())
+                .isEqualTo("league-2.png");
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchStatus.class, names = {"POSTPONED", "CANCELLED", "ABANDONED"})
+    void 연기와_취소_경기는_일반_목록과_Featured에서_저장된_점수를_노출하지_않는다(MatchStatus status) {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        Match regular = createMatch(71L, status, LocalDateTime.of(2026, 6, 2, 19, 0), 3, 2);
+        Match featured = createMatch(72L, status, LocalDateTime.of(2026, 6, 2, 20, 0), 4, 1);
+
+        givenAppMatches(date, SportCode.FOOTBALL, 2L, regular, featured);
+        givenMatchResponseData(regular, featured);
+        given(featuredMatchRepository.findAllByDisplayDateAndMatchIds(date, Set.of(71L, 72L)))
+                .willReturn(List.of(featuredMatch(72L, date, FeaturedMatchType.HOT_MATCH, 1)));
+
+        MatchAppResponse result = matchAppQueryService.getMatchesWithFeatured(date, SportCode.FOOTBALL, 2L);
+
+        MatchAppItemResponse regularResponse = result.getLeagueMatches().get(0).getMatches().get(0);
+        MatchAppItemResponse featuredResponse = result.getFeaturedMatches().getHotMatches().get(0).getMatch();
+
+        assertThat(regularResponse.getId()).isEqualTo(71L);
+        assertThat(regularResponse.getHomeScore()).isNull();
+        assertThat(regularResponse.getAwayScore()).isNull();
+        assertThat(featuredResponse.getId()).isEqualTo(72L);
+        assertThat(featuredResponse.getHomeScore()).isNull();
+        assertThat(featuredResponse.getAwayScore()).isNull();
     }
 
     @Test
@@ -684,6 +748,7 @@ class MatchAppQueryServiceTest {
                         .id(leagueId)
                         .sName(leagueName)
                         .eName(leagueName)
+                        .imageUrl("league-" + leagueId + ".png")
                         .build())
                 .homeId(10L)
                 .homeTeam(Team.builder()
@@ -718,6 +783,7 @@ class MatchAppQueryServiceTest {
                         .id(20L)
                         .sName("KBO")
                         .eName("KBO")
+                        .imageUrl("league-20.png")
                         .build())
                 .homeId(100L)
                 .homeTeam(Team.builder()

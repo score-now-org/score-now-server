@@ -44,11 +44,17 @@ public class FootballClock {
     }
 
     public Integer resolvePhaseElapsedMinutes() {
-        if (phaseElapsedSeconds == null || phase == null) {
+        return resolveDisplayElapsedMinutes(phaseElapsedSeconds, phase);
+    }
+
+    public static Integer resolveDisplayElapsedMinutes(Integer elapsedSeconds, FootballPhase phase) {
+        if (elapsedSeconds == null || phase == null) {
             return null;
         }
 
-        return Math.max(phaseElapsedSeconds / 60, 0);
+        int elapsedMinutes = Math.max(elapsedSeconds / 60, 0);
+
+        return phase.isClockRunningPhase() ? elapsedMinutes + 1 : elapsedMinutes;
     }
 
     public static Integer resolvePhaseElapsedSeconds(Integer accumulatedElapsedSeconds, FootballPhase phase) {

@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.league.service;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueCreateRequest;
+import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueApiLeagueIdUpdateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSearchCondition;
 import com.scorenow.scorenow_api.domain.league.dto.request.LeagueSyncEnabledUpdateRequest;
@@ -14,6 +15,7 @@ import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +23,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +54,9 @@ class AdminLeagueServiceTest {
 
     @Mock
     private SportRepository sportRepository;
+
+    @Mock
+    private FileStorage fileStorage;
 
     @InjectMocks
     private AdminLeagueService adminLeagueService;
@@ -117,6 +125,165 @@ class AdminLeagueServiceTest {
         assertThat(mapping.getDataOrigin()).isEqualTo(BETS);
         assertThat(mapping.getApiLeagueId()).isEqualTo("api_league_id");
         assertThat(mapping.getSyncEnabled()).isTrue();
+    }
+
+    @Test
+    void 리그와_엠블럼을_함께_등록한다() {
+        givenSportExists();
+        givenLeagueSaveReturnsArgument();
+        MockMultipartFile image = emblemFile();
+        given(fileStorage.uploadFileAndReturnKey(image, "league-emblems"))
+                .willReturn("league-emblems/emblem.png");
+        given(fileStorage.getFileUrl("league-emblems/emblem.png"))
+                .willReturn("https://storage.googleapis.com/bucket/league-emblems/emblem.png");
+
+        AdminLeagueResponse response = adminLeagueService.createLeague(externalCreateRequest(TRUE), image);
+
+        assertThat(response.getImageUrl())
+                .isEqualTo("https://storage.googleapis.com/bucket/league-emblems/emblem.png");
+    }
+
+    @Test
+    void 트랜잭션이_롤백되면_새로_업로드한_엠블럼을_삭제한다() {
+        givenSportExists();
+        givenLeagueSaveReturnsArgument();
+        MockMultipartFile image = emblemFile();
+        String imageKey = "league-emblems/emblem.png";
+        given(fileStorage.uploadFileAndReturnKey(image, "league-emblems")).willReturn(imageKey);
+        given(fileStorage.getFileUrl(imageKey))
+                .willReturn("https://storage.googleapis.com/bucket/league-emblems/emblem.png");
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            adminLeagueService.createLeague(externalCreateRequest(TRUE), image);
+
+            TransactionSynchronization synchronization = TransactionSynchronizationManager
+                    .getSynchronizations()
+                    .get(0);
+            synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+
+            then(fileStorage).should().deleteFile(imageKey);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void 트랜잭션_결과를_알_수_없으면_신규_엠블럼을_삭제하지_않는다() {
+        givenSportExists();
+        givenLeagueSaveReturnsArgument();
+        MockMultipartFile image = emblemFile();
+        String imageKey = "league-emblems/emblem.png";
+        given(fileStorage.uploadFileAndReturnKey(image, "league-emblems")).willReturn(imageKey);
+        given(fileStorage.getFileUrl(imageKey))
+                .willReturn("https://storage.googleapis.com/bucket/league-emblems/emblem.png");
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            adminLeagueService.createLeague(externalCreateRequest(TRUE), image);
+
+            TransactionSynchronization synchronization = TransactionSynchronizationManager
+                    .getSynchronizations()
+                    .get(0);
+            synchronization.afterCompletion(TransactionSynchronization.STATUS_UNKNOWN);
+
+            then(fileStorage).should(never()).deleteFile(imageKey);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void 기존_엠블럼을_새_이미지로_교체한다() {
+        Long leagueId = 1L;
+        String previousImageUrl = "https://storage.googleapis.com/bucket/league-emblems/old.png";
+        League league = League.builder()
+                .id(leagueId)
+                .sportId(1L)
+                .eName("League")
+                .kName("리그")
+                .dataOrigin(MANUAL)
+                .imageUrl(previousImageUrl)
+                .build();
+        AdminLeagueUpdateRequest request = mock(AdminLeagueUpdateRequest.class);
+        given(request.getSportId()).willReturn(null);
+        MockMultipartFile image = emblemFile();
+        given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
+        given(fileStorage.uploadFileAndReturnKey(image, "league-emblems"))
+                .willReturn("league-emblems/new.png");
+        given(fileStorage.getFileUrl("league-emblems/new.png"))
+                .willReturn("https://storage.googleapis.com/bucket/league-emblems/new.png");
+        given(fileStorage.isManagedFileUrl(previousImageUrl)).willReturn(true);
+
+        adminLeagueService.updateLeague(leagueId, request, image);
+
+        assertThat(league.getImageUrl())
+                .isEqualTo("https://storage.googleapis.com/bucket/league-emblems/new.png");
+        then(fileStorage).should().deleteFileByUrl(previousImageUrl);
+    }
+
+    @Test
+    void removeEmblem이_true면_기존_엠블럼을_제거한다() {
+        Long leagueId = 1L;
+        String previousImageUrl = "https://storage.googleapis.com/bucket/league-emblems/old.png";
+        League league = League.builder()
+                .id(leagueId)
+                .sportId(1L)
+                .eName("League")
+                .kName("리그")
+                .dataOrigin(MANUAL)
+                .imageUrl(previousImageUrl)
+                .build();
+        AdminLeagueUpdateRequest request = mock(AdminLeagueUpdateRequest.class);
+        given(request.getSportId()).willReturn(null);
+        given(request.getRemoveEmblem()).willReturn(TRUE);
+        given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
+        given(fileStorage.isManagedFileUrl(previousImageUrl)).willReturn(true);
+
+        adminLeagueService.updateLeague(leagueId, request, null);
+
+        assertThat(league.getImageUrl()).isNull();
+        then(fileStorage).should().deleteFileByUrl(previousImageUrl);
+    }
+
+    @Test
+    void 이미지가_없고_removeEmblem이_false면_기존_엠블럼을_유지한다() {
+        Long leagueId = 1L;
+        String previousImageUrl = "https://storage.googleapis.com/bucket/league-emblems/old.png";
+        League league = League.builder()
+                .id(leagueId)
+                .sportId(1L)
+                .eName("League")
+                .kName("리그")
+                .dataOrigin(MANUAL)
+                .imageUrl(previousImageUrl)
+                .build();
+        AdminLeagueUpdateRequest request = mock(AdminLeagueUpdateRequest.class);
+        given(request.getSportId()).willReturn(null);
+        given(request.getRemoveEmblem()).willReturn(false);
+        given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
+
+        adminLeagueService.updateLeague(leagueId, request, null);
+
+        assertThat(league.getImageUrl()).isEqualTo(previousImageUrl);
+        then(fileStorage).should(never()).uploadFileAndReturnKey(any(), any());
+        then(fileStorage).should(never()).deleteFileByUrl(any());
+    }
+
+    @Test
+    void 엠블럼_제거와_새_이미지를_동시에_요청할_수_없다() {
+        Long leagueId = 1L;
+        League league = createManualLeague(leagueId);
+        AdminLeagueUpdateRequest request = mock(AdminLeagueUpdateRequest.class);
+        given(request.getRemoveEmblem()).willReturn(TRUE);
+        given(leagueRepository.findById(leagueId)).willReturn(Optional.of(league));
+
+        assertThatThrownBy(() -> adminLeagueService.updateLeague(leagueId, request, emblemFile()))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PARAMETER);
+
+        then(fileStorage).should(never()).uploadFileAndReturnKey(any(), any());
     }
 
     @Test
@@ -309,6 +476,15 @@ class AdminLeagueServiceTest {
                 .kName("리그")
                 .dataOrigin(MANUAL)
                 .build();
+    }
+
+    private MockMultipartFile emblemFile() {
+        return new MockMultipartFile(
+                "image",
+                "emblem.png",
+                "image/png",
+                new byte[]{1, 2, 3}
+        );
     }
 
     private LeagueApiLeagueIdUpdateRequest apiLeagueIdUpdateRequest(String apiLeagueId) {

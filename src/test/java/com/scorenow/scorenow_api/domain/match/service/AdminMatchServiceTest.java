@@ -22,8 +22,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,11 +67,50 @@ class AdminMatchServiceTest {
     private SportCodeResolver sportCodeResolver;
 
     @Test
+    void 경기_등록용_팀을_이름으로_검색한다() {
+        given(teamRepository.searchMatchTeamCandidates(
+                1L,
+                null,
+                "김해 FC 2008",
+                PageRequest.of(0, 10)
+        )).willReturn(List.of());
+
+        adminMatchService.getTeamCandidates(" 김해 FC 2008 ", null, 1L);
+
+        then(teamRepository).should().searchMatchTeamCandidates(
+                1L,
+                null,
+                "김해 FC 2008",
+                PageRequest.of(0, 10)
+        );
+    }
+
+    @Test
+    void 경기_등록용_팀을_ID로_검색한다() {
+        given(teamRepository.searchMatchTeamCandidates(
+                1L,
+                2008L,
+                null,
+                PageRequest.of(0, 10)
+        )).willReturn(List.of());
+
+        adminMatchService.getTeamCandidates(null, 2008L, 1L);
+
+        then(teamRepository).should().searchMatchTeamCandidates(
+                1L,
+                2008L,
+                null,
+                PageRequest.of(0, 10)
+        );
+    }
+
+    @Test
     void 경기_시작_시각_수정을_공통_업데이터에_위임한다() {
         Long matchId = 1L;
         Match match = Match.builder()
                 .id(matchId)
                 .startAt(LocalDateTime.of(2026, 7, 23, 19, 0))
+                .isManual(true)
                 .build();
 
         MatchUpdateRequest request = new MatchUpdateRequest();
@@ -81,6 +122,29 @@ class AdminMatchServiceTest {
 
         then(matchScheduledStartAtUpdater).should()
                 .update(match, LocalDateTime.of(2026, 7, 24, 19, 0));
+    }
+
+    @Test
+    void 자동_경기에서_수동_전환과_시작_시각_변경을_한번에_처리할_수_없다() {
+        Long matchId = 1L;
+        Match match = Match.builder()
+                .id(matchId)
+                .startAt(LocalDateTime.of(2026, 7, 23, 19, 0))
+                .isManual(false)
+                .build();
+
+        MatchUpdateRequest request = new MatchUpdateRequest();
+        request.setStartAt(LocalDateTime.of(2026, 7, 24, 19, 0));
+        request.setIsManual(true);
+
+        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+
+        assertThatThrownBy(() -> adminMatchService.updateMatch(matchId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("데이터 관리를 수동으로 먼저 저장한 후 경기 날짜와 시간을 변경할 수 있습니다.");
+
+        then(matchScheduledStartAtUpdater).should(never())
+                .update(match, request.getStartAt());
     }
 
     @Test

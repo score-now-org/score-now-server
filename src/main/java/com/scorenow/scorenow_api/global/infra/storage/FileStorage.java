@@ -18,4 +18,8 @@ public interface FileStorage {
 
     default void deleteFileByUrl(String fileUrl) {
     }
+
+    default boolean isManagedFileUrl(String fileUrl) {
+        return false;
+    }
 }

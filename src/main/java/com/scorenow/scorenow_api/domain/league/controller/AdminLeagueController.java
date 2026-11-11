@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueCreateRequest;
 import com.scorenow.scorenow_api.domain.league.dto.request.AdminLeagueUpdateRequest;
@@ -48,15 +51,31 @@ public class AdminLeagueController implements AdminLeagueApiDocs {
 		return ApiResponse.success(adminLeagueService.searchLeagues(leagueId));
 	}
 
-	@PostMapping
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ApiResponse<AdminLeagueResponse> createLeague(@RequestBody @Valid AdminLeagueCreateRequest request) {
 		return ApiResponse.success(adminLeagueService.createLeague(request));
 	}
 
-	@PutMapping("/{leagueId}")
+	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<AdminLeagueResponse> createLeagueWithEmblem(
+		@RequestPart("request") @Valid AdminLeagueCreateRequest request,
+		@RequestPart(value = "image", required = false) MultipartFile image) {
+		return ApiResponse.success(adminLeagueService.createLeague(request, image));
+	}
+
+	@PutMapping(value = "/{leagueId}", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ApiResponse<Void> updateLeague(@PathVariable Long leagueId,
 		@RequestBody @Valid AdminLeagueUpdateRequest request) {
 		adminLeagueService.updateLeague(leagueId, request);
+		return ApiResponse.success();
+	}
+
+	@PutMapping(value = "/{leagueId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<Void> updateLeagueWithEmblem(
+		@PathVariable Long leagueId,
+		@RequestPart("request") @Valid AdminLeagueUpdateRequest request,
+		@RequestPart(value = "image", required = false) MultipartFile image) {
+		adminLeagueService.updateLeague(leagueId, request, image);
 		return ApiResponse.success();
 	}
 

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Admin League API", description = "관리자 리그 관리 API")
 public interface AdminLeagueApiDocs {
@@ -34,10 +35,21 @@ public interface AdminLeagueApiDocs {
     ApiResponse<AdminLeagueResponse> createLeague(
             @Parameter(description = "생성할 리그 정보", required = true) AdminLeagueCreateRequest request);
 
+    @Operation(summary = "리그와 엠블럼 등록", description = "multipart/form-data로 리그 정보와 선택적인 엠블럼 이미지를 함께 등록합니다.")
+    ApiResponse<AdminLeagueResponse> createLeagueWithEmblem(
+            @Parameter(description = "생성할 리그 정보", required = true) AdminLeagueCreateRequest request,
+            @Parameter(description = "리그 엠블럼 이미지") MultipartFile image);
+
     @Operation(summary = "리그 수정", description = "리그 ID로 리그 기본 정보를 부분 수정합니다. 요청에 포함된 필드만 변경됩니다.")
     ApiResponse<Void> updateLeague(
             @Parameter(description = "수정할 리그 ID", required = true, example = "1") Long leagueId,
             @Parameter(description = "수정할 리그 정보", required = true) AdminLeagueUpdateRequest request);
+
+    @Operation(summary = "리그 정보와 엠블럼 수정", description = "multipart/form-data로 리그 정보를 수정하고, 이미지 파일 또는 removeEmblem으로 엠블럼을 관리합니다.")
+    ApiResponse<Void> updateLeagueWithEmblem(
+            @Parameter(description = "수정할 리그 ID", required = true, example = "1") Long leagueId,
+            @Parameter(description = "수정할 리그 정보", required = true) AdminLeagueUpdateRequest request,
+            @Parameter(description = "새 리그 엠블럼 이미지") MultipartFile image);
 
     @Operation(summary = "외부 API 리그 ID 수정", description = "외부 API와 연동된 리그의 apiLeagueId를 수정합니다.")
     ApiResponse<Void> updateApiLeagueId(

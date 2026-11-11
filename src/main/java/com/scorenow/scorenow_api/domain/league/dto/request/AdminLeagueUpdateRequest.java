@@ -29,4 +29,7 @@ public class AdminLeagueUpdateRequest {
 
 	@Schema(description = "팀 표시 순서. null이면 변경하지 않습니다.", example = "HOME_AWAY", allowableValues = {"HOME_AWAY", "AWAY_HOME"})
 	private TeamDisplayOrder teamDisplayOrder;
+
+	@Schema(description = "기존 리그 엠블럼 제거 여부. 새 이미지와 동시에 요청할 수 없습니다.", example = "false")
+	private Boolean removeEmblem;
 }

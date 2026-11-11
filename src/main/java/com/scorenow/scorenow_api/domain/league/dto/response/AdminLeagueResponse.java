@@ -40,6 +40,9 @@ public class AdminLeagueResponse {
     @JsonProperty("sName")
     private String sName;
 
+    @Schema(description = "리그 엠블럼 이미지 URL", example = "https://storage.googleapis.com/example/league-emblems/epl.png", nullable = true)
+    private String imageUrl;
+
     @Schema(description = "팀 표시 순서", example = "HOME_AWAY", allowableValues = {"HOME_AWAY", "AWAY_HOME"})
     private TeamDisplayOrder teamDisplayOrder;
 
@@ -85,6 +88,7 @@ public class AdminLeagueResponse {
                 .kName(league.getKName())
                 .eName(league.getEName())
                 .sName(league.getSName())
+                .imageUrl(league.getImageUrl())
                 .teamDisplayOrder(league.resolveTeamDisplayOrder())
                 .dataOrigin(league.getDataOrigin())
                 .syncEnabled(syncEnabled)

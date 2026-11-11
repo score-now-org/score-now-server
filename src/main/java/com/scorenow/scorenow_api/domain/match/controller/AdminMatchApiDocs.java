@@ -27,11 +27,13 @@ public interface AdminMatchApiDocs {
 
     @Operation(
             summary = "경기 등록용 팀 후보 검색",
-            description = "수동 경기 등록 시 선택할 팀 후보를 검색합니다. keyword와 sportId를 기준으로 팀을 조회합니다."
+            description = "수동 경기 등록 시 선택할 팀 후보를 검색합니다. 팀명 검색은 keyword, 팀 ID 검색은 teamId를 sportId와 함께 전달합니다."
     )
     ApiResponse<List<MatchTeamCandidateResponse>> getTeamCandidates(
-            @Parameter(description = "팀명 검색어", required = true, example = "토트넘")
+            @Parameter(description = "팀명 검색어", example = "토트넘")
             String keyword,
+            @Parameter(description = "정확히 일치하는 팀 ID", example = "10")
+            Long teamId,
             @Parameter(description = "종목 ID", required = true, example = "1")
             Long sportId);
 

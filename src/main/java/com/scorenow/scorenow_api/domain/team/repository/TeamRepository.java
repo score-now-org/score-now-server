@@ -64,7 +64,9 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             left join fetch t.sport
             where t.isActive = true
               and t.sport.id = :sportId
-              and (lower(t.kName) like lower(concat('%', :keyword, '%'))
+              and (:teamId is null or t.id = :teamId)
+              and (:keyword is null
+                   or lower(t.kName) like lower(concat('%', :keyword, '%'))
                    or lower(t.eName) like lower(concat('%', :keyword, '%'))
                    or lower(t.sName) like lower(concat('%', :keyword, '%')))
             order by
@@ -78,6 +80,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             """)
     List<Team> searchMatchTeamCandidates(
             @Param("sportId") Long sportId,
+            @Param("teamId") Long teamId,
             @Param("keyword") String keyword,
             Pageable pageable
     );

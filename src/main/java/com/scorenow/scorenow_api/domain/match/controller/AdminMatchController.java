@@ -49,10 +49,11 @@ public class AdminMatchController implements AdminMatchApiDocs {
      */
     @GetMapping("/team-candidates")
     public ApiResponse<List<MatchTeamCandidateResponse>> getTeamCandidates(
-            @RequestParam String keyword,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long teamId,
             @RequestParam Long sportId) {
 
-        List<MatchTeamCandidateResponse> result = adminMatchService.getTeamCandidates(keyword, sportId);
+        List<MatchTeamCandidateResponse> result = adminMatchService.getTeamCandidates(keyword, teamId, sportId);
         return ApiResponse.success(result);
     }
 
