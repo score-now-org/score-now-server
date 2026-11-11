@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
-public class AdminLoginIntercepter implements HandlerInterceptor {
+public class AdminLoginInterceptor implements HandlerInterceptor {
     private final AdminTokenStore tokenStore;
 
-    public AdminLoginIntercepter(AdminTokenStore tokenStore) {
+    public AdminLoginInterceptor(AdminTokenStore tokenStore) {
         this.tokenStore = tokenStore;
     }
 
@@ -17,11 +17,6 @@ public class AdminLoginIntercepter implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response,
                              Object handler) throws Exception {
-        String uri = request.getRequestURI();
-        // 로그인은 통과
-        if (uri.equals("/admin/login")) {
-            return true;
-        }
         String token = request.getHeader("Authorization");
         if (token != null && tokenStore.isValid(token)) {
             return true;
