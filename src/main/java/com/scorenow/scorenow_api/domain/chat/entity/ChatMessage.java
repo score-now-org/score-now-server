@@ -14,7 +14,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "chat_messages", indexes = {@Index(name = "idx_chat_messages_match_id_id", columnList = "match_id, id")})
+@Table(name = "chat_messages", indexes = {
+        @Index(name = "idx_chat_messages_match_id_id", columnList = "match_id, id"),
+        @Index(name = "idx_chat_messages_report_count_id", columnList = "report_count, id")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMessage extends BaseEntity {

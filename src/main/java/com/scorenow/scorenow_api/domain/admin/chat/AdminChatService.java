@@ -1,6 +1,11 @@
 package com.scorenow.scorenow_api.domain.admin.chat;
 
 import java.util.Locale;
+import java.util.ArrayList;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+import com.scorenow.scorenow_api.domain.chat.entity.ChatMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,8 +41,27 @@ public class AdminChatService {
                 || pageable.getSort().stream().anyMatch(order -> !order.getProperty().equals("id"))) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         }
-        return chatMessageRepository.findForAdmin(memberId, matchId, sportId, pattern(socialId), pattern(nickname), reportedOnly, imageOnly, pageable)
-                .map(AdminChatMessageResponse::from);
+        String socialIdPattern = pattern(socialId);
+        String nicknamePattern = pattern(nickname);
+        Specification<ChatMessage> filter = (chat, query, cb) -> {
+            var predicates = new ArrayList<Predicate>();
+            var user = chat.join("user", JoinType.LEFT);
+            if (memberId != null) predicates.add(cb.equal(user.get("id"), memberId));
+            if (matchId != null) predicates.add(cb.equal(chat.get("match").get("id"), matchId));
+            if (sportId != null) predicates.add(cb.equal(chat.get("match").get("sportId"), sportId));
+            if (socialIdPattern != null) predicates.add(cb.like(cb.lower(user.get("socialId")), socialIdPattern, '!'));
+            if (nicknamePattern != null) {
+                var displayNickname = cb.coalesce(user.<String>get("nickname"), chat.<String>get("senderNickname"));
+                predicates.add(cb.like(cb.lower(displayNickname), nicknamePattern, '!'));
+            }
+            if (reportedOnly) predicates.add(cb.gt(chat.<Long>get("reportCount"), 0L));
+            if (imageOnly) {
+                predicates.add(cb.isNotNull(chat.get("imageUrl")));
+                predicates.add(cb.isNull(chat.get("deletedAt")));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+        return chatMessageRepository.findAll(filter, pageable).map(AdminChatMessageResponse::from);
     }
 
     @Transactional

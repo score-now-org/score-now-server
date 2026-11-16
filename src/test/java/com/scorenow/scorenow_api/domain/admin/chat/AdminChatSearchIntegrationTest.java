@@ -47,6 +47,18 @@ class AdminChatSearchIntegrationTest {
         assertThat(service.getMessages(second.getId(), null, null, null, null, false, false, PageRequest.of(0, 15)).getTotalElements()).isEqualTo(1);
     }
 
+    @Test void nicknameSearchFindsSnapshotWhenUserWasRemoved() {
+        User author = User.builder().provider("test").socialId("old-user").nickname("이전닉네임").status(UserStatus.ACTIVE).build();
+        Match match = Match.builder().sportId(1L).build();
+        em.persist(author); em.persist(match);
+        ChatMessage chat = ChatMessage.create(match, author, "메시지");
+        em.persist(chat); em.flush();
+        em.createNativeQuery("update chat_messages set user_id = null where id = :id").setParameter("id", chat.getId()).executeUpdate();
+        em.clear();
+        var page = service.getMessages(null, null, null, null, "이전닉네임", false, false, PageRequest.of(0, 15));
+        assertThat(page.getContent()).extracting("nickname").containsExactly("이전닉네임");
+    }
+
     @Test void reportedImageCanBeModeratedAndDeletedMessagesDisappearFromHistory() {
         User sender = User.builder().provider("test").socialId("sender").nickname("sender").status(UserStatus.ACTIVE).build();
         User reporter = User.builder().provider("test").socialId("reporter").nickname("reporter").status(UserStatus.ACTIVE).build();
@@ -90,5 +102,19 @@ class AdminChatSearchIntegrationTest {
     @Test void rejectsInvalidPageSize() {
         assertThatThrownBy(() -> service.getMessages(null, null, null, null, null, false, false, PageRequest.of(0, 101)))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test void deletingAnImageDoesNotRemoveTheSameImageFromAnotherMessage() {
+        User user = User.builder().provider("test").socialId("shared-image").nickname("fan").status(UserStatus.ACTIVE).build();
+        Match match = Match.builder().sportId(1L).build();
+        em.persist(user); em.persist(match);
+        String sharedUrl = "https://example.test/shared.png";
+        ChatMessage selected = ChatMessage.create(match, user, "첫 번째", sharedUrl);
+        ChatMessage other = ChatMessage.create(match, user, "두 번째", sharedUrl);
+        em.persist(selected); em.persist(other); em.flush();
+        service.deleteImage(selected.getId(), "사유");
+        em.flush(); em.clear();
+        assertThat(messages.findById(selected.getId()).orElseThrow().getImageUrl()).isNull();
+        assertThat(messages.findById(other.getId()).orElseThrow().getImageUrl()).isEqualTo(sharedUrl);
     }
 }

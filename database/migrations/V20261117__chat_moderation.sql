@@ -7,6 +7,8 @@ ALTER TABLE chat_messages
     ADD COLUMN image_deletion_reason VARCHAR(500) NULL,
     ADD COLUMN report_count BIGINT NULL;
 
+CREATE INDEX idx_chat_messages_report_count_id ON chat_messages (report_count, id);
+
 CREATE TABLE chat_message_reports (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     message_id BIGINT NOT NULL,

@@ -11,7 +11,7 @@ public record AdminChatMessageResponse(Long chatId, Long matchId, Long sportId, 
         User user = chat.getUser();
         return new AdminChatMessageResponse(chat.getId(), chat.getMatchId(), chat.getMatch().getSportId(),
                 chat.getUserId(), user == null ? null : user.getSocialId(),
-                user == null ? chat.getSenderNickname() : user.getNickname(),
+                user == null || user.getNickname() == null ? chat.getSenderNickname() : user.getNickname(),
                 user == null ? null : user.getProfileImageUrl(),
                 user == null ? null : user.getWarningCnt(), user == null ? null : user.getCountryCode(),
                 chat.getMessage(), chat.getImageUrl(), chat.getReportCount() == null ? 0L : chat.getReportCount(),
