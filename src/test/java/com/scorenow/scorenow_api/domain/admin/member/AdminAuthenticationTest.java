@@ -22,6 +22,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
+import com.scorenow.scorenow_api.domain.admin.chat.AdminChatController;
+import com.scorenow.scorenow_api.domain.admin.chat.AdminChatService;
 import com.scorenow.scorenow_api.domain.admin.member.controller.AdminLoginController;
 import com.scorenow.scorenow_api.domain.admin.member.controller.AdminMemberController;
 import com.scorenow.scorenow_api.domain.admin.member.service.AdminMemberService;
@@ -30,7 +32,7 @@ import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.global.config.SecurityConfig;
 
-@WebMvcTest({AdminLoginController.class, AdminMemberController.class})
+@WebMvcTest({AdminLoginController.class, AdminMemberController.class, AdminChatController.class})
 @Import(SecurityConfig.class)
 class AdminAuthenticationTest {
     @Autowired MockMvc mvc;
@@ -38,6 +40,7 @@ class AdminAuthenticationTest {
     @MockBean AdminTokenStore tokens;
     @MockBean AdminMemberService members;
     @MockBean MemberModerationService moderation;
+    @MockBean AdminChatService chat;
     @MockBean JwtProvider jwt;
     @MockBean UserRepository users;
     @MockBean JpaMetamodelMappingContext jpa;
@@ -72,6 +75,21 @@ class AdminAuthenticationTest {
         mvc.perform(get("/admin/test").header("Authorization", token)).andExpect(status().isOk());
         mvc.perform(post("/api/v1/admin/logout").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
         mvc.perform(get("/api/v1/admin/session").header("Authorization", "Bearer " + token)).andExpect(status().isUnauthorized());
+    }
+    @Test void moderationEndpointsRequireAdminAndValidateReason() throws Exception {
+        mvc.perform(post("/api/v1/admin/members/1/actions").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"BAN\",\"reason\":\"test\"}")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/admin/chat/messages/1/delete").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"test\"}")).andExpect(status().isUnauthorized());
+        String token = "00000000-0000-0000-0000-000000000001";
+        sessions.add(token);
+        mvc.perform(post("/api/v1/admin/chat/messages/1/delete").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/admin/chat/messages/1/delete").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"test\"}"))
+                .andExpect(status().isOk());
+        verify(chat).delete(1L, "test");
     }
     @Test void inputValidationRejectsBlankPassword() throws Exception {
         mvc.perform(post("/api/v1/admin/login").contentType(MediaType.APPLICATION_JSON)
