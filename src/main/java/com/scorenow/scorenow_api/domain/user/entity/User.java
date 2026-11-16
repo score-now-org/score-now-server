@@ -39,6 +39,18 @@ public class User extends BaseEntity {
     private UserStatus status;
 
     private LocalDateTime deletedAt; // 탈퇴일자
+    @Column(length = 500)
+    private String warningReason;
+    private LocalDateTime warnedAt;
+    @Column(length = 500)
+    private String permanentWithdrawalReason;
+    private LocalDateTime permanentlyWithdrawnAt;
+    @Enumerated(EnumType.STRING)
+    private UserStatus statusBeforePermanentWithdrawal;
+    private Long tokenVersion;
+
+    public long currentTokenVersion() { return tokenVersion == null ? 0L : tokenVersion; }
+    public void revokeTokens() { tokenVersion = currentTokenVersion() + 1; }
 
     @Column(name = "nickname_updated_at")
     private LocalDateTime nicknameUpdateAt; // 닉네임 마지막 업데이트일자
