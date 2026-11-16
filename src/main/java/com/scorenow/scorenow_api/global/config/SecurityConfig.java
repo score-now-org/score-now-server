@@ -1,6 +1,8 @@
 package com.scorenow.scorenow_api.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scorenow.scorenow_api.domain.admin.member.component.AdminAuthenticationFilter;
+import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtAuthenticationFilter;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -37,8 +40,22 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final AdminTokenStore adminTokenStore;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
+        return configureCommonSecurity(http)
+                .securityMatcher("/api/v1/admin/**", "/admin/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/login", "/admin/login").permitAll()
+                        .anyRequest().hasRole("ADMIN"))
+                .addFilterBefore(new AdminAuthenticationFilter(adminTokenStore), UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         configureCommonSecurity(http)
                 .authorizeHttpRequests(auth -> auth
@@ -71,7 +88,6 @@ public class SecurityConfig {
                                 "/ws"
                         ).permitAll()
                         .requestMatchers("/api/v1/app/**").permitAll()    // 앱 전용 API 접근 허용
-                        .requestMatchers("/api/v1/admin/**", "/admin/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

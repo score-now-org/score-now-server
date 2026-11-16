@@ -26,6 +26,16 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Verify admin login configuration
+        env:
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
+        run: |
+          if [ -z "$ADMIN_ID" ] || [ -z "$ADMIN_PASSWORD_HASH" ]; then
+            echo "관리자 로그인 비밀 설정이 누락되었습니다." >&2
+            exit 1
+          fi
+
       - name: Configure Docker
         run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
@@ -36,13 +46,17 @@ jobs:
           docker push asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID}}/scorenow-repo/scorenow-api:latest
 
       - name: Deploy to Cloud Run
+        env:
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
         run: |
           gcloud run deploy scorenow-api \
             --image=asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/scorenow-repo/scorenow-api:${{ github.sha }} \
             --region=asia-northeast3 \
             --network=default \
             --subnet=default \
-            --vpc-egress=private-ranges-only
+            --vpc-egress=private-ranges-only \
+            --update-env-vars="ADMIN_ID=$ADMIN_ID,ADMIN_PASSWORD_HASH=$ADMIN_PASSWORD_HASH"
 
 
 
