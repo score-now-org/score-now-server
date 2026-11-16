@@ -13,13 +13,11 @@ import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.test.web.servlet.MockMvc;
 import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
-import com.scorenow.scorenow_api.domain.admin.member.component.AdminLoginIntercepter;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.domain.user.service.UserReferenceService;
 import com.scorenow.scorenow_api.global.config.SecurityConfig;
-import com.scorenow.scorenow_api.global.config.WebConfig;
-@WebMvcTest(NoticeController.class) @Import({SecurityConfig.class, WebConfig.class, AdminLoginIntercepter.class})
+@WebMvcTest(NoticeController.class) @Import(SecurityConfig.class)
 class NoticeSecurityTest {
  @Autowired MockMvc mvc;
  @MockBean JwtProvider jwtProvider;
@@ -32,8 +30,11 @@ class NoticeSecurityTest {
   when(notices.findPublished(anyCollection(), anyBoolean(), any())).thenReturn(Page.empty());
   mvc.perform(get("/api/v1/notices")).andExpect(status().isOk());
   mvc.perform(get("/admin/notices")).andExpect(status().isUnauthorized());
-  when(adminTokenStore.isValid("valid-admin")).thenReturn(true);
+  when(adminTokenStore.isValid("00000000-0000-0000-0000-000000000001")).thenReturn(true);
   when(notices.findByDeletedFalse(any())).thenReturn(Page.empty());
-  mvc.perform(get("/admin/notices").header("Authorization", "valid-admin")).andExpect(status().isOk());
+  mvc.perform(get("/admin/notices").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(put("/admin/notices/1").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")
+      .contentType("application/json").content("{\"title\":\"title\",\"content\":\"content\",\"ticker\":false,\"visible\":true,\"platform\":\"ALL\",\"sortOrder\":0}"))
+      .andExpect(status().isBadRequest());
  }
 }

@@ -67,7 +67,7 @@ public class NoticeController {
     @PostMapping("/admin/notices/publish") @Transactional
     public ApiResponse<Void> publish() {
         List<Notice> all = notices.findAll();
-        for (Notice n : all) n.publish();
+        for (Notice n : all) if (!n.isDeleted()) n.publish();
         notices.deleteAll(all.stream().filter(Notice::isDeleted).toList());
         return ApiResponse.success();
     }
