@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.http.MediaType;
@@ -36,7 +38,9 @@ import com.scorenow.scorenow_api.global.exception.*;
 
 import jakarta.persistence.EntityManager;
 
-@DataJpaTest
+// Include the comment filter when that independently developed feature is present.
+@DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.REGEX,
+    pattern = "com\\.scorenow\\.scorenow_api\\.domain\\.admin\\.forbiddenword\\.ForbiddenWordFilter"))
 @Import({QueryDslConfig.class, AuthService.class, UserReferenceService.class, CommunityPostQueryService.class,
     CommunityCommentService.class, CommunityReferenceService.class, CommunityAuthService.class})
 class CommunityNicknameIntegrationTest {
