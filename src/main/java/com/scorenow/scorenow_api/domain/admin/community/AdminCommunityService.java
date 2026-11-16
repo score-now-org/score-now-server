@@ -65,7 +65,7 @@ public class AdminCommunityService {
         Specification<CommunityComment> spec = (comment, query, cb) -> {
             var predicates = new ArrayList<Predicate>();
             var author = comment.join("author");
-            if (keywordPattern != null) predicates.add(cb.or(cb.like(cb.lower(cb.function("str", String.class, comment.get("content"))), keywordPattern, '!'),
+            if (keywordPattern != null) predicates.add(cb.or(cb.like(cb.lower(comment.get("content").as(String.class)), keywordPattern, '!'),
                     cb.like(cb.lower(comment.get("post").get("title")), keywordPattern, '!')));
             if (socialPattern != null) predicates.add(cb.like(cb.lower(author.get("socialId")), socialPattern, '!'));
             if (nicknamePattern != null) predicates.add(cb.like(cb.lower(displayNickname(cb, author.get("nickname"), comment.get("authorNickname"))), nicknamePattern, '!'));
@@ -100,7 +100,7 @@ public class AdminCommunityService {
     private Map<Long, String> imageUrls(List<Long> ids) {
         if (ids.isEmpty()) return Map.of();
         Map<Long, String> urls = new HashMap<>();
-        for (CommunityPostImage image : images.findByPost_IdInOrderByPost_IdAscSortOrderAsc(ids)) {
+        for (CommunityPostImage image : images.findFirstImagesByPostIds(ids)) {
             Long postId = image.getPost().getId();
             if (!urls.containsKey(postId)) urls.put(postId, storage.getFileUrl(image.getImageKey()));
         }

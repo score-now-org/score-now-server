@@ -30,6 +30,7 @@ class AdminCommunityIntegrationTest {
     @Autowired AdminCommunityService service;
     @Autowired CommunityPostRepository posts;
     @Autowired CommunityCommentRepository comments;
+    @Autowired CommunityPostImageRepository images;
     @MockBean(name = "mongoMappingContext") MongoMappingContext mongo;
     @MockBean JPAQueryFactory queryFactory;
     @MockBean FileStorage storage;
@@ -96,6 +97,17 @@ class AdminCommunityIntegrationTest {
                 .extracting("nickname").containsExactly("익명");
         assertThat(service.comments(null, null, "익명", null, null, page).getContent())
                 .extracting("nickname").containsExactly("익명");
+    }
+
+    @Test void retrievesOnlyTheEarliestImageForEachPostEvenWhenOrderingStartsAboveZero() {
+        User author = user("images", "팬");
+        CommunityPost first = post(author, "첫 글"), second = post(author, "둘째 글");
+        em.persist(CommunityPostImage.create(first, "first-key", 2));
+        em.persist(CommunityPostImage.create(first, "later-key", 5));
+        em.persist(CommunityPostImage.create(second, "second-key", 0));
+        em.flush(); em.clear();
+        assertThat(images.findFirstImagesByPostIds(List.of(first.getId(), second.getId())))
+                .extracting("imageKey").containsExactly("first-key", "second-key");
     }
 
     private User user(String socialId, String nickname) {
