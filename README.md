@@ -213,3 +213,11 @@ Feat: 예정 경기 동기화 배치 구현
 Fix: 인플레이 감지 스케줄러 NPE 수정
 ```
 
+
+## 관리자 로그인 설정
+
+- `ADMIN_ID`: 관리자 아이디
+- `ADMIN_PASSWORD_HASH`: 관리자 비밀번호의 BCrypt 해시 (평문을 저장하지 않음)
+- `admin.token-ttl-seconds`: 관리자 세션 만료 시간(초, 기본 28800). 토큰은 Redis에 저장됩니다.
+
+두 관리자 계정 설정이 없으면 관리자 로그인은 503을 반환합니다. dev 배포 워크플로는 GitHub Actions 비밀 설정 `ADMIN_ID`, `ADMIN_PASSWORD_HASH`를 Cloud Run 환경변수로 전달하며, 두 값 중 하나라도 누락되면 배포를 중단합니다. 관리자 API는 `/api/v1/admin/**`과 `/admin/**`에서 관리자 토큰이 필요하며, 로그인 요청만 예외입니다. 로그인 응답의 토큰은 `Authorization: Bearer <token>` 또는 기존 `Authorization: <token>`으로 전달합니다. `GET /api/v1/admin/session`으로 세션을 확인하고 `POST /api/v1/admin/logout`으로 폐기합니다.
