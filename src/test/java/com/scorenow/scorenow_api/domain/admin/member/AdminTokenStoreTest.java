@@ -18,8 +18,10 @@ class AdminTokenStoreTest {
         store.add(token);
         verify(values).set("adminToken:" + token, "admin", Duration.ofHours(8));
         assertThat(AdminTokenStore.resolveToken("Bearer " + token)).isEqualTo(token);
+        assertThat(AdminTokenStore.resolveToken("  bEaReR " + token.toUpperCase() + "  ")).isEqualTo(token);
         assertThat(AdminTokenStore.resolveToken(token)).isEqualTo(token);
         assertThat(AdminTokenStore.resolveToken("Bearer user.jwt.token")).isNull();
+        assertThat(AdminTokenStore.resolveToken("Bearer 1-1-1-1-1")).isNull();
         assertThat(store.isValid(null)).isFalse();
         store.delete(token);
         verify(redis).delete("adminToken:" + token);

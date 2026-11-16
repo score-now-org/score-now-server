@@ -37,7 +37,7 @@ public class AdminLoginController {
     @Operation(summary = "관리자 로그인")
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@Valid @RequestBody AdminLoginRequestDto request) {
-        if (request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+        if (request.getPassword() == null || request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "관리자 비밀번호는 72바이트 이하여야 합니다.");
         }
         if (!StringUtils.hasText(adminId) || !StringUtils.hasText(passwordHash)
