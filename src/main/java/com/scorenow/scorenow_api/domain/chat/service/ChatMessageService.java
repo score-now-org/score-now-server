@@ -1,6 +1,12 @@
 package com.scorenow.scorenow_api.domain.chat.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import java.util.List;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityUploadedImageRepository;
+import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
+import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.chat.dto.ChatMessageRequest;
@@ -21,6 +27,8 @@ public class ChatMessageService {
 	private final MatchReferenceService matchReferenceService;
 	private final ChatMessageRepository chatMessageRepository;
 	private final UserReferenceService userReferenceService;
+	private final CommunityUploadedImageRepository uploadedImages;
+	private final FileStorage fileStorage;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long matchId, Long userId, ChatMessageRequest request) {
@@ -29,7 +37,14 @@ public class ChatMessageService {
 
 		User sendUser = userReferenceService.requireActiveUser(userId);
 
-		ChatMessage chatMessage = ChatMessage.create(match, sendUser, request.getMessage());
+		String imageUrl = null;
+		if (StringUtils.hasText(request.getImageKey())) {
+			String imageKey = request.getImageKey().trim();
+			if (uploadedImages.countByImageKeyInAndOwner_Id(List.of(imageKey), userId) != 1)
+				throw new BusinessException(ErrorCode.COMMUNITY_IMAGE_INVALID);
+			imageUrl = fileStorage.getFileUrl(imageKey);
+		}
+		ChatMessage chatMessage = ChatMessage.create(match, sendUser, request.getMessage(), imageUrl);
 
 		ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 

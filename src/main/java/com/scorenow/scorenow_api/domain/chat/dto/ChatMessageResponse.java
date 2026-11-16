@@ -28,6 +28,7 @@ public class ChatMessageResponse {
 
 	@Schema(description = "채팅 내용", example = "이게 프로 경기가 맞나요?")
 	private String message;
+	private String imageUrl;
 
 	@Schema(description = "메시지 생성 시각", example = "2026-09-14T12:30:00", type = "string", format = "date-time")
 	private LocalDateTime createdAt;
@@ -41,6 +42,7 @@ public class ChatMessageResponse {
 			.senderNickname(chatMessage.getSenderNickname())
 			.profileImageUrl(user != null ? user.getProfileImageUrl() : null)
 			.message(chatMessage.getMessage())
+			.imageUrl(chatMessage.getImageUrl())
 			.createdAt(chatMessage.getCreatedAt())
 			.build();
 	}
