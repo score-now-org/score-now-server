@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.chat.service;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.util.List;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordFilter;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityUploadedImageRepository;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -29,6 +30,7 @@ public class ChatMessageService {
 	private final UserReferenceService userReferenceService;
 	private final CommunityUploadedImageRepository uploadedImages;
 	private final FileStorage fileStorage;
+	private final ForbiddenWordFilter forbiddenWords;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long matchId, Long userId, ChatMessageRequest request) {
@@ -44,7 +46,7 @@ public class ChatMessageService {
 				throw new BusinessException(ErrorCode.COMMUNITY_IMAGE_INVALID);
 			imageUrl = fileStorage.getFileUrl(imageKey);
 		}
-		ChatMessage chatMessage = ChatMessage.create(match, sendUser, request.getMessage(), imageUrl);
+		ChatMessage chatMessage = ChatMessage.create(match, sendUser, forbiddenWords.apply(request.getMessage(), 1000), imageUrl);
 
 		ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 

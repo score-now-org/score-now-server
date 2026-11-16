@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.community.service;
 
 import java.util.List;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordFilter;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class CommunityPostCommandService {
 	private final CommunityPostRepository postRepository;
 	private final CommunityPostImageRepository imageRepository;
 	private final CommunityUploadedImageRepository uploadedImageRepository;
+	private final ForbiddenWordFilter forbiddenWords;
 
 	@Transactional
 	public Long createPost(Long userId, CommunityPostCreateRequest request) {
@@ -39,8 +41,9 @@ public class CommunityPostCommandService {
 		List<String> imageKeys = normalizeImageKeys(request.getImageKeys());
 		validateImageOwnership(loginUserId, imageKeys);
 
-		CommunityPost post = CommunityPost.create(author, request.getCategory(), request.getTitle(),
-			request.getContent());
+		CommunityPost post = CommunityPost.create(author, request.getCategory(),
+			forbiddenWords.apply(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH),
+			forbiddenWords.apply(request.getContent(), CommunityPost.MAX_CONTENT_LENGTH));
 		CommunityPost savedPost = postRepository.save(post);
 		saveImages(savedPost, imageKeys);
 		return savedPost.getId();
@@ -53,7 +56,9 @@ public class CommunityPostCommandService {
 		validateImageOwnership(loginUserId, imageKeys);
 		CommunityPost post = referenceService.requireActivePost(postId);
 
-		post.update(loginUserId, request.getCategory(), request.getTitle(), request.getContent());
+		post.update(loginUserId, request.getCategory(),
+			forbiddenWords.apply(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH),
+			forbiddenWords.apply(request.getContent(), CommunityPost.MAX_CONTENT_LENGTH));
 		imageRepository.deleteByPost(post);
 		saveImages(post, imageKeys);
 	}
