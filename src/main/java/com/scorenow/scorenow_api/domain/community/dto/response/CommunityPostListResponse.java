@@ -29,7 +29,7 @@ public class CommunityPostListResponse {
 			.category(post.getCategory())
 			.categoryName(post.getCategory().getDisplayName())
 			.title(post.getTitle())
-			.authorNickname(post.getAuthorNickname())
+			.authorNickname(post.getCurrentAuthorNickname())
 			.hasImages(hasImages)
 			.viewCount(post.getViewCount())
 			.likeCount(post.getLikeCount())

@@ -28,7 +28,7 @@ public class CommunityCommentResponse {
 			.id(comment.getId())
 			.postId(comment.getPostId())
 			.authorId(comment.getAuthorId())
-			.authorNickname(comment.getAuthorNickname())
+			.authorNickname(comment.getCurrentAuthorNickname())
 			.parentCommentId(comment.getParentCommentId())
 			.rootCommentId(comment.getRootCommentId())
 			.depth(comment.getDepth())
