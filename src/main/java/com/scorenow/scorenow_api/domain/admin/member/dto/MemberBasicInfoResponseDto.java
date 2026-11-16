@@ -25,7 +25,7 @@ public class MemberBasicInfoResponseDto extends MemberListResponseDto {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .deletedAt(user.getDeletedAt())
-                .status(String.valueOf(user.getStatus()))
+                .status(user.getStatus() == null ? null : user.getStatus().name())
                 .warningReason(user.getWarningReason())
                 .warnedAt(user.getWarnedAt())
                 .permanentWithdrawalReason(user.getPermanentWithdrawalReason())
