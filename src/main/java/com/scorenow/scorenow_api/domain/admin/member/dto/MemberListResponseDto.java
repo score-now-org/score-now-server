@@ -18,10 +18,12 @@ public class MemberListResponseDto {
     private Long memberId;
     private String provider;
     private String nickname;
+    private String profileImageUrl;
     private Integer warningCnt;
     private String countryCode;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
     private String status;
 
     public static MemberListResponseDto from(User user) {
@@ -29,10 +31,12 @@ public class MemberListResponseDto {
                 .memberId(user.getId())
                 .provider(user.getProvider())
                 .nickname(user.getNickname())
+                .profileImageUrl(user.getProfileImageUrl())
                 .warningCnt(user.getWarningCnt())
                 .countryCode(user.getCountryCode())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .deletedAt(user.getDeletedAt())
                 .status(String.valueOf(user.getStatus()))
                 .build();
     }

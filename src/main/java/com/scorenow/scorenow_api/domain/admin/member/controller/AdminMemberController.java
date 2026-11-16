@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.admin.member.controller;
 
 import com.scorenow.scorenow_api.domain.admin.member.dto.MemberListResponseDto;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberSearchCondition;
 import com.scorenow.scorenow_api.domain.admin.member.dto.MemberBasicInfoResponseDto;
 import com.scorenow.scorenow_api.domain.admin.member.dto.MemberSecurityInfoResponseDto;
 import com.scorenow.scorenow_api.domain.admin.member.service.AdminMemberService;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,9 +32,9 @@ public class AdminMemberController {
     @Operation(summary = "회원 목록 조회", description = "전체 회원 목록을 페이징으로 조회합니다.")
     @GetMapping
     public ApiResponse<Page<MemberListResponseDto>> getMembers(
-            @PageableDefault(size = 15) Pageable pageable
+            MemberSearchCondition condition, @PageableDefault(size = 15, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponse.success(adminMemberService.getMembers(pageable));
+        return ApiResponse.success(adminMemberService.getMembers(condition, pageable));
     }
 
 
