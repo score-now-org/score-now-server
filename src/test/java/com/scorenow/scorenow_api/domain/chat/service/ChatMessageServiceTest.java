@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
+import org.junit.jupiter.api.BeforeEach;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordFilter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,9 +44,14 @@ class ChatMessageServiceTest {
 
 	@Mock private CommunityUploadedImageRepository uploadedImages;
 	@Mock private FileStorage fileStorage;
+	@Mock private ForbiddenWordFilter forbiddenWords;
 
 	@InjectMocks
 	private ChatMessageService chatMessageService;
+
+	@BeforeEach void preserveTextByDefault() {
+		lenient().when(forbiddenWords.apply(any(), anyInt())).thenAnswer(invocation -> invocation.getArgument(0));
+	}
 
 	@Test
 	void createMessage_saves_chat_message_and_returns_response() {
@@ -83,6 +90,26 @@ class ChatMessageServiceTest {
 		assertThat(response.getProfileImageUrl()).isEqualTo("https://cdn.score-now.com/profiles/10.png");
 		assertThat(response.getMessage()).isEqualTo("hello score now");
 		assertThat(response.getCreatedAt()).isEqualTo(createdAt);
+	}
+
+	@Test
+	void createMessage_saves_and_broadcasts_filtered_text() {
+		given(matchReferenceService.requireMatch(1L)).willReturn(Match.builder().id(1L).build());
+		given(userReferenceService.requireActiveUser(10L)).willReturn(User.builder().id(10L).nickname("fan").build());
+		given(forbiddenWords.apply("금칙어", 1000)).willReturn("???");
+		given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> invocation.getArgument(0));
+		assertThat(chatMessageService.createMessage(1L, 10L, request("금칙어")).getMessage()).isEqualTo("???");
+	}
+
+	@Test
+	void oversizedChatKeepsTheExistingErrorAndDoesNotFilterOrSave() {
+		given(matchReferenceService.requireMatch(1L)).willReturn(Match.builder().id(1L).build());
+		given(userReferenceService.requireActiveUser(10L)).willReturn(User.builder().id(10L).nickname("fan").build());
+		assertThatExceptionOfType(BusinessException.class)
+			.isThrownBy(() -> chatMessageService.createMessage(1L, 10L, request("x".repeat(1001))))
+			.satisfies(exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_MESSAGE_LENGTH_EXCEEDED));
+		then(forbiddenWords).shouldHaveNoInteractions();
+		then(chatMessageRepository).should(never()).save(any());
 	}
 
 	@Test
