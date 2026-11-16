@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController @RequiredArgsConstructor
 public class InquiryController {
+    private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
     private final InquiryRepository inquiries;
     private final InquiryImageRepository images;
     private final UserReferenceService users;
@@ -35,7 +36,7 @@ public class InquiryController {
     public ApiResponse<Page<Response>> list(@AuthenticationPrincipal Long userId, @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "20") int size) {
         users.requireActiveUser(userId);
-        return ApiResponse.success(inquiries.findByUser_IdOrderByIdDesc(userId, pagination(page, size)).map(Response::of));
+        return ApiResponse.success(inquiries.findByUser_Id(userId, pagination(page, size)).map(Response::of));
     }
     @GetMapping("/api/v1/inquiries/{id}") @Transactional(readOnly = true)
     public ApiResponse<Response> detail(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
@@ -53,8 +54,7 @@ public class InquiryController {
         byte[] bytes = image.getBytes();
         String type;
         if (bytes.length >= 3 && (bytes[0] & 255) == 0xff && (bytes[1] & 255) == 0xd8 && (bytes[2] & 255) == 0xff) type = "image/jpeg";
-        else if (bytes.length >= 8 && java.util.Arrays.equals(java.util.Arrays.copyOf(bytes, 8),
-                new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a})) type = "image/png";
+        else if (bytes.length >= 8 && java.util.Arrays.equals(bytes, 0, 8, PNG_SIGNATURE, 0, PNG_SIGNATURE.length)) type = "image/png";
         else throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         images.save(new InquiryImage(id, type, bytes));
         inquiry.attachImage();
