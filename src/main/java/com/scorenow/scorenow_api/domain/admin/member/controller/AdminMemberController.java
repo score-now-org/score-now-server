@@ -9,6 +9,15 @@ import com.scorenow.scorenow_api.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import com.scorenow.scorenow_api.domain.admin.member.service.MemberModerationService;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberActionRequest;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberEditRequest;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberModerationEventDto;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -25,6 +34,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminMemberController {
 
     private final AdminMemberService adminMemberService;
+    private final MemberModerationService moderationService;
+
+    @GetMapping("/{id}/moderation-history")
+    public ApiResponse<List<MemberModerationEventDto>> getModerationHistory(@PathVariable Long id) {
+        return ApiResponse.success(moderationService.history(id));
+    }
+    @PostMapping("/{id}/actions")
+    public ApiResponse<MemberBasicInfoResponseDto> act(@PathVariable Long id, @Valid @RequestBody MemberActionRequest request) {
+        return ApiResponse.success(moderationService.act(id, request));
+    }
+    @PatchMapping("/{id}")
+    public ApiResponse<MemberBasicInfoResponseDto> edit(@PathVariable Long id, @Valid @RequestBody MemberEditRequest request) {
+        return ApiResponse.success(moderationService.edit(id, request));
+    }
 
     /**
      * 회원 목록 전체 조회 (페이징)

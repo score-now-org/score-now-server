@@ -26,6 +26,10 @@ public class MemberListResponseDto {
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
     private String status;
+    private String warningReason;
+    private LocalDateTime warnedAt;
+    private String permanentWithdrawalReason;
+    private LocalDateTime permanentlyWithdrawnAt;
 
     public static MemberListResponseDto from(User user) {
         return MemberListResponseDto.builder()
@@ -40,6 +44,10 @@ public class MemberListResponseDto {
                 .updatedAt(user.getUpdatedAt())
                 .deletedAt(user.getDeletedAt())
                 .status(String.valueOf(user.getStatus()))
+                .warningReason(user.getWarningReason())
+                .warnedAt(user.getWarnedAt())
+                .permanentWithdrawalReason(user.getPermanentWithdrawalReason())
+                .permanentlyWithdrawnAt(user.getPermanentlyWithdrawnAt())
                 .build();
     }
 }

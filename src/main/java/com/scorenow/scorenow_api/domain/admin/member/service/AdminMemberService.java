@@ -59,7 +59,9 @@ public class AdminMemberService {
             }
             if (condition.getMemberId() != null) predicates.add(cb.equal(user.get("id"), condition.getMemberId()));
             if (StringUtils.hasText(condition.getProvider())) predicates.add(cb.equal(cb.lower(user.get("provider")), condition.getProvider().trim().toLowerCase(Locale.ROOT)));
+            if (Boolean.TRUE.equals(condition.getHasProfileImage())) predicates.add(cb.and(cb.isNotNull(user.get("profileImageUrl")), cb.notEqual(user.get("profileImageUrl"), "")));
             if (status != null) predicates.add(cb.equal(user.get("status"), status));
+            if (Boolean.TRUE.equals(condition.getExcludeWithdrawn())) predicates.add(cb.not(user.get("status").in(UserStatus.DELETED, UserStatus.PERMANENTLY_WITHDRAWN)));
             if (condition.getMinWarningCnt() != null) predicates.add(cb.ge(cb.coalesce(user.<Integer>get("warningCnt"), 0), condition.getMinWarningCnt()));
             if (condition.getCreatedFrom() != null) predicates.add(cb.greaterThanOrEqualTo(user.get("createdAt"), condition.getCreatedFrom().atStartOfDay()));
             if (condition.getCreatedTo() != null) predicates.add(cb.lessThan(user.get("createdAt"), condition.getCreatedTo().plusDays(1).atStartOfDay()));

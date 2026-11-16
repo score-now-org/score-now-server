@@ -26,6 +26,10 @@ public class MemberBasicInfoResponseDto extends MemberListResponseDto {
                 .updatedAt(user.getUpdatedAt())
                 .deletedAt(user.getDeletedAt())
                 .status(String.valueOf(user.getStatus()))
+                .warningReason(user.getWarningReason())
+                .warnedAt(user.getWarnedAt())
+                .permanentWithdrawalReason(user.getPermanentWithdrawalReason())
+                .permanentlyWithdrawnAt(user.getPermanentlyWithdrawnAt())
                 //자식클래스 빌드
                 .profileImageUrl(user.getProfileImageUrl())
                 .name(user.getName())

@@ -14,6 +14,8 @@ public class MemberSearchCondition {
     private String provider;
     private String status;
     private Integer minWarningCnt;
+    private Boolean excludeWithdrawn;
+    private Boolean hasProfileImage;
     private String ip;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate createdFrom;
