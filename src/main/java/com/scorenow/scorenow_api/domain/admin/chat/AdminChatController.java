@@ -40,6 +40,12 @@ public class AdminChatController {
 
     public record DeleteRequest(@NotBlank @Size(max = 500) String reason) { }
 
+    @PostMapping("/{id}/image/delete")
+    public ApiResponse<Void> deleteImage(@PathVariable Long id, @Valid @RequestBody DeleteRequest request) {
+        adminChatService.deleteImage(id, request.reason());
+        return ApiResponse.success();
+    }
+
     @PostMapping("/{id}/delete")
     public ApiResponse<Void> delete(@PathVariable Long id, @Valid @RequestBody DeleteRequest request) {
         adminChatService.delete(id, request.reason());

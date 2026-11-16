@@ -3,6 +3,8 @@ ALTER TABLE chat_messages
     ADD COLUMN image_url VARCHAR(1000) NULL,
     ADD COLUMN deleted_at DATETIME(6) NULL,
     ADD COLUMN deletion_reason VARCHAR(500) NULL,
+    ADD COLUMN image_removed_at DATETIME(6) NULL,
+    ADD COLUMN image_deletion_reason VARCHAR(500) NULL,
     ADD COLUMN report_count BIGINT NULL;
 
 CREATE TABLE chat_message_reports (

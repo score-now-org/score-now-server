@@ -48,6 +48,14 @@ public class AdminChatService {
         message.markDeleted(reason.trim());
     }
 
+    @Transactional
+    public void deleteImage(Long id, String reason) {
+        if (!StringUtils.hasText(reason) || reason.length() > 500) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        var message = chatMessageRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        message.removeImage(reason.trim());
+    }
+
     private String pattern(String value) {
         if (!StringUtils.hasText(value)) return null;
         return "%" + value.trim().toLowerCase(Locale.ROOT)

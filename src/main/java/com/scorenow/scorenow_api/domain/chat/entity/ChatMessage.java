@@ -46,7 +46,19 @@ public class ChatMessage extends BaseEntity {
 	private LocalDateTime deletedAt;
 	@Column(length = 500)
 	private String deletionReason;
+	private LocalDateTime imageRemovedAt;
+	@Column(length = 500)
+	private String imageDeletionReason;
 	private Long reportCount;
+
+	public void removeImage(String reason) {
+		if (imageUrl == null || imageUrl.isBlank() || deletedAt != null)
+			throw new BusinessException(ErrorCode.INVALID_PARAMETER, "삭제할 채팅 사진이 없습니다.");
+		imageUrl = null;
+		imageRemovedAt = LocalDateTime.now();
+		imageDeletionReason = reason;
+		if (message == null || message.isBlank()) markDeleted(reason);
+	}
 
 	public void markReported() { reportCount = (reportCount == null ? 0 : reportCount) + 1; }
 	public void markDeleted(String reason) {

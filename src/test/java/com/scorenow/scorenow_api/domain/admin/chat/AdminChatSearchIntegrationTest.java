@@ -70,6 +70,23 @@ class AdminChatSearchIntegrationTest {
         assertThat(service.getMessages(null, null, null, null, null, true, false, PageRequest.of(0, 15)).getContent().get(0).deleted()).isTrue();
     }
 
+    @Test void deletingAnImagePreservesChatTextAndHidesEmptyPhotoOnlyMessages() {
+        User user = User.builder().provider("test").socialId("image-user").nickname("fan").status(UserStatus.ACTIVE).build();
+        Match match = Match.builder().sportId(1L).build();
+        em.persist(user); em.persist(match);
+        ChatMessage textAndImage = ChatMessage.create(match, user, "응원 메시지", "https://example.test/a.png");
+        ChatMessage imageOnly = ChatMessage.create(match, user, "", "https://example.test/b.png");
+        em.persist(textAndImage); em.persist(imageOnly); em.flush();
+        service.deleteImage(textAndImage.getId(), "사유");
+        service.deleteImage(imageOnly.getId(), "사유");
+        em.flush(); em.clear();
+        var remaining = messages.findByMatch_IdOrderByIdDesc(match.getId(), PageRequest.of(0, 10));
+        assertThat(remaining).hasSize(1);
+        assertThat(remaining.get(0).getMessage()).isEqualTo("응원 메시지");
+        assertThat(remaining.get(0).getImageUrl()).isNull();
+        assertThat(service.getMessages(null, null, null, null, null, false, true, PageRequest.of(0, 15)).getTotalElements()).isZero();
+    }
+
     @Test void rejectsInvalidPageSize() {
         assertThatThrownBy(() -> service.getMessages(null, null, null, null, null, false, false, PageRequest.of(0, 101)))
                 .isInstanceOf(BusinessException.class);
