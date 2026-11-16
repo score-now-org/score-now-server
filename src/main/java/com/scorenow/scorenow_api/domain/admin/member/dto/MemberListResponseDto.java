@@ -18,6 +18,7 @@ public class MemberListResponseDto {
     private Long memberId;
     private String provider;
     private String nickname;
+    private String socialId;
     private String profileImageUrl;
     private Integer warningCnt;
     private String countryCode;
@@ -31,6 +32,7 @@ public class MemberListResponseDto {
                 .memberId(user.getId())
                 .provider(user.getProvider())
                 .nickname(user.getNickname())
+                .socialId(user.getSocialId())
                 .profileImageUrl(user.getProfileImageUrl())
                 .warningCnt(user.getWarningCnt())
                 .countryCode(user.getCountryCode())

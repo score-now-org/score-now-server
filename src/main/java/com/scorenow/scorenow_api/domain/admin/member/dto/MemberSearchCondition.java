@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 public class MemberSearchCondition {
     private String nickname;
+    private String socialId;
     private Long memberId;
     private String provider;
     private String status;

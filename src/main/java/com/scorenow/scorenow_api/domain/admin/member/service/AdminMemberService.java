@@ -52,6 +52,11 @@ public class AdminMemberService {
                         .replace("!", "!!").replace("%", "!%").replace("_", "!_");
                 predicates.add(cb.like(cb.lower(user.get("nickname")), "%" + escaped + "%", '!'));
             }
+            if (StringUtils.hasText(condition.getSocialId())) {
+                String escaped = condition.getSocialId().trim().toLowerCase(Locale.ROOT)
+                        .replace("!", "!!").replace("%", "!%").replace("_", "!_");
+                predicates.add(cb.like(cb.lower(user.get("socialId")), "%" + escaped + "%", '!'));
+            }
             if (condition.getMemberId() != null) predicates.add(cb.equal(user.get("id"), condition.getMemberId()));
             if (StringUtils.hasText(condition.getProvider())) predicates.add(cb.equal(cb.lower(user.get("provider")), condition.getProvider().trim().toLowerCase(Locale.ROOT)));
             if (status != null) predicates.add(cb.equal(user.get("status"), status));

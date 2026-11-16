@@ -50,6 +50,18 @@ class AdminMemberSearchIntegrationTest {
         assertThat(service.getMembers(condition, PageRequest.of(0, 10)).getContent())
                 .extracting("memberId").containsExactly(third.getId());
     }
+    @Test void distinguishesPermanentWithdrawalFromBanAndSearchesSocialIdLiterally() {
+        User permanent = user("social%123", "nickname", 0, UserStatus.PERMANENTLY_WITHDRAWN);
+        user("socialX123", "nickname", 0, UserStatus.PERMANENTLY_WITHDRAWN);
+        user("social%123", "nickname", 0, UserStatus.BANNED);
+        em.flush(); em.clear();
+        MemberSearchCondition condition = new MemberSearchCondition();
+        condition.setStatus("permanently_withdrawn");
+        condition.setSocialId("%12");
+        var page = service.getMembers(condition, PageRequest.of(0, 10));
+        assertThat(page.getContent()).extracting("memberId").containsExactly(permanent.getId());
+        assertThat(page.getContent().get(0).getSocialId()).isEqualTo("social%123");
+    }
     @Test void rejectsInvalidFilters() {
         MemberSearchCondition condition = new MemberSearchCondition();
         condition.setStatus("unknown");

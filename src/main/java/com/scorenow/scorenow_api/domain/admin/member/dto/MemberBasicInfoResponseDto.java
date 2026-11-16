@@ -11,7 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MemberBasicInfoResponseDto extends MemberListResponseDto {
-    private String socialId;
     private String name;
 
 
