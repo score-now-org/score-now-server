@@ -17,9 +17,9 @@ public class TokenService {
 
     // 로그인시 호출
     public TokenPair createToken(Long userId) {
-        userReferenceService.requireActiveUser(userId);
-        String accessToken = jwtProvider.createAccessToken(userId);
-        String refreshToken = jwtProvider.createRefreshToken(userId);
+        var user = userReferenceService.requireActiveUser(userId);
+        String accessToken = jwtProvider.createAccessToken(userId, user.currentTokenVersion());
+        String refreshToken = jwtProvider.createRefreshToken(userId, user.currentTokenVersion());
 
         // Redis 저장
         refreshTokenRepository.save(
@@ -42,6 +42,10 @@ public class TokenService {
 
         Long userId = jwtProvider.getUserId(refreshToken);
 
+        var user = userReferenceService.requireActiveUser(userId);
+        if (user.currentTokenVersion() != jwtProvider.getTokenVersion(refreshToken)) {
+            throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        }
         if (!refreshTokenRepository.isValid(userId, refreshToken)) {
             refreshTokenRepository.delete(userId);
             throw new BusinessException(ErrorCode.TOKEN_INVALID);

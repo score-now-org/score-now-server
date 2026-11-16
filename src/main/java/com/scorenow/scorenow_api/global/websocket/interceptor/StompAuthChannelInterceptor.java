@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.websocket.principal.StompPrincipal;
 
 @Component
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
@@ -63,8 +64,9 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 	}
 
 	private void validateAuthenticatedUser(Principal user) {
-		if (user == null) {
+		if (!(user instanceof StompPrincipal principal)) {
 			throw new BusinessException(ErrorCode.CHAT_SEND_AUTH_REQUIRED);
 		}
+		stompJwtAuthenticator.validatePrincipal(principal);
 	}
 }

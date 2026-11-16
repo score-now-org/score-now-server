@@ -25,6 +25,7 @@ import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.admin.member.controller.AdminLoginController;
 import com.scorenow.scorenow_api.domain.admin.member.controller.AdminMemberController;
 import com.scorenow.scorenow_api.domain.admin.member.service.AdminMemberService;
+import com.scorenow.scorenow_api.domain.admin.member.service.MemberModerationService;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.global.config.SecurityConfig;
@@ -36,6 +37,7 @@ class AdminAuthenticationTest {
     @Autowired ObjectMapper mapper;
     @MockBean AdminTokenStore tokens;
     @MockBean AdminMemberService members;
+    @MockBean MemberModerationService moderation;
     @MockBean JwtProvider jwt;
     @MockBean UserRepository users;
     @MockBean JpaMetamodelMappingContext jpa;

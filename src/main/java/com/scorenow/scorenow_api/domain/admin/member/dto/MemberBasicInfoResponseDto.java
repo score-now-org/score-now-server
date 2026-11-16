@@ -11,8 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MemberBasicInfoResponseDto extends MemberListResponseDto {
-    private String profileImageUrl;
-    private String socialId;
     private String name;
 
 
@@ -26,7 +24,12 @@ public class MemberBasicInfoResponseDto extends MemberListResponseDto {
                 .countryCode(user.getCountryCode())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .deletedAt(user.getDeletedAt())
                 .status(String.valueOf(user.getStatus()))
+                .warningReason(user.getWarningReason())
+                .warnedAt(user.getWarnedAt())
+                .permanentWithdrawalReason(user.getPermanentWithdrawalReason())
+                .permanentlyWithdrawnAt(user.getPermanentlyWithdrawnAt())
                 //자식클래스 빌드
                 .profileImageUrl(user.getProfileImageUrl())
                 .name(user.getName())
