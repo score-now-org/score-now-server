@@ -11,6 +11,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.scorenow.scorenow_api.domain.admin.member.dto.MemberSearchCondition;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberListResponseDto;
+import com.scorenow.scorenow_api.domain.admin.member.dto.MemberBasicInfoResponseDto;
 import com.scorenow.scorenow_api.domain.admin.member.service.AdminMemberService;
 import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.entity.UserLoginHistory;
@@ -61,6 +63,11 @@ class AdminMemberSearchIntegrationTest {
         var page = service.getMembers(condition, PageRequest.of(0, 10));
         assertThat(page.getContent()).extracting("memberId").containsExactly(permanent.getId());
         assertThat(page.getContent().get(0).getSocialId()).isEqualTo("social%123");
+    }
+    @Test void missingStatusIsReturnedAsNullNotTheTextNull() {
+        User user = User.builder().provider("test").socialId("missing-status").build();
+        assertThat(MemberListResponseDto.from(user).getStatus()).isNull();
+        assertThat(MemberBasicInfoResponseDto.from(user).getStatus()).isNull();
     }
     @Test void rejectsInvalidFilters() {
         MemberSearchCondition condition = new MemberSearchCondition();
