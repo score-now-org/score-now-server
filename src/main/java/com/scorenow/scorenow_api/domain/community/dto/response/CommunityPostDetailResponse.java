@@ -40,7 +40,7 @@ public class CommunityPostDetailResponse {
 			.title(post.getTitle())
 			.content(post.getContent())
 			.authorId(post.getAuthor().getId())
-			.authorNickname(post.getAuthorNickname())
+			.authorNickname(post.getCurrentAuthorNickname())
 			.viewCount(post.getViewCount())
 			.likeCount(post.getLikeCount())
 			.dislikeCount(post.getDislikeCount())
