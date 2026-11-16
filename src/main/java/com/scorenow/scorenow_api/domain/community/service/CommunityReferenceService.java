@@ -27,6 +27,12 @@ public class CommunityReferenceService {
 			.orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
 	}
 
+	@Transactional
+	public CommunityPost requireActivePostForUpdate(Long postId) {
+		return postRepository.findByIdAndStatusForUpdate(postId, CommunityPostStatus.ACTIVE)
+			.orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
+	}
+
 	public CommunityComment requireActiveComment(Long commentId) {
 		return commentRepository.findByIdAndStatus(commentId, CommunityCommentStatus.ACTIVE)
 			.orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));

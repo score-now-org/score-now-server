@@ -54,7 +54,7 @@ public class CommunityPostCommandService {
 		Long loginUserId = authService.requireLogin(userId);
 		List<String> imageKeys = normalizeImageKeys(request.getImageKeys());
 		validateImageOwnership(loginUserId, imageKeys);
-		CommunityPost post = referenceService.requireActivePost(postId);
+		CommunityPost post = referenceService.requireActivePostForUpdate(postId);
 
 		var filtered = forbiddenWords.applyPair(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH,
 			request.getContent(), CommunityPost.MAX_CONTENT_LENGTH);
@@ -66,7 +66,7 @@ public class CommunityPostCommandService {
 	@Transactional
 	public void deletePost(Long postId, Long userId) {
 		Long loginUserId = authService.requireLogin(userId);
-		CommunityPost post = referenceService.requireActivePost(postId);
+		CommunityPost post = referenceService.requireActivePostForUpdate(postId);
 		post.delete(loginUserId);
 	}
 
