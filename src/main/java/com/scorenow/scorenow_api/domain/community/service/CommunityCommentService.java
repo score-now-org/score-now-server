@@ -1,8 +1,9 @@
 package com.scorenow.scorenow_api.domain.community.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
-import java.time.LocalDateTime;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordFilter;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +42,7 @@ public class CommunityCommentService {
 	private final CommunityCommentRepository commentRepository;
 	private final CommunityCommentReactionRepository reactionRepository;
 	private final CommunityPostRepository postRepository;
+	private final ForbiddenWordFilter forbiddenWords;
 
 	@Transactional(readOnly = true)
 	public CommunityCommentSliceResponse getComments(Long postId, Long userId, CommunityCommentSort sort,
@@ -84,7 +86,7 @@ public class CommunityCommentService {
 		CommunityComment parentComment = referenceService.requireActiveParentComment(postId, request.getParentCommentId());
 
 		CommunityComment savedComment = commentRepository.save(
-			CommunityComment.create(post, author, parentComment, request.getContent())
+			CommunityComment.create(post, author, parentComment, forbiddenWords.apply(request.getContent(), CommunityComment.MAX_CONTENT_LENGTH))
 		);
 		CommunityCommentResponse response = CommunityCommentResponse.of(savedComment, false);
 		validateUpdatedPost(postRepository.increaseCommentCount(postId, CommunityPostStatus.ACTIVE));

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.scorenow.scorenow_api.domain.community.dto.request.CommunityPostUpdateRequest;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordFilter;
 import com.scorenow.scorenow_api.domain.community.entity.*;
 import com.scorenow.scorenow_api.domain.community.repository.CommunityPostRepository;
 import com.scorenow.scorenow_api.domain.community.service.*;
@@ -30,7 +31,7 @@ import jakarta.persistence.EntityManager;
 
 @DataJpaTest
 @Import({AdminCommunityService.class, CommunityCommentService.class, CommunityPostCommandService.class,
-        CommunityReferenceService.class, CommunityAuthService.class, UserReferenceService.class})
+        CommunityReferenceService.class, CommunityAuthService.class, UserReferenceService.class, ForbiddenWordFilter.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class AdminCommunityConcurrencyTest {
     @Autowired EntityManager em;
