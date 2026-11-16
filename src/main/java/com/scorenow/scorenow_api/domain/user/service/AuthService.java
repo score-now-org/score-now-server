@@ -131,7 +131,8 @@ public class AuthService {
         public RegisterNicknameDto registerNickname(Long id, RegisterNicknameRequestDto request) {
                 User user = userReferenceService.requireActiveUser(id);
                 String nickname = request.getNickname() == null ? "" : request.getNickname().trim();
-                if (!StringUtils.hasText(nickname) || nickname.length() > 8) {
+                if (!StringUtils.hasText(nickname) || nickname.length() > 255
+                                || !nickname.matches(RegisterNicknameRequestDto.NICKNAME_PATTERN)) {
                         throw new BusinessException(ErrorCode.INVALID_PARAMETER, "닉네임은 1~8자로 입력해 주세요.");
                 }
 

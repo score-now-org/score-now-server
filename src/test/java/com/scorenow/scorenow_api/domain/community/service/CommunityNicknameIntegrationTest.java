@@ -125,6 +125,25 @@ class CommunityNicknameIntegrationTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.newNickname").value("가나다라마바사아"));
     }
 
+    @Test void nicknameLengthCountsEmojiAndCombinedCharacters() throws Exception {
+        User author = user("emoji", "원래이름");
+        em.flush();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(author.getId(), null, List.of()));
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, tokenService))
+            .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+            .setControllerAdvice(new GlobalExceptionHandler()).build();
+        String emoji = "😀";
+        String combined = "e\u0301";
+        assertThat(combined.repeat(8).matches(RegisterNicknameRequestDto.NICKNAME_PATTERN)).isTrue();
+        assertThat(combined.repeat(9).matches(RegisterNicknameRequestDto.NICKNAME_PATTERN)).isFalse();
+        mvc.perform(post("/api/v1/auth/register-nickname").contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+            .content("{\"nickname\":\"" + emoji.repeat(9) + "\"}"))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/auth/register-nickname").contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+            .content("{\"nickname\":\"" + emoji.repeat(8) + "\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.newNickname").value(emoji.repeat(8)));
+    }
+
     private User user(String socialId, String nickname) {
         User user = User.builder().provider("test").socialId(socialId).nickname(nickname).status(UserStatus.ACTIVE).build();
         em.persist(user);
