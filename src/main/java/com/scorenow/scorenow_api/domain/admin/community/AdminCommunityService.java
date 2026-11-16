@@ -25,6 +25,7 @@ public class AdminCommunityService {
     private static final long HOT_LIKE_COUNT = 10;
     private final CommunityPostRepository posts;
     private final CommunityCommentRepository comments;
+    private final AdminCommunityCommentRepository commentSearch;
     private final CommunityPostImageRepository images;
     private final FileStorage storage;
 
@@ -73,7 +74,7 @@ public class AdminCommunityService {
             if (postId != null) predicates.add(cb.equal(comment.get("post").get("id"), postId));
             return cb.and(predicates.toArray(Predicate[]::new));
         };
-        Page<CommunityComment> page = comments.findAll(spec, pageable);
+        Page<CommunityComment> page = commentSearch.findAll(spec, pageable);
         Map<Long, String> imageUrls = imageUrls(page.getContent().stream().map(CommunityComment::getPostId).distinct().toList());
         return page.map(c -> new CommentItem(c.getId(), c.getPostId(), c.getAuthorId(), c.getAuthor().getSocialId(),
                 nickname(c.getAuthor(), c.getAuthorNickname()), c.getAuthor().getWarningCnt(), imageUrls.get(c.getPostId()),
