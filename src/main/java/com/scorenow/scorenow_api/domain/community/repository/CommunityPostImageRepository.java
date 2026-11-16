@@ -13,6 +13,7 @@ import com.scorenow.scorenow_api.domain.community.entity.CommunityPostImage;
 public interface CommunityPostImageRepository extends JpaRepository<CommunityPostImage, Long> {
 
 	List<CommunityPostImage> findByPost_IdOrderBySortOrderAsc(Long postId);
+	List<CommunityPostImage> findByPost_IdInOrderByPost_IdAscSortOrderAsc(Collection<Long> postIds);
 
 	@Query("select distinct image.post.id from CommunityPostImage image where image.post.id in :postIds")
 	List<Long> findPostIdsWithImages(@Param("postIds") Collection<Long> postIds);

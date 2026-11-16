@@ -3,6 +3,12 @@ package com.scorenow.scorenow_api.domain.community.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,7 +16,16 @@ import org.springframework.data.repository.query.Param;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPost;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityPostStatus;
 
-public interface CommunityPostRepository extends JpaRepository<CommunityPost, Long>, CommunityPostRepositoryCustom {
+public interface CommunityPostRepository extends JpaRepository<CommunityPost, Long>, JpaSpecificationExecutor<CommunityPost>, CommunityPostRepositoryCustom {
+	@Override
+	@EntityGraph(attributePaths = "author")
+	Page<CommunityPost> findAll(Specification<CommunityPost> specification, Pageable pageable);
+
+	long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime start, LocalDateTime end);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("update CommunityPost p set p.status = :deleted, p.deletedAt = :now, p.commentCount = 0 where p.id = :id and p.status <> :deleted")
+	int markDeletedByAdmin(@Param("id") Long id, @Param("deleted") CommunityPostStatus deleted, @Param("now") LocalDateTime now);
 
 	Optional<CommunityPost> findByIdAndStatus(Long id, CommunityPostStatus status);
 

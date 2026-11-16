@@ -5,6 +5,11 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Page;
+import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +17,21 @@ import org.springframework.data.repository.query.Param;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityComment;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityCommentStatus;
 
-public interface CommunityCommentRepository extends JpaRepository<CommunityComment, Long> {
+public interface CommunityCommentRepository extends JpaRepository<CommunityComment, Long>, JpaSpecificationExecutor<CommunityComment> {
+	@Override
+	@EntityGraph(attributePaths = {"author", "post"})
+	Page<CommunityComment> findAll(Specification<CommunityComment> specification, Pageable pageable);
+
+	@Query("select c.post.id from CommunityComment c where c.id = :id")
+	Optional<Long> findPostIdById(@Param("id") Long id);
+
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.id = :id and c.status <> :deleted")
+	int markDeletedByAdmin(@Param("id") Long id, @Param("deleted") CommunityCommentStatus deleted, @Param("now") LocalDateTime now);
+
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.post.id = :postId and c.status <> :deleted")
+	int markPostCommentsDeleted(@Param("postId") Long postId, @Param("deleted") CommunityCommentStatus deleted, @Param("now") LocalDateTime now);
 
 	Optional<CommunityComment> findByIdAndStatus(Long id, CommunityCommentStatus status);
 
