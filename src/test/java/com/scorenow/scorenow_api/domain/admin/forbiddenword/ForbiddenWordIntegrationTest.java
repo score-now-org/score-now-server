@@ -60,6 +60,16 @@ class ForbiddenWordIntegrationTest {
         assertThat(filter.apply("나쁜말", 100)).isEqualTo("치환말");
     }
 
+    @Test void matchesCaseInsensitivelyAndRejectsCaseOnlyDuplicates() {
+        controller.create(new ForbiddenWordController.Request("Bad", "???"));
+        controller.create(new ForbiddenWordController.Request("BadWord", "***"));
+        em.flush(); em.clear();
+        assertThat(filter.apply("bADWORD and BAD", 100)).isEqualTo("*** and ???");
+        assertThatThrownBy(() -> controller.create(new ForbiddenWordController.Request("BAD", "other")))
+                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> filter.apply("bADWORD and BAD", 4)).isInstanceOf(BusinessException.class);
+    }
+
     @Test void filtersNewAndEditedPostsAndNewComments() {
         controller.create(new ForbiddenWordController.Request("나쁜말", "???"));
         User user = User.builder().provider("test").socialId("filter-user").nickname("fan").status(UserStatus.ACTIVE).build();

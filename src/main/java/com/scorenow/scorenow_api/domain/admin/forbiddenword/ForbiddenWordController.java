@@ -39,7 +39,7 @@ public class ForbiddenWordController {
     @Transactional
     public ApiResponse<Response> create(@Valid @RequestBody Request request) {
         String word = request.word().trim();
-        if (words.existsByWord(word)) throw new BusinessException(ErrorCode.INVALID_PARAMETER, "이미 등록된 금칙어입니다.");
+        if (words.existsByWordIgnoreCase(word)) throw new BusinessException(ErrorCode.INVALID_PARAMETER, "이미 등록된 금칙어입니다.");
         String replacement = request.replacement() == null || request.replacement().isBlank() ? "???" : request.replacement();
         try {
             return ApiResponse.success(Response.from(words.saveAndFlush(new ForbiddenWord(word, replacement))));

@@ -46,7 +46,9 @@ public class ChatMessageService {
 				throw new BusinessException(ErrorCode.COMMUNITY_IMAGE_INVALID);
 			imageUrl = fileStorage.getFileUrl(imageKey);
 		}
-		ChatMessage chatMessage = ChatMessage.create(match, sendUser, forbiddenWords.apply(request.getMessage(), 1000), imageUrl);
+		if (request.getMessage() != null && request.getMessage().trim().length() > ChatMessage.MAX_MESSAGE_LENGTH)
+			throw new BusinessException(ErrorCode.CHAT_MESSAGE_LENGTH_EXCEEDED);
+		ChatMessage chatMessage = ChatMessage.create(match, sendUser, forbiddenWords.apply(request.getMessage(), ChatMessage.MAX_MESSAGE_LENGTH), imageUrl);
 
 		ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 

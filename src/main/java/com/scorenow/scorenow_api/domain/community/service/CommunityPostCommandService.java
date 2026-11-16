@@ -41,9 +41,9 @@ public class CommunityPostCommandService {
 		List<String> imageKeys = normalizeImageKeys(request.getImageKeys());
 		validateImageOwnership(loginUserId, imageKeys);
 
-		CommunityPost post = CommunityPost.create(author, request.getCategory(),
-			forbiddenWords.apply(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH),
-			forbiddenWords.apply(request.getContent(), CommunityPost.MAX_CONTENT_LENGTH));
+		var filtered = forbiddenWords.applyPair(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH,
+			request.getContent(), CommunityPost.MAX_CONTENT_LENGTH);
+		CommunityPost post = CommunityPost.create(author, request.getCategory(), filtered.first(), filtered.second());
 		CommunityPost savedPost = postRepository.save(post);
 		saveImages(savedPost, imageKeys);
 		return savedPost.getId();
@@ -56,9 +56,9 @@ public class CommunityPostCommandService {
 		validateImageOwnership(loginUserId, imageKeys);
 		CommunityPost post = referenceService.requireActivePost(postId);
 
-		post.update(loginUserId, request.getCategory(),
-			forbiddenWords.apply(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH),
-			forbiddenWords.apply(request.getContent(), CommunityPost.MAX_CONTENT_LENGTH));
+		var filtered = forbiddenWords.applyPair(request.getTitle(), CommunityPost.MAX_TITLE_LENGTH,
+			request.getContent(), CommunityPost.MAX_CONTENT_LENGTH);
+		post.update(loginUserId, request.getCategory(), filtered.first(), filtered.second());
 		imageRepository.deleteByPost(post);
 		saveImages(post, imageKeys);
 	}

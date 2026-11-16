@@ -102,6 +102,17 @@ class ChatMessageServiceTest {
 	}
 
 	@Test
+	void oversizedChatKeepsTheExistingErrorAndDoesNotFilterOrSave() {
+		given(matchReferenceService.requireMatch(1L)).willReturn(Match.builder().id(1L).build());
+		given(userReferenceService.requireActiveUser(10L)).willReturn(User.builder().id(10L).nickname("fan").build());
+		assertThatExceptionOfType(BusinessException.class)
+			.isThrownBy(() -> chatMessageService.createMessage(1L, 10L, request("x".repeat(1001))))
+			.satisfies(exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_MESSAGE_LENGTH_EXCEEDED));
+		then(forbiddenWords).shouldHaveNoInteractions();
+		then(chatMessageRepository).should(never()).save(any());
+	}
+
+	@Test
 	void createMessage_does_not_save_blank_message() {
 		Long matchId = 1L;
 		Long userId = 10L;
