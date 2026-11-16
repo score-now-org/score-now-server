@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.global.websocket.interceptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,6 +16,7 @@ import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
 import java.util.Optional;
+import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.websocket.principal.StompPrincipal;
 
 class StompAuthChannelInterceptorTest {
@@ -46,6 +48,16 @@ class StompAuthChannelInterceptorTest {
 		Message<byte[]> message = stompMessage(StompCommand.SUBSCRIBE, "/user/queue/errors", null);
 
 		assertThatCode(() -> interceptor.preSend(message, null)).doesNotThrowAnyException();
+	}
+
+	@Test
+	void restoredAccountCannotReuseAnOldStompPrincipal() {
+		User user = User.builder().status(UserStatus.ACTIVE).build();
+		StompPrincipal principal = new StompPrincipal(10L, user.currentTokenVersion());
+		user.revokeTokens();
+		Mockito.when(users.findById(10L)).thenReturn(Optional.of(user));
+		assertThatThrownBy(() -> new StompJwtAuthenticator(jwtProvider, users).validatePrincipal(principal))
+			.isInstanceOf(BusinessException.class);
 	}
 
 	private Message<byte[]> stompMessage(StompCommand command, String destination, String authorization) {

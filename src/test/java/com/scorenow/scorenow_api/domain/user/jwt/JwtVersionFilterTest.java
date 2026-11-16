@@ -3,6 +3,9 @@ package com.scorenow.scorenow_api.domain.user.jwt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import java.util.Optional;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
@@ -33,4 +36,15 @@ class JwtVersionFilterTest {
         filter.doFilter(newRequest, new MockHttpServletResponse(), new MockFilterChain());
         assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(5L);
     }
+    @Test void legacyTokenWithoutVersionRemainsValidForUnchangedAccount() throws Exception {
+        User user = User.builder().status(UserStatus.ACTIVE).build();
+        when(users.findById(5L)).thenReturn(Optional.of(user));
+        String token = Jwts.builder().subject("5").claim("type", "access")
+            .signWith(Keys.hmacShaKeyFor("12345678901234567890123456789012".getBytes(StandardCharsets.UTF_8))).compact();
+        var request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token);
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(5L);
+    }
+
 }

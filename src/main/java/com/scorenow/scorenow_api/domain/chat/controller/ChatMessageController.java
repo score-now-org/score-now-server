@@ -62,7 +62,7 @@ public class ChatMessageController {
 	}
 
 	private void validateRequest(ChatMessageRequest request) {
-		if (request == null || request.getMessage() == null) {
+		if (request == null || (request.getMessage() == null && request.getImageKey() == null)) {
 			throw new BusinessException(ErrorCode.CHAT_MESSAGE_INVALID);
 		}
 	}
