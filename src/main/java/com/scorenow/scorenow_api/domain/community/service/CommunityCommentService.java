@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.community.service;
 
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -97,7 +98,11 @@ public class CommunityCommentService {
 		CommunityComment comment = referenceService.requireActiveComment(commentId);
 		Long postId = comment.getPostId();
 
-		comment.delete(loginUserId);
+		comment.validateDeletionBy(loginUserId);
+		referenceService.requireActivePostForUpdate(postId);
+		int deleted = commentRepository.markDeletedIfActive(commentId, CommunityCommentStatus.ACTIVE,
+			CommunityCommentStatus.DELETED, LocalDateTime.now());
+		if (deleted == 0) throw new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND);
 		validateUpdatedPost(postRepository.decreaseCommentCount(postId, CommunityPostStatus.ACTIVE));
 	}
 

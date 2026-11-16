@@ -51,7 +51,7 @@ public class CommunityPostCommandService {
 		Long loginUserId = authService.requireLogin(userId);
 		List<String> imageKeys = normalizeImageKeys(request.getImageKeys());
 		validateImageOwnership(loginUserId, imageKeys);
-		CommunityPost post = referenceService.requireActivePost(postId);
+		CommunityPost post = referenceService.requireActivePostForUpdate(postId);
 
 		post.update(loginUserId, request.getCategory(), request.getTitle(), request.getContent());
 		imageRepository.deleteByPost(post);
@@ -61,7 +61,7 @@ public class CommunityPostCommandService {
 	@Transactional
 	public void deletePost(Long postId, Long userId) {
 		Long loginUserId = authService.requireLogin(userId);
-		CommunityPost post = referenceService.requireActivePost(postId);
+		CommunityPost post = referenceService.requireActivePostForUpdate(postId);
 		post.delete(loginUserId);
 	}
 

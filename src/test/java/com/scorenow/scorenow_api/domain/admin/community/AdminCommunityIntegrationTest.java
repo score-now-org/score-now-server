@@ -3,6 +3,9 @@ package com.scorenow.scorenow_api.domain.admin.community;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.List;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -31,6 +34,14 @@ class AdminCommunityIntegrationTest {
     @MockBean JPAQueryFactory queryFactory;
     @MockBean FileStorage storage;
     private final PageRequest page = PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "id"));
+
+    @Test void dailyBoundariesUseSeoulDayInTheServerStorageTimezone() {
+        Instant now = Instant.parse("2026-11-17T00:00:00Z");
+        assertThat(AdminCommunityService.seoulDayBounds(now, ZoneId.of("UTC")))
+                .containsExactly(LocalDateTime.of(2026, 11, 16, 15, 0), LocalDateTime.of(2026, 11, 17, 15, 0));
+        assertThat(AdminCommunityService.seoulDayBounds(now, ZoneId.of("Asia/Seoul")))
+                .containsExactly(LocalDateTime.of(2026, 11, 17, 0, 0), LocalDateTime.of(2026, 11, 18, 0, 0));
+    }
 
     @Test void filtersPostsAndCommentsBeforePaginationAndUsesPostThumbnail() {
         User author = user("social%one", "작성자");
@@ -74,6 +85,17 @@ class AdminCommunityIntegrationTest {
         assertThat(comments.findById(second.getId()).orElseThrow().getStatus()).isEqualTo(CommunityCommentStatus.DELETED);
         assertThat(comments.findByPost_IdAndStatusOrderByIdDesc(post.getId(), CommunityCommentStatus.ACTIVE, page)).isEmpty();
         assertThatThrownBy(() -> service.deletePost(post.getId())).isInstanceOf(BusinessException.class);
+    }
+
+    @Test void nicknameSearchMatchesTheDisplayedSnapshotWhenTheCurrentNicknameIsMissing() {
+        User author = user("anonymous", null);
+        CommunityPost post = post(author, "제목");
+        em.persist(CommunityComment.create(post, author, null, "댓글"));
+        em.flush(); em.clear();
+        assertThat(service.posts(null, null, "익명", null, false, page).page().getContent())
+                .extracting("nickname").containsExactly("익명");
+        assertThat(service.comments(null, null, "익명", null, null, page).getContent())
+                .extracting("nickname").containsExactly("익명");
     }
 
     private User user(String socialId, String nickname) {

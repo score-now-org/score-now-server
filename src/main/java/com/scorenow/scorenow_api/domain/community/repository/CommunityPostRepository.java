@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +30,14 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
 	int markDeletedByAdmin(@Param("id") Long id, @Param("deleted") CommunityPostStatus deleted, @Param("now") LocalDateTime now);
 
 	Optional<CommunityPost> findByIdAndStatus(Long id, CommunityPostStatus status);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select p from CommunityPost p where p.id = :id")
+	Optional<CommunityPost> findByIdForUpdate(@Param("id") Long id);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select p from CommunityPost p where p.id = :id and p.status = :status")
+	Optional<CommunityPost> findByIdAndStatusForUpdate(@Param("id") Long id, @Param("status") CommunityPostStatus status);
 
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("""

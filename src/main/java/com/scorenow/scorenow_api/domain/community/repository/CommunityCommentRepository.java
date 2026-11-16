@@ -26,8 +26,9 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 	Optional<Long> findPostIdById(@Param("id") Long id);
 
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
-	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.id = :id and c.status <> :deleted")
-	int markDeletedByAdmin(@Param("id") Long id, @Param("deleted") CommunityCommentStatus deleted, @Param("now") LocalDateTime now);
+	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.id = :id and c.status = :active")
+	int markDeletedIfActive(@Param("id") Long id, @Param("active") CommunityCommentStatus active,
+		@Param("deleted") CommunityCommentStatus deleted, @Param("now") LocalDateTime now);
 
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
 	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.post.id = :postId and c.status <> :deleted")

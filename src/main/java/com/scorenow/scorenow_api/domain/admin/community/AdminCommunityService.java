@@ -3,6 +3,8 @@ package com.scorenow.scorenow_api.domain.admin.community;
 import java.time.*;
 import java.util.*;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,15 +43,15 @@ public class AdminCommunityService {
             var author = post.join("author");
             if (titlePattern != null) predicates.add(cb.like(cb.lower(post.get("title")), titlePattern, '!'));
             if (socialPattern != null) predicates.add(cb.like(cb.lower(author.get("socialId")), socialPattern, '!'));
-            if (nicknamePattern != null) predicates.add(cb.like(cb.lower(author.get("nickname")), nicknamePattern, '!'));
+            if (nicknamePattern != null) predicates.add(cb.like(cb.lower(displayNickname(cb, author.get("nickname"), post.get("authorNickname"))), nicknamePattern, '!'));
             if (memberId != null) predicates.add(cb.equal(author.get("id"), memberId));
             if (hotOnly) { predicates.add(cb.ge(post.get("likeCount"), HOT_LIKE_COUNT)); predicates.add(cb.equal(post.get("status"), CommunityPostStatus.ACTIVE)); }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
         Page<CommunityPost> page = posts.findAll(spec, pageable);
         Map<Long, String> imageUrls = imageUrls(page.getContent().stream().map(CommunityPost::getId).toList());
-        LocalDateTime start = LocalDate.now(ZoneId.of("Asia/Seoul")).atStartOfDay();
-        long todayCount = posts.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, start.plusDays(1));
+        LocalDateTime[] bounds = seoulDayBounds(Instant.now(), ZoneId.systemDefault());
+        long todayCount = posts.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(bounds[0], bounds[1]);
         return new PostList(page.map(p -> new PostItem(p.getId(), p.getAuthor().getId(), p.getAuthor().getSocialId(),
                 nickname(p.getAuthor(), p.getAuthorNickname()), p.getAuthor().getWarningCnt(), imageUrls.get(p.getId()),
                 p.getTitle(), p.getContent(), p.getLikeCount(), p.getCommentCount(), p.getStatus().name(), p.getCreatedAt())), todayCount);
@@ -66,7 +68,7 @@ public class AdminCommunityService {
             if (keywordPattern != null) predicates.add(cb.or(cb.like(cb.lower(cb.function("str", String.class, comment.get("content"))), keywordPattern, '!'),
                     cb.like(cb.lower(comment.get("post").get("title")), keywordPattern, '!')));
             if (socialPattern != null) predicates.add(cb.like(cb.lower(author.get("socialId")), socialPattern, '!'));
-            if (nicknamePattern != null) predicates.add(cb.like(cb.lower(author.get("nickname")), nicknamePattern, '!'));
+            if (nicknamePattern != null) predicates.add(cb.like(cb.lower(displayNickname(cb, author.get("nickname"), comment.get("authorNickname"))), nicknamePattern, '!'));
             if (memberId != null) predicates.add(cb.equal(author.get("id"), memberId));
             if (postId != null) predicates.add(cb.equal(comment.get("post").get("id"), postId));
             return cb.and(predicates.toArray(Predicate[]::new));
@@ -89,7 +91,8 @@ public class AdminCommunityService {
     @Transactional
     public void deleteComment(Long id) {
         Long postId = comments.findPostIdById(id).orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
-        if (comments.markDeletedByAdmin(id, CommunityCommentStatus.DELETED, LocalDateTime.now()) == 0)
+        posts.findByIdForUpdate(postId).orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
+        if (comments.markDeletedIfActive(id, CommunityCommentStatus.ACTIVE, CommunityCommentStatus.DELETED, LocalDateTime.now()) == 0)
             throw new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND);
         posts.decreaseCommentCount(postId, CommunityPostStatus.ACTIVE);
     }
@@ -104,6 +107,15 @@ public class AdminCommunityService {
         return urls;
     }
     private String nickname(User user, String snapshot) { return StringUtils.hasText(user.getNickname()) ? user.getNickname() : snapshot; }
+    private Expression<String> displayNickname(CriteriaBuilder cb, Expression<String> nickname, Expression<String> snapshot) {
+        return cb.<String>selectCase().when(cb.or(cb.isNull(nickname), cb.equal(cb.trim(nickname), "")), snapshot).otherwise(nickname);
+    }
+    static LocalDateTime[] seoulDayBounds(Instant now, ZoneId storageZone) {
+        ZoneId seoul = ZoneId.of("Asia/Seoul");
+        ZonedDateTime start = now.atZone(seoul).toLocalDate().atStartOfDay(seoul);
+        return new LocalDateTime[]{start.withZoneSameInstant(storageZone).toLocalDateTime(),
+                start.plusDays(1).withZoneSameInstant(storageZone).toLocalDateTime()};
+    }
     private void validate(Pageable page, String keyword, String socialId, String nickname, Long memberId) {
         if (page.getPageSize() > 100 || (memberId != null && memberId <= 0)
                 || page.getSort().stream().anyMatch(order -> !order.getProperty().equals("id"))
