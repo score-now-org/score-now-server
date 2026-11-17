@@ -36,7 +36,7 @@ class NoticeConcurrencyTest {
             Future<Void> first = executor.submit(add), second = executor.submit(add);
             start.countDown();
             first.get(30, TimeUnit.SECONDS); second.get(30, TimeUnit.SECONDS);
-            assertThat(notices.findByDeletedFalseOrderBySortOrderAscIdDesc())
+            assertThat(notices.findByKindAndDeletedFalseOrderBySortOrderAscIdDesc(Notice.Kind.NOTICE))
                     .extracting(Notice::getSortOrder).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         } finally {
             executor.shutdownNow();
