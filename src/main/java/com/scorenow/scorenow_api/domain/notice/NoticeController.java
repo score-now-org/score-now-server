@@ -54,7 +54,7 @@ public class NoticeController {
     @PostMapping({"/admin/notices", "/api/v1/admin/notices"}) @Transactional
     public ApiResponse<AdminResponse> create(@Valid @RequestBody NoticeRequest request) {
         lockForEdit();
-        Notice n = new Notice(); n.update(request);
+        Notice n = new Notice(request);
         List<Notice> ordered = new ArrayList<>(notices.findByDeletedFalseOrderBySortOrderAscIdDesc());
         ordered.add(0, n); reorder(ordered);
         return ApiResponse.success(AdminResponse.of(notices.save(n)));
@@ -66,7 +66,7 @@ public class NoticeController {
         if (request.sortOrder() != null) {
             List<Notice> ordered = new ArrayList<>(notices.findByDeletedFalseOrderBySortOrderAscIdDesc());
             ordered.removeIf(item -> item.getId().equals(id));
-            ordered.add(Math.min(request.sortOrder() - 1, ordered.size()), n); reorder(ordered);
+            ordered.add(Math.max(0, Math.min(request.sortOrder() - 1, ordered.size())), n); reorder(ordered);
         }
         return ApiResponse.success(AdminResponse.of(n));
     }
@@ -76,7 +76,7 @@ public class NoticeController {
         Notice n = requireDraft(id);
         List<Notice> ordered = new ArrayList<>(notices.findByDeletedFalseOrderBySortOrderAscIdDesc());
         ordered.removeIf(item -> item.getId().equals(id));
-        ordered.add(Math.min(request.sortOrder() - 1, ordered.size()), n);
+        ordered.add(Math.max(0, Math.min(request.sortOrder() - 1, ordered.size())), n);
         reorder(ordered);
         return ApiResponse.success(AdminResponse.of(n));
     }

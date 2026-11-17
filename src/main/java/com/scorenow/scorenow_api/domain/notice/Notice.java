@@ -25,6 +25,8 @@ public class Notice extends BaseEntity {
     private int publishedSortOrder;
     @Column(length = 2048) private String publishedUrl;
 
+    public Notice(NoticeRequest request) { update(request); }
+
     public void update(NoticeRequest request) {
         title = request.title().trim(); content = request.content().trim(); ticker = request.ticker();
         visible = request.visible(); platform = request.platform(); url = request.url();
