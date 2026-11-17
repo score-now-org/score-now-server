@@ -26,13 +26,20 @@ class NoticeSecurityTest {
  @MockBean JpaMetamodelMappingContext jpa;
  @MockBean(name = "mongoMappingContext") MongoMappingContext mongo;
  @MockBean NoticeRepository notices;
+ @MockBean NoticeLockRepository noticeLock;
  @Test void accessRules() throws Exception {
   when(notices.findPublished(anyCollection(), anyBoolean(), any())).thenReturn(Page.empty());
   mvc.perform(get("/api/v1/notices")).andExpect(status().isOk());
   mvc.perform(get("/admin/notices")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/notices")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/notices/status")).andExpect(status().isUnauthorized());
   when(adminTokenStore.isValid("00000000-0000-0000-0000-000000000001")).thenReturn(true);
   when(notices.findByDeletedFalse(any())).thenReturn(Page.empty());
   mvc.perform(get("/admin/notices").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(get("/api/v1/admin/notices").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(get("/api/v1/admin/notices/status").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(put("/api/v1/admin/notices/1/order").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")
+      .contentType("application/json").content("{\"sortOrder\":0}")).andExpect(status().isBadRequest());
   mvc.perform(put("/admin/notices/1").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")
       .contentType("application/json").content("{\"title\":\"title\",\"content\":\"content\",\"ticker\":false,\"visible\":true,\"platform\":\"ALL\",\"sortOrder\":0}"))
       .andExpect(status().isBadRequest());

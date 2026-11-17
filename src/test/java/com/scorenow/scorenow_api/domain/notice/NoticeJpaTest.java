@@ -12,10 +12,12 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 @DataJpaTest @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class NoticeJpaTest {
  @Autowired NoticeRepository notices;
+ @Autowired NoticeLockRepository noticeLock;
  @MockBean(name = "mongoMappingContext") MongoMappingContext mongo;
  @MockBean JPAQueryFactory queryFactory;
  @Test void publishControlsVisibilityPlatformAndDeletion() {
-  NoticeController c = new NoticeController(notices);
+  noticeLock.saveAndFlush(new NoticeLock(1));
+  NoticeController c = new NoticeController(notices, noticeLock);
   Long id = c.create(new NoticeRequest("제목", "본문", true, true, Notice.Platform.IOS, null, null)).getData().id();
   assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData()).isEmpty();
   c.publish();
@@ -25,5 +27,27 @@ class NoticeJpaTest {
   assertThat(c.detail(id, Notice.Platform.IOS).getData().title()).isEqualTo("제목");
   c.publish();
   assertThatThrownBy(() -> c.detail(id, Notice.Platform.IOS)).isInstanceOf(BusinessException.class);
+ }
+ @Test void pendingChangesAndReorderingArePublishedTogether() {
+  noticeLock.saveAndFlush(new NoticeLock(1));
+  NoticeController c = new NoticeController(notices, noticeLock);
+  Long first = c.create(new NoticeRequest("첫 번째", "내용1", false, true, Notice.Platform.ALL, null, null)).getData().id();
+  Long second = c.create(new NoticeRequest("두 번째", "내용2", true, true, Notice.Platform.IOS, null, null)).getData().id();
+  assertThat(c.status().getData().pending()).isTrue();
+  c.publish();
+  assertThat(c.status().getData().pending()).isFalse();
+  assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData().getContent()).extracting(NoticeController.Response::id).containsExactly(second, first);
+  c.move(first, new NoticeController.OrderRequest(1));
+  c.visibility(second, new NoticeController.VisibilityRequest(false));
+  assertThat(c.status().getData().pending()).isTrue();
+  assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData().getContent()).extracting(NoticeController.Response::id).containsExactly(second, first);
+  c.publish();
+  assertThat(c.status().getData().pending()).isFalse();
+  assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData().getContent()).extracting(NoticeController.Response::id).containsExactly(first);
+  c.delete(first);
+  assertThat(c.status().getData().pending()).isTrue();
+  assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData().getTotalElements()).isEqualTo(1);
+  c.publish();
+  assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData()).isEmpty();
  }
 }

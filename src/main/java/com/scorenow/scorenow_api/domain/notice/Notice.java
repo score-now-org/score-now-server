@@ -16,6 +16,7 @@ public class Notice extends BaseEntity {
     @Column(nullable = false) private int sortOrder;
     @Column(length = 2048) private String url;
     @Column(nullable = false) private boolean deleted;
+    @Column(nullable = false) private boolean modified;
     @Column(nullable = false) private boolean published;
     @Column(length = 200) private String publishedTitle;
     @Lob @Column(columnDefinition = "TEXT") private String publishedContent;
@@ -27,12 +28,15 @@ public class Notice extends BaseEntity {
     public void update(NoticeRequest request) {
         title = request.title().trim(); content = request.content().trim(); ticker = request.ticker();
         visible = request.visible(); platform = request.platform(); url = request.url();
+        modified = true;
     }
-    public void setSortOrder(int order) { sortOrder = order; }
-    public void remove() { deleted = true; }
+    public void setSortOrder(int order) { if (sortOrder != order) { sortOrder = order; modified = true; } }
+    public void setVisible(boolean value) { if (visible != value) { visible = value; modified = true; } }
+    public void remove() { deleted = true; modified = true; }
     public void publish() {
         published = visible && !deleted;
         publishedTitle = title; publishedContent = content; publishedTicker = ticker;
         publishedPlatform = platform; publishedSortOrder = sortOrder; publishedUrl = url;
+        modified = false;
     }
 }

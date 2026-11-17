@@ -13,4 +13,5 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
     Page<Notice> findByDeletedFalse(Pageable pageable);
     Page<Notice> findByDeletedFalseAndPlatform(Notice.Platform platform, Pageable pageable);
     Optional<Notice> findByIdAndDeletedFalse(Long id);
+    boolean existsByModifiedTrue();
 }
