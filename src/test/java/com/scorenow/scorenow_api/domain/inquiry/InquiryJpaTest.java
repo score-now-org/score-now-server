@@ -26,6 +26,9 @@ class InquiryJpaTest {
   User other = User.builder().provider("test").socialId("other").build(); em.persist(other);
   Inquiry inquiry = inquiries.save(new Inquiry(owner, "제목", "내용"));
   InquiryController c = new InquiryController(inquiries, images, users);
+  assertThat(c.detail(owner.getId(), inquiry.getId()).getData().title()).isEqualTo("제목");
+  assertThatThrownBy(() -> c.detail(other.getId(), inquiry.getId())).isInstanceOf(BusinessException.class);
+  assertThat(c.list(other.getId(), 0, 20).getData().getTotalElements()).isZero();
   byte[] png = {(byte)0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
   c.uploadImage(owner.getId(), inquiry.getId(), new MockMultipartFile("image", "a.png", "image/png", png));
   em.flush(); em.clear();
