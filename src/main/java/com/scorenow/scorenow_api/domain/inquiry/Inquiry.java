@@ -14,6 +14,7 @@ public class Inquiry extends BaseEntity {
     @Column(nullable = false, length = 200) private String title;
     @Lob @Column(nullable = false, columnDefinition = "TEXT") private String content;
     @Lob @Column(columnDefinition = "TEXT") private String answer;
+    @Lob @Column(columnDefinition = "TEXT") private String answerHtml;
     private LocalDateTime answeredAt;
     @Column(nullable = false) private boolean hasImage;
 
@@ -21,5 +22,5 @@ public class Inquiry extends BaseEntity {
         this.user = user; this.title = title.trim(); this.content = content.trim();
     }
     public void attachImage() { this.hasImage = true; }
-    public void answer(String answer) { this.answer = answer.trim(); this.answeredAt = LocalDateTime.now(); }
+    public void answer(String answer, String answerHtml) { this.answer = answer.trim(); this.answerHtml = answerHtml; this.answeredAt = LocalDateTime.now(); }
 }
