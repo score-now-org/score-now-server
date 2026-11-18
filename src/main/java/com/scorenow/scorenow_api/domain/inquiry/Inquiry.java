@@ -17,10 +17,13 @@ public class Inquiry extends BaseEntity {
     @Lob @Column(columnDefinition = "TEXT") private String answerHtml;
     private LocalDateTime answeredAt;
     @Column(nullable = false) private boolean hasImage;
+    @Column(length = 180) private String attachmentName;
 
     public Inquiry(User user, String title, String content) {
         this.user = user; this.title = title.trim(); this.content = content.trim();
     }
-    public void attachImage() { this.hasImage = true; }
+    public void attachImage() { this.hasImage = true; this.attachmentName = null; }
+    public void attachFile(String name, boolean image) { this.hasImage = image; this.attachmentName = name; }
+    public boolean hasAttachment() { return hasImage || attachmentName != null; }
     public void answer(String answer, String answerHtml) { this.answer = answer.trim(); this.answerHtml = answerHtml; this.answeredAt = LocalDateTime.now(); }
 }

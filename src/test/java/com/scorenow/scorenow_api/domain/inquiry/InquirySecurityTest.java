@@ -34,10 +34,12 @@ class InquirySecurityTest {
   mvc.perform(get("/api/v1/inquiries")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/inquiries/1/image")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/inquiries/1/image/download")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/inquiries/1/attachment")).andExpect(status().isUnauthorized());
   mvc.perform(get("/admin/inquiries")).andExpect(status().isUnauthorized());
   mvc.perform(get("/admin/inquiries/1/image")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/admin/inquiries")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/admin/inquiries/1/image")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/inquiries/1/attachment")).andExpect(status().isUnauthorized());
   when(jwtProvider.getAccessTokenUserId("user-token")).thenReturn(1L);
   when(userRepository.existsByIdAndStatus(1L, UserStatus.ACTIVE)).thenReturn(true);
   when(inquiries.findByUser_Id(eq(1L), any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
