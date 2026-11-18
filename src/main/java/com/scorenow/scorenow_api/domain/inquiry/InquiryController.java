@@ -34,7 +34,7 @@ public class InquiryController {
     private final InquiryImageRepository images;
     private final UserReferenceService users;
     public record Request(@NotBlank @Size(max = 200) String title, @NotBlank @Size(max = 10000) String content) {}
-    public record Answer(@NotBlank @Size(max = 10000) String content, @Size(max = 10000) String contentHtml) {}
+    public record Answer(@Size(max = 10000) String content, @Size(max = 10000) String contentHtml) {}
     public record Response(Long id, String title, String content, String status, String answer,
                            String answerHtml, LocalDateTime createdAt, LocalDateTime answeredAt, boolean hasImage,
                            boolean hasAttachment, String attachmentName) {
@@ -174,15 +174,16 @@ public class InquiryController {
             html = Jsoup.clean(request.contentHtml(), "", allowed, new Document.OutputSettings().prettyPrint(false));
             text = plainText(html);
             if (text.isBlank() || text.length() > 10000) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
-        }
+        } else if (text == null || text.isBlank() || text.length() > 10000) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         inquiry.answer(text, html);
         return ApiResponse.success(Response.of(inquiry));
     }
     private static String plainText(String html) {
+        var blockTags = java.util.Set.of("p", "div", "li");
         StringBuilder text = new StringBuilder();
         Jsoup.parse(html).body().traverse(new NodeVisitor() {
             private void line() { if (!text.isEmpty() && text.charAt(text.length() - 1) != '\n') text.append('\n'); }
-            private boolean block(Node node) { return node instanceof Element element && java.util.Set.of("p", "div", "li").contains(element.normalName()); }
+            private boolean block(Node node) { return node instanceof Element element && blockTags.contains(element.normalName()); }
             @Override public void head(Node node, int depth) {
                 if (block(node)) line();
                 if (node instanceof TextNode value) text.append(value.getWholeText());

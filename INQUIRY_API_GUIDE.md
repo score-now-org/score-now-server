@@ -20,8 +20,8 @@
 
 관리자 API는 Firebase 프록시용 `/api/v1/admin/inquiries` 경로도 제공한다. 목록에는 `nickname`, `userId`, `from`, `to`, `status` 검색 조건을 조합할 수 있다. 날짜는 `yyyy-MM-dd`, 상태는 `WAITING` 또는 `ANSWERED`다. 관리자 목록·상세는 기존 문의 필드에 `userId`, `nickname`을 추가한다.
 
-답변 등록은 기존 `content` 외에 선택적으로 `contentHtml`을 받는다. 서식을 요청하면 서버가 허용된 태그만 남기고 일반 텍스트 `answer`와 서식 버전 `answerHtml`을 함께 저장한다. 앱은 `answerHtml`이 있으면 안전하게 렌더링하고, 없으면 `answer`를 일반 텍스트로 표시한다. 허용 태그는 p, div, br, strong, b, em, i, u, s, strike, ul, ol, li, a이며 링크는 http, https, mailto만 허용한다. 스크립트 실행이나 외부 리소스 로딩을 허용하지 않아야 한다. 답변 첨부 기능은 없다.
+답변 등록은 기존 `content` 또는 서식용 `contentHtml`을 받는다. 둘 다 보내면 `contentHtml`을 기준으로 한다. 서식을 요청하면 서버가 허용된 태그만 남기고 일반 텍스트 `answer`와 서식 버전 `answerHtml`을 함께 저장한다. 앱은 `answerHtml`이 있으면 안전하게 렌더링하고, 없으면 `answer`를 일반 텍스트로 표시한다. 허용 태그는 p, div, br, strong, b, em, i, u, s, strike, ul, ol, li, a이며 링크는 http, https, mailto만 허용한다. 스크립트 실행이나 외부 리소스 로딩을 허용하지 않아야 한다. 답변 첨부 기능은 없다.
 
-문의 이미지 데이터는 DB에 저장되므로 DB 용량 및 MySQL `max_allowed_packet`은 5 MiB 이상 이미지 저장에 맞춰 설정해야 한다. dev 프로필은 multipart 파일 5MB/요청 6MB로 설정했으며 다른 프로필도 동일하게 설정해야 한다.
+문의 첨부 데이터는 DB에 저장되므로 DB 용량 및 MySQL `max_allowed_packet`은 5 MiB 이상 파일 저장에 맞춰 설정해야 한다. dev 프로필은 multipart 파일 5MB/요청 6MB로 설정했으며 다른 프로필도 동일하게 설정해야 한다.
 
 기존 DB는 `inquiries.answer_html`, `inquiries.attachment_name` 컬럼이 필요하다. dev의 Hibernate `ddl-auto: update`가 시작 시 추가할 수 있으나 실제 DB 권한·스키마를 배포 전에 확인해야 한다. 수동 적용 시 `database/migrations/V20261118__inquiry_answer_html.sql`과 `V20261118__inquiry_attachment_name.sql`은 해당 컬럼이 아직 없는 경우에만 한 번 실행한다.

@@ -81,13 +81,17 @@ class InquiryJpaTest {
   InquiryController c = new InquiryController(inquiries, images, users);
   assertThat(c.adminList(0, 20, "축구", owner.getId(), null, null, "WAITING").getData().getTotalElements()).isEqualTo(1);
   assertThat(c.adminList(0, 20, null, other.getId(), null, null, "ANSWERED").getData().getTotalElements()).isZero();
-  c.answer(first.getId(), new InquiryController.Answer("답변", "<p><strong>답변</strong><script>alert(1)</script><a href='javascript:alert(1)'>링크</a></p><div>두 번째 줄</div>"));
+  assertThatThrownBy(() -> c.answer(first.getId(), new InquiryController.Answer(null, null))).isInstanceOf(BusinessException.class);
+  c.answer(first.getId(), new InquiryController.Answer(null, "<p><strong>답변</strong><script>alert(1)</script><a href='javascript:alert(1)'>링크</a></p><div>두 번째 줄</div>"));
   em.flush(); em.clear();
   var answer = c.detail(owner.getId(), first.getId()).getData();
   assertThat(answer.status()).isEqualTo("ANSWERED");
   assertThat(answer.answer()).isEqualTo("답변링크\n두 번째 줄");
   assertThat(answer.answerHtml()).contains("<strong>답변</strong>").doesNotContain("script", "javascript:");
   assertThat(c.adminList(0, 20, "축구", owner.getId(), LocalDate.now(), LocalDate.now(), "ANSWERED").getData().getTotalElements()).isEqualTo(1);
+  c.answer(first.getId(), new InquiryController.Answer("일반 답변", null));
+  assertThat(c.detail(owner.getId(), first.getId()).getData().answer()).isEqualTo("일반 답변");
+  assertThat(c.detail(owner.getId(), first.getId()).getData().answerHtml()).isNull();
   assertThatThrownBy(() -> c.detail(other.getId(), first.getId())).isInstanceOf(BusinessException.class);
  }
 }
