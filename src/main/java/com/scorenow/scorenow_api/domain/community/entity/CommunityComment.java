@@ -154,6 +154,10 @@ public class CommunityComment extends BaseEntity {
 		}
 	}
 
+	public String getCurrentAuthorNickname() {
+		return snapshotNickname(author);
+	}
+
 	private static String snapshotNickname(User author) {
 		if (author.getNickname() == null || author.getNickname().isBlank()) {
 			return "익명";

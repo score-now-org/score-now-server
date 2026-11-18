@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,12 +17,15 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 
 	Optional<CommunityComment> findByIdAndStatus(Long id, CommunityCommentStatus status);
 
+	@EntityGraph(attributePaths = "author")
 	List<CommunityComment> findByPost_IdAndStatusOrderByIdDesc(Long postId, CommunityCommentStatus status,
 		Pageable pageable);
 
+	@EntityGraph(attributePaths = "author")
 	List<CommunityComment> findByPost_IdAndStatusAndIdLessThanOrderByIdDesc(Long postId,
 		CommunityCommentStatus status, Long cursor, Pageable pageable);
 
+	@EntityGraph(attributePaths = "author")
 	@Query("""
 		select c from CommunityComment c
 		where c.post.id = :postId and c.status = :status
@@ -30,6 +34,7 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 	List<CommunityComment> findRecommendedComments(@Param("postId") Long postId,
 		@Param("status") CommunityCommentStatus status, Pageable pageable);
 
+	@EntityGraph(attributePaths = "author")
 	@Query("""
 		select c from CommunityComment c
 		where c.post.id = :postId and c.status = :status
