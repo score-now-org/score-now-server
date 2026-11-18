@@ -67,9 +67,7 @@ public class InquiryController {
     @PutMapping("/api/v1/inquiries/{id}/image") @Transactional
     public ApiResponse<Void> uploadImage(@AuthenticationPrincipal Long userId, @PathVariable Long id,
                                          @RequestPart("image") MultipartFile image) throws IOException {
-        users.requireActiveUser(userId);
-        Inquiry inquiry = inquiries.findOwnedForUpdate(id, userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        Inquiry inquiry = lockOwned(id, userId);
         if (image.isEmpty() || image.getSize() > 5 * 1024 * 1024) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         byte[] bytes = image.getBytes();
         String type;
@@ -83,9 +81,7 @@ public class InquiryController {
     @PutMapping("/api/v1/inquiries/{id}/attachment") @Transactional
     public ApiResponse<Void> uploadAttachment(@AuthenticationPrincipal Long userId, @PathVariable Long id,
                                               @RequestPart("file") MultipartFile file) throws IOException {
-        users.requireActiveUser(userId);
-        Inquiry inquiry = inquiries.findOwnedForUpdate(id, userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        Inquiry inquiry = lockOwned(id, userId);
         InquiryAttachment attachment = InquiryAttachment.read(file);
         images.save(new InquiryImage(id, attachment.contentType(), attachment.data()));
         inquiry.attachFile(attachment.name(), attachment.isImage());
@@ -165,7 +161,7 @@ public class InquiryController {
     }
     @PutMapping({"/admin/inquiries/{id}/answer", "/api/v1/admin/inquiries/{id}/answer"}) @Transactional
     public ApiResponse<Response> answer(@PathVariable Long id, @Valid @RequestBody Answer request) {
-        Inquiry inquiry = inquiries.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        Inquiry inquiry = inquiries.findForUpdate(id).orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         String html = null;
         String text = request.content();
         if (request.contentHtml() != null) {
@@ -192,6 +188,13 @@ public class InquiryController {
             @Override public void tail(Node node, int depth) { if (block(node)) line(); }
         });
         return text.toString().trim();
+    }
+    private Inquiry lockOwned(Long id, Long userId) {
+        // MySQL REPEATABLE READ snapshot must be established after acquiring this lock.
+        Inquiry inquiry = inquiries.findOwnedForUpdate(id, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        users.requireActiveUser(userId);
+        return inquiry;
     }
     private static Pageable pagination(int page, int size) {
         if (page < 0 || size < 1 || size > 100) throw new BusinessException(ErrorCode.INVALID_PARAMETER);

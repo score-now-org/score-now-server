@@ -60,6 +60,7 @@ class InquiryJpaTest {
   assertThat(download.getBody()).containsExactly(pdf);
   assertThat(download.getHeaders().getContentDisposition().getType()).isEqualTo("attachment");
   assertThat(download.getHeaders().getContentDisposition().getFilename()).isEqualTo("안내.pdf");
+  assertThat(download.getHeaders().getFirst("Content-Disposition")).contains("filename*=UTF-8''");
   assertThat(c.adminAttachment(inquiry.getId()).getBody()).containsExactly(pdf);
   assertThatThrownBy(() -> c.downloadAttachment(other.getId(), inquiry.getId())).isInstanceOf(BusinessException.class);
   assertThatThrownBy(() -> c.uploadAttachment(other.getId(), inquiry.getId(), new MockMultipartFile("file", "other.pdf", "application/pdf", pdf))).isInstanceOf(BusinessException.class);

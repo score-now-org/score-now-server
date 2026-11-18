@@ -17,6 +17,9 @@ public interface InquiryRepository extends JpaRepository<Inquiry, Long>, JpaSpec
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Inquiry i where i.id = :id and i.user.id = :userId")
     Optional<Inquiry> findOwnedForUpdate(@Param("id") Long id, @Param("userId") Long userId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from Inquiry i where i.id = :id")
+    Optional<Inquiry> findForUpdate(@Param("id") Long id);
     @Override @EntityGraph(attributePaths = "user")
     Page<Inquiry> findAll(Specification<Inquiry> spec, Pageable pageable);
 }

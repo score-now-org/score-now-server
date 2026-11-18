@@ -51,7 +51,7 @@ class InquirySecurityTest {
   when(inquiries.findAll(any(Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
   mvc.perform(get("/admin/inquiries").header("Authorization", "00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
   mvc.perform(get("/api/v1/admin/inquiries").header("Authorization", "00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
-  when(inquiries.findById(1L)).thenReturn(Optional.of(mock(Inquiry.class)));
+  when(inquiries.findForUpdate(1L)).thenReturn(Optional.of(mock(Inquiry.class)));
   mvc.perform(put("/api/v1/admin/inquiries/1/answer").header("Authorization", "00000000-0000-0000-0000-000000000001")
           .contentType("application/json").content("{\"contentHtml\":\"<p>답변</p>\"}")).andExpect(status().isOk());
   mvc.perform(put("/api/v1/admin/inquiries/1/answer").header("Authorization", "00000000-0000-0000-0000-000000000001")
