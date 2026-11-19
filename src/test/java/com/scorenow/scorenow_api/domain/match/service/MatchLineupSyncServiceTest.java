@@ -22,6 +22,7 @@ import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
+import com.scorenow.scorenow_api.domain.player.repository.PlayerExternalMappingRepository;
 import com.scorenow.scorenow_api.domain.team.entity.Team;
 import com.scorenow.scorenow_api.domain.team.entity.TeamExternalMapping;
 import com.scorenow.scorenow_api.domain.team.repository.TeamExternalMappingRepository;
@@ -49,6 +50,9 @@ class MatchLineupSyncServiceTest {
 
 	@Mock
 	private TeamExternalMappingRepository teamExternalMappingRepository;
+
+	@Mock
+	private PlayerExternalMappingRepository playerExternalMappingRepository;
 
 	@InjectMocks
 	private MatchLineupSyncService matchLineupSyncService;
