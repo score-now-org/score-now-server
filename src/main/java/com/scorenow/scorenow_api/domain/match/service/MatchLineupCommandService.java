@@ -91,7 +91,6 @@ public class MatchLineupCommandService {
 			.kName(playerInfo.getKName())
 			.shirtNumber(playerInfo.getShirtNumber())
 			.position(lineupMapper.mapPosition(playerInfo.getPosition()))
-			.goals(0)
 			.temp(false)
 			.build();
 
@@ -217,7 +216,7 @@ public class MatchLineupCommandService {
 
 	/**
 	 * 라인업 선수 수정
-	 * - 포지션, 등번호, 득점 수 변경
+	 * - 포지션, 등번호 변경
 	 */
 	@Transactional
 	public String updateLineupManual(
@@ -415,18 +414,6 @@ public class MatchLineupCommandService {
 				newShirtNumber
 			)) {
 				player.setShirtNumber(newShirtNumber);
-				changed = true;
-			}
-		}
-
-		if (request.getGoals() != null) {
-			int newGoals = Math.max(0, request.getGoals());
-			int currentGoals = player.getGoals() == null
-				? 0
-				: player.getGoals();
-
-			if (currentGoals != newGoals) {
-				player.setGoals(newGoals);
 				changed = true;
 			}
 		}

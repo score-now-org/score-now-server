@@ -97,7 +97,6 @@ class MatchLineupCommandServiceTest {
 		assertThat(added.getPlayerId()).isEqualTo(100L);
 		assertThat(added.getPosition()).isEqualTo("FW");
 		assertThat(added.getShirtNumber()).isEqualTo("7");
-		assertThat(added.getGoals()).isZero();
 
 		verify(lineupMapper).mapPosition("Forward");
 		verify(matchLineupRepo).save(document);
@@ -195,7 +194,6 @@ class MatchLineupCommandServiceTest {
 			.playerId(100L)
 			.position("MF")
 			.shirtNumber("7")
-			.goals(0)
 			.build();
 
 		starters.add(player);
@@ -205,7 +203,6 @@ class MatchLineupCommandServiceTest {
 
 		when(request.getPosition()).thenReturn("FW");
 		when(request.getShirtNumber()).thenReturn("9");
-		when(request.getGoals()).thenReturn(1);
 
 		String result =
 			service.updateLineupManual(1L, 10L, 100L, request);
@@ -214,7 +211,6 @@ class MatchLineupCommandServiceTest {
 
 		assertThat(player.getPosition()).isEqualTo("FW");
 		assertThat(player.getShirtNumber()).isEqualTo("9");
-		assertThat(player.getGoals()).isEqualTo(1);
 
 		verify(matchLineupRepo).save(document);
 	}
@@ -225,7 +221,6 @@ class MatchLineupCommandServiceTest {
 			.playerId(100L)
 			.position("MF")
 			.shirtNumber("7")
-			.goals(0)
 			.build();
 
 		starters.add(player);
