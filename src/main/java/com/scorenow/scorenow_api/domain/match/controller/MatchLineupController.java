@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerRoleUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
@@ -143,4 +144,26 @@ public class MatchLineupController {
 			)
 		);
 	}
+
+	/**
+	 * 라인업 선수 역할 변경
+	 * - 선발 ↔ 후보 이동
+	 */
+	@PatchMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}/role")
+	public ApiResponse<String> updateLineupPlayerRole(
+		@PathVariable Long matchId,
+		@PathVariable Long teamId,
+		@PathVariable Long playerId,
+		@Valid @RequestBody MatchLineupPlayerRoleUpdateRequest request
+	) {
+		return ApiResponse.success(
+			lineupCommandSvc.updateLineupPlayerRole(
+				matchId,
+				teamId,
+				playerId,
+				request
+			)
+		);
+	}
+
 }

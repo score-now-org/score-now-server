@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerRoleUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
@@ -242,6 +243,113 @@ class MatchLineupCommandServiceTest {
 	void addPlayerToLineup_invalidMatchId() {
 		assertThatThrownBy(
 			() -> service.addPlayerToLineup(null, 10L, null)
+		).isInstanceOf(BusinessException.class);
+
+		verifyNoInteractions(matchLineupRepo);
+	}
+
+	@Test
+	void updateLineupPlayerRole_toStarter() {
+		LineupPlayer player = LineupPlayer.builder()
+			.playerId(100L)
+			.position("FW")
+			.shirtNumber("7")
+			.build();
+
+		substitutes.add(player);
+
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
+
+		String result =
+			service.updateLineupPlayerRole(1L, 10L, 100L, request);
+
+		assertThat(result).isEqualTo("1:100");
+		assertThat(starters).containsExactly(player);
+		assertThat(substitutes).isEmpty();
+		assertThat(player.getPosition()).isEqualTo("FW");
+		assertThat(player.getShirtNumber()).isEqualTo("7");
+
+		verify(matchLineupRepo).save(document);
+	}
+
+	@Test
+	void updateLineupPlayerRole_toSubstitute() {
+		LineupPlayer player = LineupPlayer.builder()
+			.playerId(100L)
+			.build();
+
+		starters.add(player);
+
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.SUBSTITUTE);
+
+		String result =
+			service.updateLineupPlayerRole(1L, 10L, 100L, request);
+
+		assertThat(result).isEqualTo("1:100");
+		assertThat(starters).isEmpty();
+		assertThat(substitutes).containsExactly(player);
+
+		verify(matchLineupRepo).save(document);
+	}
+
+	@Test
+	void updateLineupPlayerRole_noChanges() {
+		starters.add(LineupPlayer.builder()
+			.playerId(100L)
+			.build());
+
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
+
+		String result =
+			service.updateLineupPlayerRole(1L, 10L, 100L, request);
+
+		assertThat(result).isEqualTo("NO_CHANGES");
+		assertThat(starters).hasSize(1);
+
+		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void updateLineupPlayerRole_notFound() {
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
+
+		assertThatThrownBy(
+			() -> service.updateLineupPlayerRole(1L, 10L, 999L, request)
+		).isInstanceOf(BusinessException.class);
+
+		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void updateLineupPlayerRole_duplicate() {
+		LineupPlayer player = LineupPlayer.builder()
+			.playerId(100L)
+			.build();
+
+		starters.add(player);
+		substitutes.add(player);
+
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
+
+		assertThatThrownBy(
+			() -> service.updateLineupPlayerRole(1L, 10L, 100L, request)
+		).isInstanceOf(BusinessException.class);
+
+		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void updateLineupPlayerRole_invalidRole() {
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(null);
+
+		assertThatThrownBy(
+			() -> service.updateLineupPlayerRole(1L, 10L, 100L, request)
 		).isInstanceOf(BusinessException.class);
 
 		verifyNoInteractions(matchLineupRepo);

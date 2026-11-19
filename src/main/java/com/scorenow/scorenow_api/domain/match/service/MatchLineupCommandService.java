@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerRoleUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
@@ -130,6 +132,83 @@ public class MatchLineupCommandService {
 					+ ", teamId=" + teamId
 					+ ", playerId=" + playerId
 			);
+		}
+
+		matchLineupRepo.save(document);
+
+		return matchId + ":" + playerId;
+	}
+
+	/**
+	 * 라인업 선수 역할 변경
+	 * - 선발 ↔ 후보 이동
+	 */
+	@Transactional
+	public String updateLineupPlayerRole(
+		Long matchId,
+		Long teamId,
+		Long playerId,
+		MatchLineupPlayerRoleUpdateRequest request
+	) {
+		validateRequiredId(matchId, "matchId");
+		validateRequiredId(teamId, "teamId");
+		validateRequiredId(playerId, "playerId");
+
+		if (request == null || request.role() == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"변경할 선수 역할이 비어있습니다."
+			);
+		}
+
+		MatchLineupDocument document = getLineupDocument(matchId);
+		LineupSide side = getLineupSide(document, teamId);
+
+		List<LineupPlayer> starters = side.getStartingLineup();
+		List<LineupPlayer> substitutes = side.getSubstitutes();
+
+		if (starters == null || substitutes == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"선발 또는 후보 명단이 존재하지 않습니다."
+			);
+		}
+
+		int starterIndex = findPlayerIndex(starters, playerId);
+		int substituteIndex = findPlayerIndex(substitutes, playerId);
+
+		if (starterIndex == -1 && substituteIndex == -1) {
+			throw new BusinessException(
+				ErrorCode.MATCH_LINEUP_PLAYER_NOT_FOUND,
+				"라인업에서 선수를 찾을 수 없습니다.",
+				"matchId=" + matchId
+					+ ", teamId=" + teamId
+					+ ", playerId=" + playerId
+			);
+		}
+
+		if (starterIndex != -1 && substituteIndex != -1) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"선수가 선발과 후보 명단에 중복 등록되어 있습니다."
+			);
+		}
+
+		switch (request.role()) {
+			case STARTER -> {
+				if (starterIndex != -1) {
+					return "NO_CHANGES";
+				}
+
+				starters.add(substitutes.remove(substituteIndex));
+			}
+			case SUBSTITUTE -> {
+				if (substituteIndex != -1) {
+					return "NO_CHANGES";
+				}
+
+				substitutes.add(starters.remove(starterIndex));
+			}
 		}
 
 		matchLineupRepo.save(document);
@@ -498,5 +577,25 @@ public class MatchLineupCommandService {
 		private static UpdateResult foundChanged() {
 			return new UpdateResult(true, true);
 		}
+	}
+
+	private int findPlayerIndex(
+		List<LineupPlayer> players,
+		Long playerId
+	) {
+		if (players == null) {
+			return -1;
+		}
+
+		for (int i = 0; i < players.size(); i++) {
+			LineupPlayer player = players.get(i);
+
+			if (player != null
+				&& Objects.equals(player.getPlayerId(), playerId)) {
+				return i;
+			}
+		}
+
+		return -1;
 	}
 }
