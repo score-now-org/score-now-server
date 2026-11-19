@@ -26,7 +26,6 @@ public class LineupPlayer {
 
 	private String shirtNumber;
 	private String position;
-	private Integer goals;
 
 	/**
 	 * 기타 선수

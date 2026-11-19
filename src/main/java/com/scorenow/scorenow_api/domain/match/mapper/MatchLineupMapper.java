@@ -83,7 +83,6 @@ public class MatchLineupMapper {
 			.eName(eName)
 			.shirtNumber(shirtNumber)
 			.position(mapPosition(betsPlayer != null ? betsPlayer.getPos() : null))
-			.goals(0)
 			.build();
 	}
 

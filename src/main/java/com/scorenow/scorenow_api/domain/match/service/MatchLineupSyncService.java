@@ -103,7 +103,11 @@ public class MatchLineupSyncService {
 		BetsLineupResponse lineupResponse = betsApiClient.getLineup(apiMatchId);
 		validateLineupResponse(lineupResponse, apiMatchId);
 
-		Map<String, Long> playerIdMap = resolvePlayerIdMap(lineupResponse);
+		var results = lineupResponse.getResults();
+
+		Map<String, Long> playerIdMap = results == null
+			? Map.of()
+			: resolvePlayerIdMap(lineupResponse);
 
 		MatchLineupDocument doc = matchLineupRepo.findById(matchId)
 			.orElseGet(() -> MatchLineupDocument.create(
@@ -113,7 +117,7 @@ public class MatchLineupSyncService {
 			));
 
 		doc.setHome(lineupMapper.toSide(
-			lineupResponse.getResults().getHome(),
+			results == null ? null : results.getHome(),
 			homeId,
 			apiHomeId,
 			homeTeam.getEName(),
@@ -121,7 +125,7 @@ public class MatchLineupSyncService {
 		));
 
 		doc.setAway(lineupMapper.toSide(
-			lineupResponse.getResults().getAway(),
+			results == null ? null : results.getAway(),
 			awayId,
 			apiAwayId,
 			awayTeam.getEName(),
@@ -242,13 +246,6 @@ public class MatchLineupSyncService {
 			);
 		}
 
-		if (response.getResults() == null) {
-			throw new BusinessException(
-				ErrorCode.INTERNAL_SERVER_ERROR,
-				"라인업 API 결과가 비어있습니다.",
-				"apiMatchId=" + apiMatchId
-			);
-		}
 	}
 
 	@Transactional(readOnly = true)

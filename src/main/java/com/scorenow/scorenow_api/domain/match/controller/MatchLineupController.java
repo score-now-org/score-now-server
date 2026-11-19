@@ -52,7 +52,7 @@ public class MatchLineupController {
 
 	/**
 	 * 라인업 수정
-	 * - 선수의 포지션, 등번호, 득점 수 변경 가능
+	 * - 선수의 포지션, 등번호 변경 가능
 	 */
 	@PatchMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}")
 	public ApiResponse<String> updateLineupPlayer(

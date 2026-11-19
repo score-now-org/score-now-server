@@ -79,10 +79,7 @@ public class FootballInplayMatchDetailSynchronizer implements InplayMatchDetailS
 			));
 
 		// 라인업 정보는 모든 경기에 대해 한 번만 조회한 뒤 경기별 처리에서 재사용한다.
-		Map<Long, MatchLineupDocument> matchLineupDocuments = detailsByApiMatchId.values().stream()
-			.anyMatch(BetsFootballViewResponse.ViewResult::hasLineup)
-			? findMatchLineupDocuments(inplayMatches)
-			: Map.of();
+		Map<Long, MatchLineupDocument> matchLineupDocuments = findMatchLineupDocuments(inplayMatches);
 
 		// 각 Inplay 경기의 세부 정보 및 라인업 정보를 업데이트 한다. (축구의 경우 라인업 정보도 업데이트 필요함)
 		for (Match inplayMatch : inplayMatches) {
@@ -117,8 +114,8 @@ public class FootballInplayMatchDetailSynchronizer implements InplayMatchDetailS
 				// 경기 세부 정보 업데이트
 				matchDetailService.updateInplayMatchDetail(snapshot);
 
-				// 라인업 정보가 제공 되는 경우 라인업 정보 업데이트
-				if (footballViewResult.hasLineup() && !matchLineupDocuments.containsKey(matchId)) {
+				// 라인업 문서가 없는 경우, API 제공 여부와 관계없이 생성 큐에 등록
+				if (!matchLineupDocuments.containsKey(matchId)) {
 
 					boolean isEnqueued = inplayRedisService.markSeenAndEnqueue(
 						String.valueOf(matchId),
