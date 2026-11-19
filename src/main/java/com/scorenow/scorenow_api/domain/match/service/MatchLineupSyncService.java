@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.mapper.MatchLineupMapper;
@@ -27,9 +27,7 @@ import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchLineupSyncService {

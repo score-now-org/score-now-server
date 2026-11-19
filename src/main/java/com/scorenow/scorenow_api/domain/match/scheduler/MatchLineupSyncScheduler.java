@@ -24,9 +24,6 @@ public class MatchLineupSyncScheduler {
 	@Value("${scorenow.inplay.worker.lineup.initBatchSize:10}")
 	private int initBatchSize;
 
-	@Value("${scorenow.inplay.due.goals.intervalMs:15000}")
-	private long goalsIntervalMs;
-
 	// 재큐잉 최대 횟수
 	@Value("${scorenow.inplay.worker.lineup.maxRetry:5}")
 	private int maxRetry;
@@ -34,7 +31,7 @@ public class MatchLineupSyncScheduler {
 	@Value("${scorenow.inplay.worker.lineup.lockTtlMs:10000}")
 	private long lockTtlMs;
 
-	@Scheduled(fixedDelayString = "${scorenow.inplay.worker.lineup.fixedDelayMs:10000}", zone = "Asia/Seoul")
+	@Scheduled(fixedDelayString = "${scorenow.inplay.worker.lineup.fixedDelayMs:10000}")
 	public void run() {
 
 		for (int i = 0; i < initBatchSize; i++) {
