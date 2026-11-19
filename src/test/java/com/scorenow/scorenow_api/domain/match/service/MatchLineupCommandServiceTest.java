@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerSwapRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
@@ -245,6 +246,97 @@ class MatchLineupCommandServiceTest {
 		).isInstanceOf(BusinessException.class);
 
 		verifyNoInteractions(matchLineupRepo);
+	}
+
+	@Test
+	void swapLineupPlayers_success() {
+		// given
+		LineupPlayer starter = LineupPlayer.builder()
+			.playerId(100L)
+			.eName("Starter Player")
+			.position("FW")
+			.shirtNumber("7")
+			.build();
+
+		LineupPlayer substitute = LineupPlayer.builder()
+			.playerId(200L)
+			.eName("Substitute Player")
+			.position("MF")
+			.shirtNumber("10")
+			.build();
+
+		starters.add(starter);
+		substitutes.add(substitute);
+
+		MatchLineupPlayerSwapRequest request =
+			new MatchLineupPlayerSwapRequest(100L, 200L);
+
+		// when
+		String result = service.swapLineupPlayers(1L, 10L, request);
+
+		// then
+		assertThat(result).isEqualTo("1:10");
+
+		assertThat(starters).containsExactly(substitute);
+		assertThat(substitutes).containsExactly(starter);
+
+		assertThat(starters.get(0).getPosition()).isEqualTo("MF");
+		assertThat(starters.get(0).getShirtNumber()).isEqualTo("10");
+
+		assertThat(substitutes.get(0).getPosition()).isEqualTo("FW");
+		assertThat(substitutes.get(0).getShirtNumber()).isEqualTo("7");
+
+		verify(matchLineupRepo).save(document);
+	}
+
+	@Test
+	void swapLineupPlayers_starterNotFound() {
+		// given
+		substitutes.add(LineupPlayer.builder()
+			.playerId(200L)
+			.build());
+
+		MatchLineupPlayerSwapRequest request =
+			new MatchLineupPlayerSwapRequest(100L, 200L);
+
+		// when & then
+		assertThatThrownBy(
+			() -> service.swapLineupPlayers(1L, 10L, request)
+		).isInstanceOf(BusinessException.class);
+
+		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void swapLineupPlayers_substituteNotFound() {
+		// given
+		starters.add(LineupPlayer.builder()
+			.playerId(100L)
+			.build());
+
+		MatchLineupPlayerSwapRequest request =
+			new MatchLineupPlayerSwapRequest(100L, 200L);
+
+		// when & then
+		assertThatThrownBy(
+			() -> service.swapLineupPlayers(1L, 10L, request)
+		).isInstanceOf(BusinessException.class);
+
+		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void swapLineupPlayers_samePlayer() {
+		// given
+		MatchLineupPlayerSwapRequest request =
+			new MatchLineupPlayerSwapRequest(100L, 100L);
+
+		// when & then
+		assertThatThrownBy(
+			() -> service.swapLineupPlayers(1L, 10L, request)
+		).isInstanceOf(BusinessException.class);
+
+		verify(matchLineupRepo, never()).save(any());
 	}
 
 	private MatchLineupPlayerResponse playerResponse(

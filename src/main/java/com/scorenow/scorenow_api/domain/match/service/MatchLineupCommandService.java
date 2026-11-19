@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerSwapRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
@@ -135,6 +137,68 @@ public class MatchLineupCommandService {
 		matchLineupRepo.save(document);
 
 		return matchId + ":" + playerId;
+	}
+
+	/**
+	 * 선발·후보 선수 교체
+	 */
+	@Transactional
+	public String swapLineupPlayers(
+		Long matchId,
+		Long teamId,
+		MatchLineupPlayerSwapRequest request
+	) {
+		validateRequiredId(matchId, "matchId");
+		validateRequiredId(teamId, "teamId");
+
+		if (request == null
+			|| request.starterPlayerId() == null
+			|| request.substitutePlayerId() == null) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"교체할 선수 정보가 비어있습니다."
+			);
+		}
+
+		Long starterPlayerId = request.starterPlayerId();
+		Long substitutePlayerId = request.substitutePlayerId();
+
+		if (Objects.equals(starterPlayerId, substitutePlayerId)) {
+			throw new BusinessException(
+				ErrorCode.INVALID_PARAMETER,
+				"동일한 선수끼리는 교체할 수 없습니다."
+			);
+		}
+
+		MatchLineupDocument document = getLineupDocument(matchId);
+		LineupSide side = getLineupSide(document, teamId);
+
+		List<LineupPlayer> starters = side.getStartingLineup();
+		List<LineupPlayer> substitutes = side.getSubstitutes();
+
+		int starterIndex = findPlayerIndex(starters, starterPlayerId);
+		int substituteIndex = findPlayerIndex(substitutes, substitutePlayerId);
+
+		if (starterIndex == -1 || substituteIndex == -1) {
+			throw new BusinessException(
+				ErrorCode.MATCH_LINEUP_PLAYER_NOT_FOUND,
+				"교체할 선수를 해당 명단에서 찾을 수 없습니다.",
+				"matchId=" + matchId
+					+ ", teamId=" + teamId
+					+ ", starterPlayerId=" + starterPlayerId
+					+ ", substitutePlayerId=" + substitutePlayerId
+			);
+		}
+
+		LineupPlayer starter = starters.get(starterIndex);
+		LineupPlayer substitute = substitutes.get(substituteIndex);
+
+		starters.set(starterIndex, substitute);
+		substitutes.set(substituteIndex, starter);
+
+		matchLineupRepo.save(document);
+
+		return matchId + ":" + teamId;
 	}
 
 	/**
@@ -498,5 +562,25 @@ public class MatchLineupCommandService {
 		private static UpdateResult foundChanged() {
 			return new UpdateResult(true, true);
 		}
+	}
+
+	private int findPlayerIndex(
+		List<LineupPlayer> players,
+		Long playerId
+	) {
+		if (players == null) {
+			return -1;
+		}
+
+		for (int i = 0; i < players.size(); i++) {
+			LineupPlayer player = players.get(i);
+
+			if (player != null
+				&& Objects.equals(player.getPlayerId(), playerId)) {
+				return i;
+			}
+		}
+
+		return -1;
 	}
 }
