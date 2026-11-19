@@ -18,7 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerAddRequest;
-import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerSwapRequest;
+import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerRoleUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupPlayerUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.request.MatchLineupSideUpdateRequest;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchLineupPlayerResponse;
@@ -249,94 +249,110 @@ class MatchLineupCommandServiceTest {
 	}
 
 	@Test
-	void swapLineupPlayers_success() {
-		// given
-		LineupPlayer starter = LineupPlayer.builder()
+	void updateLineupPlayerRole_toStarter() {
+		LineupPlayer player = LineupPlayer.builder()
 			.playerId(100L)
-			.eName("Starter Player")
 			.position("FW")
 			.shirtNumber("7")
 			.build();
 
-		LineupPlayer substitute = LineupPlayer.builder()
-			.playerId(200L)
-			.eName("Substitute Player")
-			.position("MF")
-			.shirtNumber("10")
-			.build();
+		substitutes.add(player);
 
-		starters.add(starter);
-		substitutes.add(substitute);
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
 
-		MatchLineupPlayerSwapRequest request =
-			new MatchLineupPlayerSwapRequest(100L, 200L);
+		String result =
+			service.updateLineupPlayerRole(1L, 10L, 100L, request);
 
-		// when
-		String result = service.swapLineupPlayers(1L, 10L, request);
-
-		// then
-		assertThat(result).isEqualTo("1:10");
-
-		assertThat(starters).containsExactly(substitute);
-		assertThat(substitutes).containsExactly(starter);
-
-		assertThat(starters.get(0).getPosition()).isEqualTo("MF");
-		assertThat(starters.get(0).getShirtNumber()).isEqualTo("10");
-
-		assertThat(substitutes.get(0).getPosition()).isEqualTo("FW");
-		assertThat(substitutes.get(0).getShirtNumber()).isEqualTo("7");
+		assertThat(result).isEqualTo("1:100");
+		assertThat(starters).containsExactly(player);
+		assertThat(substitutes).isEmpty();
+		assertThat(player.getPosition()).isEqualTo("FW");
+		assertThat(player.getShirtNumber()).isEqualTo("7");
 
 		verify(matchLineupRepo).save(document);
 	}
 
 	@Test
-	void swapLineupPlayers_starterNotFound() {
-		// given
-		substitutes.add(LineupPlayer.builder()
-			.playerId(200L)
-			.build());
+	void updateLineupPlayerRole_toSubstitute() {
+		LineupPlayer player = LineupPlayer.builder()
+			.playerId(100L)
+			.build();
 
-		MatchLineupPlayerSwapRequest request =
-			new MatchLineupPlayerSwapRequest(100L, 200L);
+		starters.add(player);
 
-		// when & then
-		assertThatThrownBy(
-			() -> service.swapLineupPlayers(1L, 10L, request)
-		).isInstanceOf(BusinessException.class);
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.SUBSTITUTE);
 
-		verify(matchLineupRepo, never()).save(any());
+		String result =
+			service.updateLineupPlayerRole(1L, 10L, 100L, request);
+
+		assertThat(result).isEqualTo("1:100");
+		assertThat(starters).isEmpty();
+		assertThat(substitutes).containsExactly(player);
+
+		verify(matchLineupRepo).save(document);
 	}
 
 	@Test
-	void swapLineupPlayers_substituteNotFound() {
-		// given
+	void updateLineupPlayerRole_noChanges() {
 		starters.add(LineupPlayer.builder()
 			.playerId(100L)
 			.build());
 
-		MatchLineupPlayerSwapRequest request =
-			new MatchLineupPlayerSwapRequest(100L, 200L);
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
 
-		// when & then
+		String result =
+			service.updateLineupPlayerRole(1L, 10L, 100L, request);
+
+		assertThat(result).isEqualTo("NO_CHANGES");
+		assertThat(starters).hasSize(1);
+
+		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void updateLineupPlayerRole_notFound() {
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
+
 		assertThatThrownBy(
-			() -> service.swapLineupPlayers(1L, 10L, request)
+			() -> service.updateLineupPlayerRole(1L, 10L, 999L, request)
 		).isInstanceOf(BusinessException.class);
 
 		verify(matchLineupRepo, never()).save(any());
 	}
 
 	@Test
-	void swapLineupPlayers_samePlayer() {
-		// given
-		MatchLineupPlayerSwapRequest request =
-			new MatchLineupPlayerSwapRequest(100L, 100L);
+	void updateLineupPlayerRole_duplicate() {
+		LineupPlayer player = LineupPlayer.builder()
+			.playerId(100L)
+			.build();
 
-		// when & then
+		starters.add(player);
+		substitutes.add(player);
+
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
+
 		assertThatThrownBy(
-			() -> service.swapLineupPlayers(1L, 10L, request)
+			() -> service.updateLineupPlayerRole(1L, 10L, 100L, request)
 		).isInstanceOf(BusinessException.class);
 
 		verify(matchLineupRepo, never()).save(any());
+	}
+
+	@Test
+	void updateLineupPlayerRole_invalidRole() {
+		MatchLineupPlayerRoleUpdateRequest request =
+			new MatchLineupPlayerRoleUpdateRequest(null);
+
+		assertThatThrownBy(
+			() -> service.updateLineupPlayerRole(1L, 10L, 100L, request)
+		).isInstanceOf(BusinessException.class);
+
+		verifyNoInteractions(matchLineupRepo);
 	}
 
 	private MatchLineupPlayerResponse playerResponse(
