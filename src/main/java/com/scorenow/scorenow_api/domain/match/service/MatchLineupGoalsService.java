@@ -11,7 +11,6 @@ import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
-import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse.ViewResult;
 
@@ -23,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MatchLineupGoalsService {
 
-	private final BetsApiClient betsApiClient;
 	private final MatchLineupRepository matchLineupRepo;
 
 	@Transactional
