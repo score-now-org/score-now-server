@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse.ViewResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,8 +11,8 @@ import com.scorenow.scorenow_api.domain.match.document.MatchLineupDocument;
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
 import com.scorenow.scorenow_api.domain.match.repository.mongo.MatchLineupRepository;
-import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse.ViewResult;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,86 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MatchLineupGoalsService {
 
-	private final BetsApiClient betsApiClient;
 	private final MatchLineupRepository matchLineupRepo;
-
-	@Transactional
-	public void updateLineupGoals(String matchIdValue, String sportIdValue) {
-		if (matchIdValue == null || matchIdValue.isBlank()) {
-			return;
-		}
-		if (sportIdValue == null || sportIdValue.isBlank()) {
-			return;
-		}
-
-		Long matchId = parseNullableLong(matchIdValue);
-		Long sportId = parseNullableLong(sportIdValue);
-
-		if (matchId == null || sportId == null) {
-			log.warn("⚠[GOALS] matchId/sportId 숫자 변환 실패 matchId={}, sportId={}", matchIdValue, sportIdValue);
-			return;
-		}
-
-		try {
-			MatchLineupDocument doc = matchLineupRepo.findById(matchId).orElse(null);
-			if (doc == null) {
-				log.debug("⏭[GOALS] lineup doc not found matchId={}", matchId);
-				return;
-			}
-
-			if (doc.getSportId() != null && !sportId.equals(doc.getSportId())) {
-				log.warn("⚠[GOALS] sportId 불일치 matchId={}, payloadSportId={}, docSportId={}",
-					matchId, sportId, doc.getSportId());
-				return;
-			}
-
-			String apiMatchId = doc.getApiMatchId();
-			if (apiMatchId == null || apiMatchId.isBlank()) {
-				log.warn("⚠[GOALS] apiMatchId 없음 matchId={}", matchId);
-				return;
-			}
-
-			log.info("📡[GOALS VIEW CALL] matchId={}, sportId={}, apiMatchId={}",
-				matchId, sportId, apiMatchId);
-
-			var viewResponse = betsApiClient.getFootballEventView(apiMatchId);
-
-			log.info("📩[GOALS VIEW RESP] matchId={}, hasResults={}",
-				matchId,
-				viewResponse != null
-					&& viewResponse.getResults() != null
-					&& !viewResponse.getResults().isEmpty());
-
-			if (viewResponse == null || viewResponse.getResults() == null || viewResponse.getResults().isEmpty()) {
-				log.debug("⏭[GOALS] viewResponse empty matchId={}, apiMatchId={}", matchId, apiMatchId);
-				return;
-			}
-
-			var result = viewResponse.getResults().get(0);
-			List<BetsFootballViewResponse.EventText> events = result.getEvents();
-			if (events == null || events.isEmpty()) {
-				log.debug("⏭[GOALS] events empty matchId={}, apiMatchId={}", matchId, apiMatchId);
-				return;
-			}
-
-			Map<String, Integer> goalCounts = buildGoalCounts(events);
-
-			boolean changed = false;
-			changed |= applyGoalCountsToSide(doc.getHome(), goalCounts);
-			changed |= applyGoalCountsToSide(doc.getAway(), goalCounts);
-
-			if (changed) {
-				matchLineupRepo.save(doc);
-				log.debug("✅[GOALS] 반영 완료 matchId={}, goalPlayers={}", matchId, goalCounts.size());
-			} else {
-				log.debug("⏭[GOALS] 변경 없음 matchId={}", matchId);
-			}
-
-		} catch (Exception e) {
-			log.warn("⚠[GOALS] 처리 중 예외 matchId={}, sportId={}, reason={}",
-				matchId, sportId, e.toString());
-		}
-	}
 
 	@Transactional
 	public void updateLineupGoals(MatchLineupDocument matchLineupDocument, ViewResult matchDetail) {
@@ -124,23 +44,6 @@ public class MatchLineupGoalsService {
 			log.info("✅[GOALS] 반영 완료 matchId={}, goalPlayers={}", matchLineupDocument.getId(), goalCounts.size());
 		} else {
 			log.info("⏭[GOALS] 변경 없음 matchId={}", matchLineupDocument.getId());
-		}
-	}
-
-	private Long parseNullableLong(String raw) {
-		if (raw == null) {
-			return null;
-		}
-
-		String s = raw.trim();
-		if (s.isEmpty()) {
-			return null;
-		}
-
-		try {
-			return Long.valueOf(s);
-		} catch (NumberFormatException e) {
-			return null;
 		}
 	}
 
@@ -169,9 +72,6 @@ public class MatchLineupGoalsService {
 		if (p == null) {
 			return false;
 		}
-
-		// String nameKey = normalize(p.getEName());
-		// int newGoals = goalCounts.getOrDefault(nameKey, 0);
 
 		String playerName = normalize(p.getEName());
 
