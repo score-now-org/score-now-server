@@ -41,6 +41,9 @@ class MatchLineupCommandServiceTest {
 	@Mock
 	private MatchLineupMapper lineupMapper;
 
+	@Mock
+	private MatchLineupFormationCalculator formationCalculator;
+
 	@InjectMocks
 	private MatchLineupCommandService service;
 
@@ -86,6 +89,8 @@ class MatchLineupCommandServiceTest {
 		when(lineupMapper.mapPosition("Forward"))
 			.thenReturn("FW");
 
+		when(formationCalculator.calculate(starters)).thenReturn("0-0-1");
+
 		String result =
 			service.addPlayerToLineup(1L, 10L, request);
 
@@ -100,6 +105,8 @@ class MatchLineupCommandServiceTest {
 		assertThat(added.getShirtNumber()).isEqualTo("7");
 
 		verify(lineupMapper).mapPosition("Forward");
+		verify(formationCalculator).calculate(starters);
+		verify(home).setFormation("0-0-1");
 		verify(matchLineupRepo).save(document);
 	}
 
@@ -146,16 +153,30 @@ class MatchLineupCommandServiceTest {
 
 	@Test
 	void removePlayerFromLineup() {
-		starters.add(LineupPlayer.builder()
+		LineupPlayer defender = LineupPlayer.builder()
+			.playerId(200L)
+			.position("DF")
+			.build();
+
+		LineupPlayer forward = LineupPlayer.builder()
 			.playerId(100L)
-			.build());
+			.position("FW")
+			.build();
+
+		starters.add(defender);
+		starters.add(forward);
+
+		when(formationCalculator.calculate(starters))
+			.thenReturn("1-0-0");
 
 		String result =
 			service.removePlayerFromLineup(1L, 10L, 100L);
 
 		assertThat(result).isEqualTo("1:100");
-		assertThat(starters).isEmpty();
+		assertThat(starters).containsExactly(defender);
 
+		verify(formationCalculator).calculate(starters);
+		verify(home).setFormation("1-0-0");
 		verify(matchLineupRepo).save(document);
 	}
 
@@ -173,10 +194,7 @@ class MatchLineupCommandServiceTest {
 		MatchLineupSideUpdateRequest request =
 			mock(MatchLineupSideUpdateRequest.class);
 
-		when(request.getFormation()).thenReturn("4-3-3");
 		when(request.getUniformColor()).thenReturn("#FFFFFF");
-
-		when(home.getFormation()).thenReturn("4-4-2");
 		when(home.getUniformColor()).thenReturn("#000000");
 
 		String result =
@@ -184,8 +202,8 @@ class MatchLineupCommandServiceTest {
 
 		assertThat(result).isEqualTo("1:10");
 
-		verify(home).setFormation("4-3-3");
 		verify(home).setUniformColor("#FFFFFF");
+		verify(home, never()).setFormation(any());
 		verify(matchLineupRepo).save(document);
 	}
 
@@ -205,6 +223,10 @@ class MatchLineupCommandServiceTest {
 		when(request.getPosition()).thenReturn("FW");
 		when(request.getShirtNumber()).thenReturn("9");
 
+		// 포메이션 계산 결과 설정
+		when(formationCalculator.calculate(starters))
+			.thenReturn("0-0-1");
+
 		String result =
 			service.updateLineupManual(1L, 10L, 100L, request);
 
@@ -212,6 +234,10 @@ class MatchLineupCommandServiceTest {
 
 		assertThat(player.getPosition()).isEqualTo("FW");
 		assertThat(player.getShirtNumber()).isEqualTo("9");
+
+		// 포메이션 갱신 검증
+		verify(formationCalculator).calculate(starters);
+		verify(home).setFormation("0-0-1");
 
 		verify(matchLineupRepo).save(document);
 	}
@@ -250,6 +276,7 @@ class MatchLineupCommandServiceTest {
 
 	@Test
 	void updateLineupPlayerRole_toStarter() {
+		// given
 		LineupPlayer player = LineupPlayer.builder()
 			.playerId(100L)
 			.position("FW")
@@ -261,36 +288,57 @@ class MatchLineupCommandServiceTest {
 		MatchLineupPlayerRoleUpdateRequest request =
 			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.STARTER);
 
+		when(formationCalculator.calculate(starters))
+			.thenReturn("0-0-1");
+
+		// when
 		String result =
 			service.updateLineupPlayerRole(1L, 10L, 100L, request);
 
 		assertThat(result).isEqualTo("1:100");
 		assertThat(starters).containsExactly(player);
 		assertThat(substitutes).isEmpty();
+
 		assertThat(player.getPosition()).isEqualTo("FW");
 		assertThat(player.getShirtNumber()).isEqualTo("7");
 
+		verify(formationCalculator).calculate(starters);
+		verify(home).setFormation("0-0-1");
 		verify(matchLineupRepo).save(document);
 	}
 
 	@Test
 	void updateLineupPlayerRole_toSubstitute() {
-		LineupPlayer player = LineupPlayer.builder()
+		LineupPlayer defender = LineupPlayer.builder()
 			.playerId(100L)
+			.position("DF")
 			.build();
 
-		starters.add(player);
+		LineupPlayer midfielder = LineupPlayer.builder()
+			.playerId(200L)
+			.position("MF")
+			.build();
+
+		starters.add(defender);
+		starters.add(midfielder);
 
 		MatchLineupPlayerRoleUpdateRequest request =
-			new MatchLineupPlayerRoleUpdateRequest(MatchLineupPlayerRoleUpdateRequest.Role.SUBSTITUTE);
+			new MatchLineupPlayerRoleUpdateRequest(
+				MatchLineupPlayerRoleUpdateRequest.Role.SUBSTITUTE
+			);
+
+		when(formationCalculator.calculate(starters))
+			.thenReturn("0-1-0");
 
 		String result =
 			service.updateLineupPlayerRole(1L, 10L, 100L, request);
 
 		assertThat(result).isEqualTo("1:100");
-		assertThat(starters).isEmpty();
-		assertThat(substitutes).containsExactly(player);
+		assertThat(starters).containsExactly(midfielder);
+		assertThat(substitutes).containsExactly(defender);
 
+		verify(formationCalculator).calculate(starters);
+		verify(home).setFormation("0-1-0");
 		verify(matchLineupRepo).save(document);
 	}
 

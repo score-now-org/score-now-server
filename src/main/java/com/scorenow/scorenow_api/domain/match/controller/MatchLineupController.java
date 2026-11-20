@@ -35,7 +35,7 @@ public class MatchLineupController {
 
 	/**
 	 * 라인업 팀 설정 수정
-	 * - 포메이션, 유니폼 컬러 변경
+	 * - 유니폼 컬러 변경
 	 */
 	@PatchMapping("/{matchId}/lineup/teams/{teamId}")
 	public ApiResponse<String> updateLineupSide(
