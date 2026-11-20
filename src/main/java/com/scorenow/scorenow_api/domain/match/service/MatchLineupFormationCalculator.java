@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,7 @@ public class MatchLineupFormationCalculator {
 				continue;
 			}
 
-			switch (player.getPosition()) {
+			switch (player.getPosition().toUpperCase(Locale.ROOT)) {
 				case "DF" -> df++;
 				case "MF" -> mf++;
 				case "FW" -> fw++;
