@@ -9,6 +9,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
+import java.util.Optional;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,15 +34,27 @@ class InquirySecurityTest {
  @Test void accessRules() throws Exception {
   mvc.perform(get("/api/v1/inquiries")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/inquiries/1/image")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/inquiries/1/image/download")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/inquiries/1/attachment")).andExpect(status().isUnauthorized());
   mvc.perform(get("/admin/inquiries")).andExpect(status().isUnauthorized());
   mvc.perform(get("/admin/inquiries/1/image")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/inquiries")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/inquiries/1/image")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/inquiries/1/attachment")).andExpect(status().isUnauthorized());
   when(jwtProvider.getAccessTokenUserId("user-token")).thenReturn(1L);
   when(userRepository.existsByIdAndStatus(1L, UserStatus.ACTIVE)).thenReturn(true);
   when(inquiries.findByUser_Id(eq(1L), any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
   mvc.perform(get("/api/v1/inquiries").header("Authorization", "Bearer user-token")).andExpect(status().isOk());
   mvc.perform(get("/admin/inquiries").header("Authorization", "Bearer user-token")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/inquiries").header("Authorization", "Bearer user-token")).andExpect(status().isUnauthorized());
   when(adminTokenStore.isValid("00000000-0000-0000-0000-000000000001")).thenReturn(true);
-  when(inquiries.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
+  when(inquiries.findAll(any(Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
   mvc.perform(get("/admin/inquiries").header("Authorization", "00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(get("/api/v1/admin/inquiries").header("Authorization", "00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  when(inquiries.findForUpdate(1L)).thenReturn(Optional.of(mock(Inquiry.class)));
+  mvc.perform(put("/api/v1/admin/inquiries/1/answer").header("Authorization", "00000000-0000-0000-0000-000000000001")
+          .contentType("application/json").content("{\"contentHtml\":\"<p>답변</p>\"}")).andExpect(status().isOk());
+  mvc.perform(put("/api/v1/admin/inquiries/1/answer").header("Authorization", "00000000-0000-0000-0000-000000000001")
+          .contentType("application/json").content("{}")).andExpect(status().isBadRequest());
  }
 }
