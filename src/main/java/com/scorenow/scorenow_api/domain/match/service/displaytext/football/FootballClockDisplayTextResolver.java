@@ -11,7 +11,10 @@ import java.time.Instant;
 public class FootballClockDisplayTextResolver {
 
     public String resolve(FootballClock clock) {
+        return resolve(clock, Instant.now());
+    }
 
+    public String resolve(FootballClock clock, Instant now) {
         if (clock == null || clock.getPhase() == null) {
             return null;
         }
@@ -23,7 +26,6 @@ public class FootballClockDisplayTextResolver {
             return phase.getDescription();
         }
 
-        Instant now = Instant.now();
         Instant clockSyncedAt = clock.getClockSyncedAt();
         Integer phaseElapsedSeconds = clock.getPhaseElapsedSeconds();
 
@@ -31,9 +33,12 @@ public class FootballClockDisplayTextResolver {
             return phase.getDescription();
         }
 
+        int elapsedSinceSyncedAt = Boolean.TRUE.equals(clock.getRunning())
+                ? (int) Math.max(Duration.between(clockSyncedAt, now).getSeconds(), 0)
+                : 0;
         int calculatedPhaseElapsedSeconds = Boolean.TRUE.equals(clock.getRunning())
-                ? (int) Duration.between(clockSyncedAt, now).getSeconds() + phaseElapsedSeconds // 타이머가 running 중인 경우
-                : phaseElapsedSeconds;  // 타이머가 멈춘 경우
+                ? elapsedSinceSyncedAt + phaseElapsedSeconds
+                : phaseElapsedSeconds;
 
         Integer displayElapsedMinutes = FootballClock.resolveDisplayElapsedMinutes(
                 calculatedPhaseElapsedSeconds,

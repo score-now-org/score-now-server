@@ -231,7 +231,7 @@ class FootballAdminMatchDetailServiceTest {
         ReflectionTestUtils.setField(request, "elapsedSeconds", 34);
 
         given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(document));
-        given(footballClockDisplayTextResolver.resolve(any(FootballClock.class))).willReturn("후반 12");
+        given(footballClockDisplayTextResolver.resolve(any(FootballClock.class))).willReturn("후반 13");
 
         Instant beforeCorrection = Instant.now();
         service.correctClock(MATCH_ID, request);
@@ -251,7 +251,7 @@ class FootballAdminMatchDetailServiceTest {
         assertThat(correctedClock.getProviderUpdatedAt()).isEqualTo(providerUpdatedAt);
 
         inOrder.verify(footballClockDisplayTextResolver).resolve(correctedClock);
-        inOrder.verify(eventPublisher).publishFootballClockChanged(MATCH_ID, correctedClock, "후반 12");
+        inOrder.verify(eventPublisher).publishFootballClockChanged(MATCH_ID, correctedClock, "후반 13");
     }
 
     @Test
