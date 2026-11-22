@@ -27,17 +27,20 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/admin/matches")
-public class MatchLineupController {
+@RequestMapping("/api/v1/admin/matches/{matchId}/lineup")
+public class AdminMatchLineupController implements AdminMatchLineupApiDocs {
 
 	private final MatchLineupCommandService lineupCommandSvc;
 	private final MatchLineupQueryService lineupQuerySvc;
 
-	/**
-	 * 라인업 팀 설정 수정
-	 * - 유니폼 컬러 변경
-	 */
-	@PatchMapping("/{matchId}/lineup/teams/{teamId}")
+	@Override
+	@GetMapping
+	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable Long matchId) {
+		return ApiResponse.success(lineupQuerySvc.getByMatchId(matchId));
+	}
+
+	@Override
+	@PatchMapping("/teams/{teamId}")
 	public ApiResponse<String> updateLineupSide(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
@@ -51,11 +54,8 @@ public class MatchLineupController {
 		);
 	}
 
-	/**
-	 * 라인업 수정
-	 * - 선수의 포지션, 등번호 변경 가능
-	 */
-	@PatchMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}")
+	@Override
+	@PatchMapping("/teams/{teamId}/players/{playerId}")
 	public ApiResponse<String> updateLineupPlayer(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
@@ -72,20 +72,8 @@ public class MatchLineupController {
 		);
 	}
 
-	/**
-	 * 라인업 전체 조회
-	 */
-	@GetMapping("/{matchId}/lineup")
-	public ApiResponse<MatchLineupDocument> getLineup(@PathVariable Long matchId) {
-		return ApiResponse.success(lineupQuerySvc.getByMatchId(matchId));
-	}
-
-	/**
-	 * 라인업 > 선수추가
-	 * - 모달 최초 진입 시 해당 팀 선수 목록 조회
-	 * - 해당 팀 라인업 반영 여부(selected) 포함
-	 */
-	@GetMapping("/{matchId}/lineup/teams/{teamId}/players")
+	@Override
+	@GetMapping("/teams/{teamId}/players")
 	public ApiResponse<List<MatchLineupPlayerResponse>> getSelectablePlayers(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId
@@ -95,12 +83,8 @@ public class MatchLineupController {
 		);
 	}
 
-	/**
-	 * 라인업 > 선수추가
-	 * - 검색 시 전체 선수 풀에서 선수명으로 검색
-	 * - 해당 팀 라인업 반영 여부(selected) 포함
-	 */
-	@GetMapping("/{matchId}/lineup/teams/{teamId}/players/search")
+	@Override
+	@GetMapping("/teams/{teamId}/players/search")
 	public ApiResponse<List<MatchLineupPlayerResponse>> searchSelectablePlayers(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
@@ -111,11 +95,8 @@ public class MatchLineupController {
 		);
 	}
 
-	/**
-	 * 라인업 > 선수추가
-	 * - 선수 반영
-	 */
-	@PostMapping("/{matchId}/lineup/teams/{teamId}/players")
+	@Override
+	@PostMapping("/teams/{teamId}/players")
 	public ApiResponse<String> addLineupPlayer(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
@@ -126,11 +107,8 @@ public class MatchLineupController {
 		);
 	}
 
-	/**
-	 * 라인업 > 선수추가
-	 * - 선수 해제
-	 */
-	@DeleteMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}")
+	@Override
+	@DeleteMapping("/teams/{teamId}/players/{playerId}")
 	public ApiResponse<String> deleteLineupPlayer(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
@@ -145,11 +123,8 @@ public class MatchLineupController {
 		);
 	}
 
-	/**
-	 * 라인업 선수 역할 변경
-	 * - 선발 ↔ 후보 이동
-	 */
-	@PatchMapping("/{matchId}/lineup/teams/{teamId}/players/{playerId}/role")
+	@Override
+	@PatchMapping("/teams/{teamId}/players/{playerId}/role")
 	public ApiResponse<String> updateLineupPlayerRole(
 		@PathVariable Long matchId,
 		@PathVariable Long teamId,
@@ -165,5 +140,4 @@ public class MatchLineupController {
 			)
 		);
 	}
-
 }
