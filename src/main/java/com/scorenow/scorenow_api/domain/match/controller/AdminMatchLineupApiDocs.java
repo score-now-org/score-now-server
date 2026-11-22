@@ -19,7 +19,7 @@ public interface AdminMatchLineupApiDocs {
 
 	@Operation(summary = "경기 라인업 전체 조회")
 	ApiResponse<MatchLineupDocument> getLineup(
-		@Parameter(description = "경기 ID", required = true) Long matchId
+		@Parameter(name = "matchId", description = "경기 ID", required = true) Long matchId
 	);
 
 	@Operation(summary = "라인업 팀 설정 수정", description = "해당 팀의 유니폼 색상을 수정")
