@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.scorenow.scorenow_api.domain.common.enums.DataOrigin;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +18,16 @@ import lombok.Getter;
 public class MatchListResponse {
     @Schema(description = "경기 ID", example = "1001")
     private Long id;
+
+    @Schema(description = "경기 데이터 원천. BETS는 BetsAPI, MANUAL은 관리자 직접 등록을 의미합니다.",
+            example = "BETS", nullable = true)
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private DataOrigin dataOrigin;
+
+    @Schema(description = "공급자가 부여한 외부 경기 ID. 저장된 ID가 없으면 null입니다.",
+            example = "00123456", nullable = true)
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private String apiMatchId;
 
     @Schema(description = "종목 ID", example = "1")
     private Long sportId;
@@ -65,7 +77,6 @@ public class MatchListResponse {
     @Schema(description = "원정팀 점수", example = "0")
     private Integer awayScore;
 
-    @Schema(description = "수동 등록 경기 여부. true이면 수동, false이면 자동", example = "true")
     private boolean isManual;
 
     @Schema(description = "앱 노출 여부", example = "true")
@@ -77,4 +88,9 @@ public class MatchListResponse {
     @Schema(description = "경기 시작 시간", example = "2026-06-05T20:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startAt;
+
+    @Schema(description = "현재 경기 관리 모드. true이면 수동 관리, false이면 자동 관리", example = "true")
+    public boolean isManual() {
+        return isManual;
+    }
 }
