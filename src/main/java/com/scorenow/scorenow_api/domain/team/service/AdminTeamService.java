@@ -127,7 +127,7 @@ public class AdminTeamService {
 
     @Transactional
     public void updateTeam(Long teamId, AdminTeamUpdateRequest request, MultipartFile image) {
-        Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
+        Team team = teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
 
         if (request == null) {
@@ -150,7 +150,7 @@ public class AdminTeamService {
      */
     @Transactional
     public void deleteTeam(Long teamId) {
-        Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
+        Team team = teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
 
         if (team.getDataOrigin() != MANUAL) {

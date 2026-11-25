@@ -67,7 +67,7 @@ class AdminTeamServiceTest {
         request.setSName("NEW");
         request.setCc("new cc");
 
-        given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
+        given(teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
 
         adminTeamService.updateTeam(teamId, request);
 
@@ -85,7 +85,7 @@ class AdminTeamServiceTest {
         Team team = Team.builder().id(teamId).kName("기존팀").build();
         AdminTeamUpdateRequest request = new AdminTeamUpdateRequest();
         request.setKName("   ");
-        given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
+        given(teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
 
         assertThatThrownBy(() -> adminTeamService.updateTeam(teamId, request))
                 .isInstanceOf(BusinessException.class)
@@ -102,7 +102,7 @@ class AdminTeamServiceTest {
                 .dataOrigin(MANUAL)
                 .build();
 
-        given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
+        given(teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
 
         adminTeamService.deleteTeam(teamId);
 
@@ -119,7 +119,7 @@ class AdminTeamServiceTest {
                 .dataOrigin(BETS)
                 .build();
 
-        given(teamRepository.findByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
+        given(teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)).willReturn(Optional.of(team));
 
         assertThatThrownBy(() -> adminTeamService.deleteTeam(teamId))
                 .isInstanceOf(BusinessException.class)
@@ -131,7 +131,7 @@ class AdminTeamServiceTest {
     @Test
     void 삭제할_팀이_없으면_예외가_발생한다() {
         Long invalidTeamId = 1L;
-        given(teamRepository.findByIdAndIsActiveTrue(invalidTeamId)).willReturn(Optional.empty());
+        given(teamRepository.findForUpdateByIdAndIsActiveTrue(invalidTeamId)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> adminTeamService.deleteTeam(invalidTeamId))
                 .isInstanceOf(BusinessException.class);

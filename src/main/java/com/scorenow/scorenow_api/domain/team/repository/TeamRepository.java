@@ -87,8 +87,10 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
             Pageable pageable
     );
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Team> findByIdAndIsActiveTrue(Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Team> findForUpdateByIdAndIsActiveTrue(Long id);
 
     boolean existsByIdAndIsActiveTrue(Long id);
 }
