@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.Optional;
 
 import com.scorenow.scorenow_api.domain.team.entity.Team;
+import jakarta.persistence.LockModeType;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -86,6 +88,9 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     );
 
     Optional<Team> findByIdAndIsActiveTrue(Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Team> findForUpdateByIdAndIsActiveTrue(Long id);
 
     boolean existsByIdAndIsActiveTrue(Long id);
 }

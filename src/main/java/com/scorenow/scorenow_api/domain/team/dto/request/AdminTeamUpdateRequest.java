@@ -34,10 +34,13 @@ public class AdminTeamUpdateRequest {
     @JsonProperty("sName")
     private String sName;
 
-    @Schema(description = "팀 이미지 URL. null이면 변경하지 않습니다.", example = "https://assets.b365api.com/images/team/m/12345.png")
+    @Schema(description = "직접 지정하는 팀 이미지 URL. 이미지 파일 또는 removeEmblem과 함께 사용할 수 없습니다.", example = "https://assets.b365api.com/images/team/m/12345.png")
     @Size(max = 255, message = "팀 이미지 URL은 255자를 초과할 수 없습니다.")
     @JsonProperty("imageUrl")
     private String imageUrl;
+
+    @Schema(description = "true이면 팀 엠블럼을 제거합니다. 이미지 파일과 이미지 URL을 생략해야 합니다.", example = "false")
+    private Boolean removeEmblem;
 
     @Schema(description = "국가 코드. null이면 변경하지 않습니다.", example = "KR")
     @Size(max = 10, message = "국가 코드는 10자를 초과할 수 없습니다.")
