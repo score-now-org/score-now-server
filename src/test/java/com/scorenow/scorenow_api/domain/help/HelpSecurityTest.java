@@ -9,6 +9,7 @@ import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.global.config.SecurityConfig;
 import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(HelpController.class)
@@ -47,5 +49,27 @@ class HelpSecurityTest {
         mvc.perform(put("/api/v1/admin/help").header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"version\":-1,\"items\":[null]}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test void uploadRejectsNonImagesAndAcceptsSupportedSignatures() throws Exception {
+        String token = "00000000-0000-0000-0000-000000000001";
+        when(tokens.isValid(token)).thenReturn(true);
+        MockMultipartFile fake = new MockMultipartFile("image", "fake.png", "image/png", "not an image".getBytes(StandardCharsets.US_ASCII));
+        mvc.perform(multipart("/api/v1/admin/help/images").file(fake)).andExpect(status().isUnauthorized());
+        mvc.perform(multipart("/api/v1/admin/help/images").file(fake).header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(storage);
+
+        MockMultipartFile png = new MockMultipartFile("image", "a.png", "image/png",
+                new byte[]{(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a});
+        MockMultipartFile jpeg = new MockMultipartFile("image", "a.jpg", "image/jpeg",
+                new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff});
+        MockMultipartFile webp = new MockMultipartFile("image", "a.webp", "image/webp", "RIFF0000WEBP".getBytes(StandardCharsets.US_ASCII));
+        when(storage.uploadFileAndReturnKey(any(), eq("help"))).thenReturn("help/image");
+        for (MockMultipartFile image : List.of(png, jpeg, webp)) {
+            mvc.perform(multipart("/api/v1/admin/help/images").file(image).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk());
+        }
+        verify(storage, times(3)).uploadFileAndReturnKey(any(), eq("help"));
     }
 }
