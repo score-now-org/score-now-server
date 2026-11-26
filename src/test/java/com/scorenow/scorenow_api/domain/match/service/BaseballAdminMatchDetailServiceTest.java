@@ -8,7 +8,9 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.Base
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballInningScores;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballStats;
+import com.scorenow.scorenow_api.domain.match.dto.response.BaseballAdminMatchDetailResponse.Stats;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.BaseballMatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
@@ -21,6 +23,8 @@ import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -326,6 +330,45 @@ class BaseballAdminMatchDetailServiceTest {
         then(eventPublisher).should(never()).publishScoreChanged(any(), any(), any());
         then(baseballMatchDetailRepository).should().updateInningScores(MATCH_ID, newScores);
         then(eventProcessorRegistry).should().process(eq(currentDocument), any(MatchDetailDocument.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void 상세_중계_설정과_관계없이_양팀_스탯을_조회한다(boolean detailedBroadcastEnabled) {
+        givenBaseballMatch(3, 2).updateStatus(MatchStatus.IN_PLAY);
+        BaseballDetail storedDetail = BaseballDetail.builder()
+                .detailedBroadcastEnabled(detailedBroadcastEnabled)
+                .pitcher("현재 투수")
+                .homeStats(new BaseballStats(3, 0, 1))
+                .awayStats(new BaseballStats(2, 1, 0))
+                .build();
+        given(matchDetailRepository.findById(MATCH_ID)).willReturn(Optional.of(baseballDocument(storedDetail)));
+
+        var response = service.getBaseballMatchDetail(MATCH_ID).getBaseballDetail();
+
+        assertThat(response.getDetailedBroadcastEnabled()).isEqualTo(detailedBroadcastEnabled);
+        assertThat(response.getPitcher()).isEqualTo(detailedBroadcastEnabled ? "현재 투수" : null);
+        assertThat(response.getHomeStats())
+                .isNotNull()
+                .extracting(Stats::getHits, Stats::getErrors, Stats::getBasesOnBalls)
+                .containsExactly(3, 0, 1);
+        assertThat(response.getAwayStats())
+                .isNotNull()
+                .extracting(Stats::getHits, Stats::getErrors, Stats::getBasesOnBalls)
+                .containsExactly(2, 1, 0);
+    }
+
+    @Test
+    void 상세_중계가_꺼져_있고_저장된_스탯이_없으면_미입력으로_조회한다() {
+        givenBaseballMatch(0, 0).updateStatus(MatchStatus.IN_PLAY);
+        given(matchDetailRepository.findById(MATCH_ID))
+                .willReturn(Optional.of(baseballDocument(BaseballDetail.empty())));
+
+        var response = service.getBaseballMatchDetail(MATCH_ID).getBaseballDetail();
+
+        assertThat(response.getDetailedBroadcastEnabled()).isFalse();
+        assertThat(response.getHomeStats()).isNull();
+        assertThat(response.getAwayStats()).isNull();
     }
 
     @Test

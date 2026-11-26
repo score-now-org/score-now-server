@@ -86,37 +86,37 @@ public class BaseballAdminMatchDetailResponse {
         private Stats awayStats;
 
         public static BaseballDetailResponse fromBasic(BaseballDetail baseballDetail) {
-            if (baseballDetail == null) {
-                return BaseballDetailResponse.builder().build();
-            }
-
-            return BaseballDetailResponse.builder()
-                    .currentInning(Inning.from(baseballDetail.getCurrentHalfInning()))
-                    .inningScores(resolveInningScores(baseballDetail.getInningScores()))
-                    .detailedBroadcastEnabled(baseballDetail.isDetailedBroadcastEnabled())
-                    .build();
+            return createResponse(baseballDetail, false);
         }
 
         public static BaseballDetailResponse fromDetailed(BaseballDetail baseballDetail) {
+            return createResponse(baseballDetail, true);
+        }
+
+        private static BaseballDetailResponse createResponse(BaseballDetail baseballDetail, boolean includeDetailedFields) {
             if (baseballDetail == null) {
                 return BaseballDetailResponse.builder().build();
             }
 
-            BaseballCount count = baseballDetail.getCount();
-
-            return BaseballDetailResponse.builder()
+            BaseballDetailResponseBuilder responseBuilder = BaseballDetailResponse.builder()
                     .currentInning(Inning.from(baseballDetail.getCurrentHalfInning()))
                     .inningScores(resolveInningScores(baseballDetail.getInningScores()))
                     .detailedBroadcastEnabled(baseballDetail.isDetailedBroadcastEnabled())
-                    .pitcher(baseballDetail.getPitcher())
-                    .batter(baseballDetail.getBatter())
-                    .baseStates(resolveBaseStates(baseballDetail.getBaseStates()))
-                    .balls(count == null ? null : count.getBalls())
-                    .strikes(count == null ? null : count.getStrikes())
-                    .outs(count == null ? null : count.getOuts())
                     .homeStats(Stats.from(baseballDetail.getHomeStats()))
-                    .awayStats(Stats.from(baseballDetail.getAwayStats()))
-                    .build();
+                    .awayStats(Stats.from(baseballDetail.getAwayStats()));
+
+            if (includeDetailedFields) {
+                BaseballCount count = baseballDetail.getCount();
+                responseBuilder
+                        .pitcher(baseballDetail.getPitcher())
+                        .batter(baseballDetail.getBatter())
+                        .baseStates(resolveBaseStates(baseballDetail.getBaseStates()))
+                        .balls(count == null ? null : count.getBalls())
+                        .strikes(count == null ? null : count.getStrikes())
+                        .outs(count == null ? null : count.getOuts());
+            }
+
+            return responseBuilder.build();
         }
 
         public static List<InningScore> resolveInningScores(BaseballInningScores scores) {
