@@ -89,12 +89,14 @@ class FootballInplayMatchDetailSynchronizerTest {
 
 		synchronizer.sync(SportCode.FOOTBALL, List.of(match));
 
-		verifyNoInteractions(normalizer, matchDetailService, matchLineupRepository);
+		verify(matchLineupRepository).findByIdIn(List.of(1L));
+		verifyNoMoreInteractions(matchLineupRepository);
+		verifyNoInteractions(normalizer, matchDetailService, inplayRedisService);
 	}
 
 	@Test
-	@DisplayName("라인업이 없으면 경기 상세만 업데이트한다.")
-	void sync_WhenNoLineupProvided_ThenUpdateOnlyMatchDetail() {
+	@DisplayName("라인업 응답이 없으면 경기 상세를 저장하고 기본 라인업 생성을 요청한다.")
+	void sync_WhenNoLineupProvided_ThenUpdateDetailAndEnqueueLineup() {
 		Match match = createMatch(1L, 10L, "api-1");
 		BetsFootballViewResponse.ViewResult viewResult = createViewResult("api-1", false);
 		given(betsApiClient.getFootballEventView("api-1")).willReturn(createResponse(viewResult));
@@ -105,7 +107,9 @@ class FootballInplayMatchDetailSynchronizerTest {
 		ArgumentCaptor<MatchDetailSyncSnapshot> snapshotCaptor =
 			ArgumentCaptor.forClass(MatchDetailSyncSnapshot.class);
 		verify(matchDetailService).updateInplayMatchDetail(snapshotCaptor.capture());
-		verifyNoInteractions(matchLineupRepository, inplayRedisService);
+		verify(matchLineupRepository).findByIdIn(List.of(1L));
+		verifyNoMoreInteractions(matchLineupRepository);
+		verify(inplayRedisService).markSeenAndEnqueue("1", "10");
 
 		MatchDetailSyncSnapshot snapshot = snapshotCaptor.getValue();
 		assertThat(snapshot.matchId()).isEqualTo(1L);
@@ -133,8 +137,8 @@ class FootballInplayMatchDetailSynchronizerTest {
 	}
 
 	@Test
-	@DisplayName("라인업 문서가 있으면 라인업의 득점 정보를 동기화한다.")
-	void sync_WhenLineupDocumentExists_ThenUpdateLineupGoals() {
+	@DisplayName("라인업 문서가 있으면 기본 라인업을 다시 요청하지 않는다.")
+	void sync_WhenLineupDocumentExists_ThenDoNotEnqueueLineup() {
 		Match match = createMatch(1L, 10L, "api-1");
 		BetsFootballViewResponse.ViewResult viewResult = createViewResult("api-1", true);
 		MatchLineupDocument lineupDocument = MatchLineupDocument.create(1L, 10L, "api-1");
