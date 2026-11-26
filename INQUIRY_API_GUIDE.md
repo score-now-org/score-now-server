@@ -24,7 +24,7 @@
 
 문의 첨부 데이터는 DB에 저장되므로 DB 용량 및 MySQL `max_allowed_packet`은 5 MiB 이상 파일 저장에 맞춰 설정해야 한다. dev 프로필은 multipart 파일 5MB/요청 6MB로 설정했으며 다른 프로필도 동일하게 설정해야 한다.
 
-기존 DB는 `inquiries.answer_html`, `inquiries.attachment_name` 컬럼이 필요하다. dev의 Hibernate `ddl-auto: update`가 시작 시 추가할 수 있으나 실제 DB 권한·스키마를 배포 전에 확인해야 한다. 수동 적용 시 `database/migrations/V20261118__inquiry_answer_html.sql`과 `V20261118__inquiry_attachment_name.sql`은 해당 컬럼이 아직 없는 경우에만 한 번 실행한다.
+기존 DB에는 `inquiries.answer_html`, `inquiries.attachment_name` 컬럼이 필요하다. 자동 마이그레이션이 선행 배포되면 서버 시작 시 필요한 컬럼을 적용한다. 실제 DB의 스키마와 권한은 배포 전에 확인하고, 자동 적용한 SQL을 수동으로 중복 실행하지 않는다. 자세한 내용은 `database/MIGRATIONS.md`를 참고한다.
 
 동시 업로드 MySQL 테스트는 기본적으로 건너뛴다. 포트 13307의 `scorenow_inquiry_test_only`는 테스트 중 모든 테이블을 생성·삭제하므로, 반드시 별도의 임시 MySQL 컨테이너에서만 `INQUIRY_MYSQL_DISPOSABLE_TEST=true`로 실행한다. 실제 개발·운영 DB에서는 실행하지 않는다.
 
