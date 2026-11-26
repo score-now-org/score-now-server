@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Service;
@@ -55,8 +56,12 @@ public class AuthService {
                 String country = geoService.getCountryFromIp(ip);
 
                 User user = userRepository
-                                .findByProviderAndSocialId(identity.provider(), identity.socialId())
+                                .findIdByProviderAndSocialId(identity.provider(), identity.socialId())
+                                .flatMap(userRepository::findByIdForUpdate)
                                 .orElse(null);
+
+                // A scaled-to-zero server may not have run the scheduled expiry yet.
+                if (user != null) user.expireBan(LocalDateTime.now(ZoneOffset.UTC));
 
                 boolean isNewUser = false;
                 // 신규 사용자 생성

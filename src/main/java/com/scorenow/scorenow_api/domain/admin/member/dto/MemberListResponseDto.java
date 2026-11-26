@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 @Getter
 @SuperBuilder
@@ -30,6 +32,7 @@ public class MemberListResponseDto {
     private LocalDateTime warnedAt;
     private String permanentWithdrawalReason;
     private LocalDateTime permanentlyWithdrawnAt;
+    private Instant banExpiresAt;
 
     public static MemberListResponseDto from(User user) {
         return MemberListResponseDto.builder()
@@ -48,6 +51,7 @@ public class MemberListResponseDto {
                 .warnedAt(user.getWarnedAt())
                 .permanentWithdrawalReason(user.getPermanentWithdrawalReason())
                 .permanentlyWithdrawnAt(user.getPermanentlyWithdrawnAt())
+                .banExpiresAt(user.getBanExpiresAt() == null ? null : user.getBanExpiresAt().toInstant(ZoneOffset.UTC))
                 .build();
     }
 }

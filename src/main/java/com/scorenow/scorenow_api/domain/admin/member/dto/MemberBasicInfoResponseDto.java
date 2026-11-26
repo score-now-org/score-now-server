@@ -1,6 +1,7 @@
 package com.scorenow.scorenow_api.domain.admin.member.dto;
 
 import com.scorenow.scorenow_api.domain.user.entity.User;
+import java.time.ZoneOffset;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,7 @@ public class MemberBasicInfoResponseDto extends MemberListResponseDto {
                 .warnedAt(user.getWarnedAt())
                 .permanentWithdrawalReason(user.getPermanentWithdrawalReason())
                 .permanentlyWithdrawnAt(user.getPermanentlyWithdrawnAt())
+                .banExpiresAt(user.getBanExpiresAt() == null ? null : user.getBanExpiresAt().toInstant(ZoneOffset.UTC))
                 //자식클래스 빌드
                 .profileImageUrl(user.getProfileImageUrl())
                 .name(user.getName())

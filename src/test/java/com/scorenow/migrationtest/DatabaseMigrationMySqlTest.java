@@ -303,7 +303,7 @@ class DatabaseMigrationMySqlTest {
             bootstrap.start(flyway);
             bootstrap.finish(flyway);
         }
-        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(9);
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(10);
     }
 
     @Test
@@ -327,13 +327,13 @@ class DatabaseMigrationMySqlTest {
         JavaMigration[] migrations = allFeatureMigrations();
         run(flyway(migrations));
         assertFeatureDataAndSchema();
-        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(9);
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(10);
 
         // An earlier manual deployment may have the schema but no Flyway history.
         execute("DROP TABLE flyway_schema_history");
         run(flyway(allFeatureMigrations()));
         assertFeatureDataAndSchema();
-        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(9);
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(10);
     }
 
     @Test
@@ -367,7 +367,8 @@ class DatabaseMigrationMySqlTest {
             "com.scorenow.scorenow_api.domain.help.HelpDocument",
             "com.scorenow.scorenow_api.domain.notice.Notice",
             "com.scorenow.scorenow_api.domain.notice.NewsTickerRequest",
-            "com.scorenow.scorenow_api.domain.terms.TermsRevision"
+            "com.scorenow.scorenow_api.domain.terms.TermsRevision",
+            "com.scorenow.scorenow_api.domain.admin.member.dto.SuspensionDuration"
     };
 
     private ApplicationContextRunner applicationContextRunner() {
@@ -404,13 +405,19 @@ class DatabaseMigrationMySqlTest {
                 new AdminFeatureMigrations.V20261126_06__HelpDocuments(),
                 new AdminFeatureMigrations.V20261126_07__NoticeManagement(),
                 new AdminFeatureMigrations.V20261126_08__NewsTickerFields(),
-                new AdminFeatureMigrations.V20261126_09__TermsManagement()
+                new AdminFeatureMigrations.V20261126_09__TermsManagement(),
+                new AdminFeatureMigrations.V20261126_10__TimedMemberBans()
         };
     }
 
     private void assertFeatureDataAndSchema() throws Exception {
         assertThat(scalar("SELECT COUNT(*) FROM users WHERE id = 42 AND status = 'ACTIVE' AND warning_reason = 'keep'")).isEqualTo(1);
         assertThat(scalar("SELECT COUNT(*) FROM member_moderation_events WHERE user_id = 42 AND action = 'WARN'")).isEqualTo(1);
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() "
+                + "AND ((table_name = 'users' AND column_name = 'ban_expires_at') "
+                + "OR (table_name = 'member_moderation_events' AND column_name = 'duration'))")).isEqualTo(2);
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() "
+                + "AND table_name = 'users' AND index_name = 'idx_users_status_ban_expires_at'")).isEqualTo(2);
         assertThat(scalar("SELECT COUNT(*) FROM information_schema.key_column_usage WHERE table_schema = DATABASE() "
                 + "AND table_name = 'member_moderation_events' AND column_name = 'user_id' AND referenced_table_name = 'users'"))
                 .isEqualTo(1);

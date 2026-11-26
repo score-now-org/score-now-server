@@ -46,6 +46,18 @@ public class AdminFeatureMigrations {
     @Bean @ConditionalOnClass(name = "com.scorenow.scorenow_api.domain.terms.TermsRevision")
     JavaMigration termsMigration() { return new V20261126_09__TermsManagement(); }
 
+    @Bean @ConditionalOnClass(name = "com.scorenow.scorenow_api.domain.admin.member.dto.SuspensionDuration")
+    JavaMigration timedBanMigration() { return new V20261126_10__TimedMemberBans(); }
+
+    public static class V20261126_10__TimedMemberBans extends BaseJavaMigration {
+        @Override public void migrate(Context context) throws Exception {
+            Connection c = context.getConnection();
+            SchemaMigration.addColumn(c, "users", "ban_expires_at", "DATETIME(6) NULL");
+            SchemaMigration.addIndex(c, "users", "idx_users_status_ban_expires_at", "`status`, `ban_expires_at`", false);
+            SchemaMigration.addColumn(c, "member_moderation_events", "duration", "VARCHAR(16) NULL");
+        }
+    }
+
     public static class V20261125_01__PreserveChatUserHistory extends BaseJavaMigration {
         @Override public void migrate(Context context) throws Exception {
             SchemaMigration.preserveChatUserHistory(context.getConnection());
