@@ -43,6 +43,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import db.migration.SchemaMigration;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -453,7 +454,8 @@ class DatabaseMigrationMySqlTest {
     }
     @Entity @Table(name = "chat_messages") static class FixtureChat {
         @Id Long id;
-        @ManyToOne @JoinColumn(name = "user_id") @OnDelete(action = OnDeleteAction.SET_NULL) FixtureUser user;
+        @ManyToOne @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_chat_messages_user"))
+        @OnDelete(action = OnDeleteAction.SET_NULL) FixtureUser user;
     }
     @Entity @Table(name = "inquiries") static class FixtureInquiry { @Id Long id; }
 }
