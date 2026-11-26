@@ -15,6 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.scorenow.scorenow_api.domain.chat.dto.ChatMessageRequest;
+import com.scorenow.scorenow_api.domain.community.repository.CommunityUploadedImageRepository;
+import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
+import java.util.List;
 import com.scorenow.scorenow_api.domain.chat.dto.ChatMessageResponse;
 import com.scorenow.scorenow_api.domain.chat.entity.ChatMessage;
 import com.scorenow.scorenow_api.domain.chat.repository.ChatMessageRepository;
@@ -36,6 +39,9 @@ class ChatMessageServiceTest {
 
 	@Mock
 	private UserReferenceService userReferenceService;
+
+	@Mock private CommunityUploadedImageRepository uploadedImages;
+	@Mock private FileStorage fileStorage;
 
 	@InjectMocks
 	private ChatMessageService chatMessageService;
@@ -93,6 +99,20 @@ class ChatMessageServiceTest {
 			.isThrownBy(() -> chatMessageService.createMessage(matchId, userId, request("  ")))
 			.satisfies(exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_MESSAGE_INVALID));
 		then(chatMessageRepository).should(never()).save(any(ChatMessage.class));
+	}
+
+	@Test
+	void imageRequiresOwnedUploadAndCanBeSentWithoutText() {
+		Long matchId = 1L, userId = 10L;
+		given(matchReferenceService.requireMatch(matchId)).willReturn(Match.builder().id(matchId).build());
+		given(userReferenceService.requireActiveUser(userId)).willReturn(User.builder().id(userId).nickname("fan").build());
+		ChatMessageRequest request = request(null);
+		ReflectionTestUtils.setField(request, "imageKey", "key");
+		assertThatThrownBy(() -> chatMessageService.createMessage(matchId, userId, request)).isInstanceOf(BusinessException.class);
+		given(uploadedImages.countByImageKeyInAndOwner_Id(List.of("key"), userId)).willReturn(1L);
+		given(fileStorage.getFileUrl("key")).willReturn("https://example.test/image.png");
+		given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> invocation.getArgument(0));
+		assertThat(chatMessageService.createMessage(matchId, userId, request).getImageUrl()).isEqualTo("https://example.test/image.png");
 	}
 
 	private ChatMessageRequest request(String message) {
