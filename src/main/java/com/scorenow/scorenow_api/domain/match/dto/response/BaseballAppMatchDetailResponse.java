@@ -18,6 +18,8 @@ public record BaseballAppMatchDetailResponse(
         CurrentInningResponse currentInning,
         List<InningScoreResponse> inningScores,
         boolean detailedBroadcastEnabled,
+        @JsonInclude(JsonInclude.Include.ALWAYS) StatsResponse homeStats,
+        @JsonInclude(JsonInclude.Include.ALWAYS) StatsResponse awayStats,
         @JsonInclude(JsonInclude.Include.NON_NULL) DetailedResponse detailed
 ) implements MatchAppSportDetailResponse {
 
@@ -32,12 +34,14 @@ public record BaseballAppMatchDetailResponse(
                 CurrentInningResponse.from(baseballDetail.getCurrentHalfInning()),
                 resolveInningScores(baseballDetail.getInningScores()),
                 detailedBroadcastEnabled,
+                StatsResponse.from(baseballDetail.getHomeStats()),
+                StatsResponse.from(baseballDetail.getAwayStats()),
                 detailedBroadcastEnabled ? DetailedResponse.from(baseballDetail) : null
         );
     }
 
     public static BaseballAppMatchDetailResponse empty() {
-        return new BaseballAppMatchDetailResponse(null, null, false, null);
+        return new BaseballAppMatchDetailResponse(null, null, false, null, null, null);
     }
 
     private static List<InningScoreResponse> resolveInningScores(BaseballInningScores inningScores) {
@@ -88,9 +92,7 @@ public record BaseballAppMatchDetailResponse(
             String pitcher,
             String batter,
             List<BaseStateResponse> baseStates,
-            CountResponse count,
-            StatsResponse homeStats,
-            StatsResponse awayStats
+            CountResponse count
     ) {
 
         private static DetailedResponse from(BaseballDetail baseballDetail) {
@@ -98,9 +100,7 @@ public record BaseballAppMatchDetailResponse(
                     baseballDetail.getPitcher(),
                     baseballDetail.getBatter(),
                     resolveBaseStates(baseballDetail.getBaseStates()),
-                    CountResponse.from(baseballDetail.getCount()),
-                    StatsResponse.from(baseballDetail.getHomeStats()),
-                    StatsResponse.from(baseballDetail.getAwayStats())
+                    CountResponse.from(baseballDetail.getCount())
             );
         }
 
