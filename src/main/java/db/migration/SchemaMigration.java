@@ -125,8 +125,8 @@ public final class SchemaMigration {
     /** Add the new enum member without removing existing values, defaults or collation. */
     public static void allowPermanentWithdrawal(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement(); ResultSet invalid = statement.executeQuery(
-                "SELECT 1 FROM users WHERE status IS NOT NULL AND BINARY status NOT IN "
-                        + "(BINARY 'ACTIVE', BINARY 'INACTIVE', BINARY 'BANNED', BINARY 'DELETED', BINARY 'PERMANENTLY_WITHDRAWN') LIMIT 1")) {
+                "SELECT 1 FROM users WHERE status IS NOT NULL AND CAST(status AS BINARY) NOT IN "
+                        + "('ACTIVE', 'INACTIVE', 'BANNED', 'DELETED', 'PERMANENTLY_WITHDRAWN') LIMIT 1")) {
             if (invalid.next()) throw new SQLException("users.status에 지원하지 않는 값이 있어 마이그레이션을 중단했습니다.");
         }
         try (PreparedStatement statement = connection.prepareStatement(
@@ -157,7 +157,7 @@ public final class SchemaMigration {
         if (!result.getString("EXTRA").isBlank()) throw new SQLException("users.status의 추가 속성을 수동 확인해야 합니다.");
         String charset = result.getString("CHARACTER_SET_NAME");
         String collation = result.getString("COLLATION_NAME");
-        if (!charset.matches("[A-Za-z0-9_]+") || !collation.matches("[A-Za-z0-9_]+")) {
+        if (charset == null || collation == null || !charset.matches("[A-Za-z0-9_]+") || !collation.matches("[A-Za-z0-9_]+")) {
             throw new SQLException("users.status 문자 집합을 확인할 수 없습니다.");
         }
         String sql = "ALTER TABLE users MODIFY COLUMN status " + newType + " CHARACTER SET " + charset
