@@ -24,7 +24,7 @@ import com.scorenow.scorenow_api.ScorenowApiApplication;
 @EnabledIfEnvironmentVariable(named = "ADMIN_MIGRATION_DISPOSABLE_MYSQL", matches = "true")
 @SpringBootTest(classes = ScorenowApiApplication.class, properties = {
         "spring.flyway.enabled=true", "spring.flyway.baseline-on-migrate=true", "spring.flyway.baseline-version=0",
-        "spring.flyway.out-of-order=true", "spring.jpa.hibernate.ddl-auto=update", "spring.batch.jdbc.initialize-schema=never"
+        "spring.flyway.out-of-order=true", "spring.jpa.hibernate.ddl-auto=update", "spring.batch.jdbc.initialize-schema=always"
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ApplicationMigrationMySqlTest {
@@ -60,6 +60,12 @@ class ApplicationMigrationMySqlTest {
     void realApplicationStartsOnFreshMySqlWithMigrationHistory() throws Exception {
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
              ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'SQL'")) {
+            result.next();
+            assertThat(result.getInt(1)).isEqualTo(1);
+        }
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
+                     + "WHERE table_schema = DATABASE() AND table_name = 'BATCH_JOB_INSTANCE'")) {
             result.next();
             assertThat(result.getInt(1)).isEqualTo(1);
         }
