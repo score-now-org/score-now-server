@@ -1,16 +1,23 @@
 package com.scorenow.scorenow_api.domain.match.service.appresponse.baseball;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballBase;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballBaseStates;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballCount;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballInningScores;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballStats;
 import com.scorenow.scorenow_api.domain.match.dto.response.BaseballAppLiveSummaryResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.BaseballAppMatchDetailResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 
@@ -86,5 +93,27 @@ class BaseballMatchAppSportResponseMapperTest {
         assertThat(response.inningScores().get(0).homeScore()).isEqualTo(2);
         assertThat(response.inningScores().get(0).awayScore()).isEqualTo(1);
         assertThat(response.detailed()).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void 상세중계_설정과_관계없이_H_E_B를_야구_상세_응답의_기본_필드로_반환한다(boolean detailedBroadcastEnabled) {
+        BaseballDetail baseballDetail = BaseballDetail.builder()
+                .detailedBroadcastEnabled(detailedBroadcastEnabled)
+                .pitcher("홈 투수")
+                .homeStats(new BaseballStats(4, 0, 2))
+                .build();
+
+        JsonNode detail = new ObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                .valueToTree(mapper.toDetail(baseballDetail));
+
+        assertThat(detail.at("/homeStats/hits")).isEqualTo(IntNode.valueOf(4));
+        assertThat(detail.at("/homeStats/errors")).isEqualTo(IntNode.valueOf(0));
+        assertThat(detail.at("/homeStats/basesOnBalls")).isEqualTo(IntNode.valueOf(2));
+        assertThat(detail.path("awayStats").isNull()).isTrue();
+        assertThat(detail.has("detailed")).isEqualTo(detailedBroadcastEnabled);
+        assertThat(detail.at("/detailed/homeStats").isMissingNode()).isTrue();
+        assertThat(detail.at("/detailed/awayStats").isMissingNode()).isTrue();
     }
 }

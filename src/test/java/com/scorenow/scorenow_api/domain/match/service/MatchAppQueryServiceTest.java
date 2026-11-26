@@ -157,8 +157,8 @@ class MatchAppQueryServiceTest {
                         BaseballAppMatchDetailResponse.BaseStateResponse::runnerOnBase)
                 .containsExactly(true, false, false);
         assertThat(detail.detailed().count().balls()).isEqualTo(2);
-        assertThat(detail.detailed().homeStats().hits()).isEqualTo(4);
-        assertThat(detail.detailed().awayStats().errors()).isEqualTo(1);
+        assertThat(detail.homeStats().hits()).isEqualTo(4);
+        assertThat(detail.awayStats().errors()).isEqualTo(1);
     }
 
     @Test
