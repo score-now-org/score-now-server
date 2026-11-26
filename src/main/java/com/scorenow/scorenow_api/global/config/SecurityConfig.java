@@ -72,6 +72,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/community/comments/*/reports").authenticated()
                         // 비로그인 사용자가 조회할 수 있는 커뮤니티/채팅 읽기 API
                         .requestMatchers(HttpMethod.GET, "/api/v1/notices", "/api/v1/notices/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/news-tickers").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/community/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/chat/*/history").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/help").permitAll()
