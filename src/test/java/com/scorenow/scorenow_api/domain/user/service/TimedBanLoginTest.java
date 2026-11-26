@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import com.scorenow.scorenow_api.domain.user.dto.SocialLoginRequestDto;
 import com.scorenow.scorenow_api.domain.user.entity.User;
@@ -58,7 +59,22 @@ class TimedBanLoginTest {
 
         service.socialLogin(request, new MockHttpServletRequest());
 
-        verify(users).save(any(User.class));
+        verify(users).saveAndFlush(any(User.class));
         verify(users, never()).findByIdForUpdate(anyLong());
+    }
+
+    @Test void unrelatedInsertFailureIsNotRetriedAsAnIdentityConflict() {
+        var users = mock(UserRepository.class);
+        var verifier = mock(SocialLoginVerifier.class);
+        var tokens = mock(TokenService.class);
+        var service = new AuthService(users, mock(GeoService.class), tokens, verifier,
+                mock(UserReferenceService.class), mock(NicknameGenerator.class), mock(UserLoginHistoryRepository.class));
+        var request = new SocialLoginRequestDto();
+        when(verifier.verify(request)).thenReturn(new SocialLoginVerifier.VerifiedUser("google", "new-id", "name"));
+        var failure = new DataIntegrityViolationException("unrelated constraint");
+        when(users.saveAndFlush(any(User.class))).thenThrow(failure);
+
+        assertThatThrownBy(() -> service.socialLogin(request, new MockHttpServletRequest())).isSameAs(failure);
+        verify(tokens, never()).createToken(anyLong());
     }
 }

@@ -55,7 +55,7 @@ class AdminMemberSearchIntegrationTest {
     @Test void distinguishesPermanentWithdrawalFromBanAndSearchesSocialIdLiterally() {
         User permanent = user("social%123", "nickname", 0, UserStatus.PERMANENTLY_WITHDRAWN);
         user("socialX123", "nickname", 0, UserStatus.PERMANENTLY_WITHDRAWN);
-        user("social%123", "nickname", 0, UserStatus.BANNED);
+        user("social%124", "nickname", 0, UserStatus.BANNED);
         em.flush(); em.clear();
         MemberSearchCondition condition = new MemberSearchCondition();
         condition.setStatus("permanently_withdrawn");

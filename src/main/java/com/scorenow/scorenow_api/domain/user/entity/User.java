@@ -17,8 +17,10 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = @UniqueConstraint(name = User.SOCIAL_IDENTITY_UNIQUE,
+        columnNames = {"provider", "social_id"}))
 public class User extends BaseEntity {
+    public static final String SOCIAL_IDENTITY_UNIQUE = "uk_users_provider_social_id";
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // 회원번호

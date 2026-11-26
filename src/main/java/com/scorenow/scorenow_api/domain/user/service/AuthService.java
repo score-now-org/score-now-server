@@ -24,6 +24,8 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.hibernate.exception.ConstraintViolationException;
 
 @Service
 @Slf4j
@@ -76,7 +78,12 @@ public class AuthService {
                                         .status(UserStatus.ACTIVE)
                                         .build();
 
-                        userRepository.save(user);
+                        try {
+                                userRepository.saveAndFlush(user);
+                        } catch (DataIntegrityViolationException failure) {
+                                if (isSocialIdentityConflict(failure)) throw new ConcurrentSocialRegistration();
+                                throw failure;
+                        }
                         isNewUser = true;
                 } else if (user.getStatus() == UserStatus.DELETED) {
                         if (user.getDeletedAt() == null) {
@@ -124,6 +131,19 @@ public class AuthService {
                                 .isNewUser(isNewUser)
                                 .user(userDto)
                                 .build();
+        }
+
+        public static class ConcurrentSocialRegistration extends RuntimeException { }
+
+        private static boolean isSocialIdentityConflict(Throwable failure) {
+                for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+                        if (cause instanceof ConstraintViolationException violation && violation.getConstraintName() != null) {
+                                String name = violation.getConstraintName().toLowerCase(java.util.Locale.ROOT);
+                                return name.equals(User.SOCIAL_IDENTITY_UNIQUE)
+                                                || name.endsWith("." + User.SOCIAL_IDENTITY_UNIQUE);
+                        }
+                }
+                return false;
         }
 
         /**

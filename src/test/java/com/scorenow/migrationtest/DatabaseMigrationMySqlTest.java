@@ -108,7 +108,8 @@ class DatabaseMigrationMySqlTest {
 
     @Test
     void existingLegacyForeignKeyRemainsCorrectAfterHibernateStarts() throws Exception {
-        execute("CREATE TABLE users (id BIGINT PRIMARY KEY, status ENUM('ACTIVE','INACTIVE','BANNED','DELETED') NULL)");
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY, provider VARCHAR(255), social_id VARCHAR(255), "
+                + "status ENUM('ACTIVE','INACTIVE','BANNED','DELETED') NULL)");
         execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, "
                 + "CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
         execute("CREATE TABLE inquiries (id BIGINT PRIMARY KEY)");
@@ -303,7 +304,7 @@ class DatabaseMigrationMySqlTest {
             bootstrap.start(flyway);
             bootstrap.finish(flyway);
         }
-        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(10);
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(11);
     }
 
     @Test
@@ -327,13 +328,24 @@ class DatabaseMigrationMySqlTest {
         JavaMigration[] migrations = allFeatureMigrations();
         run(flyway(migrations));
         assertFeatureDataAndSchema();
-        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(10);
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(11);
 
         // An earlier manual deployment may have the schema but no Flyway history.
         execute("DROP TABLE flyway_schema_history");
         run(flyway(allFeatureMigrations()));
         assertFeatureDataAndSchema();
-        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(10);
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(11);
+    }
+
+    @Test
+    void duplicateSocialIdentitiesStopMigrationWithoutChangingAccounts() throws Exception {
+        createCoreTables();
+        execute("INSERT INTO users (id, provider, social_id) VALUES (1, 'google', 'same'), (2, 'google', 'same')");
+        assertThrows(IllegalStateException.class,
+                () -> run(flyway(new AdminFeatureMigrations.V20261126_11__UniqueSocialIdentity())));
+        assertThat(scalar("SELECT COUNT(*) FROM users WHERE provider = 'google' AND social_id = 'same'")).isEqualTo(2);
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() "
+                + "AND table_name = 'users' AND index_name = 'uk_users_provider_social_id'")).isZero();
     }
 
     @Test
@@ -368,7 +380,8 @@ class DatabaseMigrationMySqlTest {
             "com.scorenow.scorenow_api.domain.notice.Notice",
             "com.scorenow.scorenow_api.domain.notice.NewsTickerRequest",
             "com.scorenow.scorenow_api.domain.terms.TermsRevision",
-            "com.scorenow.scorenow_api.domain.admin.member.dto.SuspensionDuration"
+            "com.scorenow.scorenow_api.domain.admin.member.dto.SuspensionDuration",
+            "com.scorenow.scorenow_api.domain.user.controller.AuthController"
     };
 
     private ApplicationContextRunner applicationContextRunner() {
@@ -406,7 +419,8 @@ class DatabaseMigrationMySqlTest {
                 new AdminFeatureMigrations.V20261126_07__NoticeManagement(),
                 new AdminFeatureMigrations.V20261126_08__NewsTickerFields(),
                 new AdminFeatureMigrations.V20261126_09__TermsManagement(),
-                new AdminFeatureMigrations.V20261126_10__TimedMemberBans()
+                new AdminFeatureMigrations.V20261126_10__TimedMemberBans(),
+                new AdminFeatureMigrations.V20261126_11__UniqueSocialIdentity()
         };
     }
 
@@ -418,6 +432,8 @@ class DatabaseMigrationMySqlTest {
                 + "OR (table_name = 'member_moderation_events' AND column_name = 'duration'))")).isEqualTo(2);
         assertThat(scalar("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() "
                 + "AND table_name = 'users' AND index_name = 'idx_users_status_ban_expires_at'")).isEqualTo(2);
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() "
+                + "AND table_name = 'users' AND index_name = 'uk_users_provider_social_id' AND non_unique = 0")).isEqualTo(2);
         assertThat(scalar("SELECT COUNT(*) FROM information_schema.key_column_usage WHERE table_schema = DATABASE() "
                 + "AND table_name = 'member_moderation_events' AND column_name = 'user_id' AND referenced_table_name = 'users'"))
                 .isEqualTo(1);
@@ -431,7 +447,8 @@ class DatabaseMigrationMySqlTest {
     }
 
     private void createCoreTables() throws Exception {
-        execute("CREATE TABLE users (id BIGINT PRIMARY KEY, status ENUM('ACTIVE','INACTIVE','BANNED','DELETED') NULL)");
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY, provider VARCHAR(255), social_id VARCHAR(255), "
+                + "status ENUM('ACTIVE','INACTIVE','BANNED','DELETED') NULL)");
         execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NULL, "
                 + "CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL)");
         execute("CREATE TABLE inquiries (id BIGINT PRIMARY KEY)");
@@ -457,6 +474,8 @@ class DatabaseMigrationMySqlTest {
 
     @Entity @Table(name = "users") static class FixtureUser {
         @Id Long id;
+        String provider;
+        String socialId;
         @Column(columnDefinition = "ENUM('ACTIVE','INACTIVE','BANNED','DELETED')") String status;
     }
     @Entity @Table(name = "chat_messages") static class FixtureChat {

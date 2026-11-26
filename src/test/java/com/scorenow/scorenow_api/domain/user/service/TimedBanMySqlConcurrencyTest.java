@@ -1,10 +1,19 @@
 package com.scorenow.scorenow_api.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.scorenow.scorenow_api.domain.user.controller.AuthController;
+import com.scorenow.scorenow_api.domain.user.dto.SocialLoginRequestDto;
 import com.scorenow.scorenow_api.domain.user.entity.User;
+import com.scorenow.scorenow_api.domain.user.enums.NicknameGenerator;
+import com.scorenow.scorenow_api.domain.user.jwt.TokenPair;
+import com.scorenow.scorenow_api.domain.user.jwt.TokenService;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import com.scorenow.scorenow_api.external.social.SocialLoginVerifier;
 import java.sql.DriverManager;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
@@ -17,7 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -27,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @DataJpaTest
+@Import({AuthService.class, AuthController.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EnabledIfEnvironmentVariable(named = "ADMIN_MIGRATION_DISPOSABLE_MYSQL", matches = "true")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -37,8 +50,15 @@ class TimedBanMySqlConcurrencyTest {
 
     @Autowired UserRepository users;
     @Autowired PlatformTransactionManager transactionManager;
+    @Autowired AuthController authController;
+    @Autowired JdbcTemplate jdbc;
     @MockBean(name = "mongoMappingContext") MongoMappingContext mongo;
     @MockBean JPAQueryFactory queryFactory;
+    @MockBean GeoService geo;
+    @MockBean TokenService tokens;
+    @MockBean SocialLoginVerifier verifier;
+    @MockBean UserReferenceService userReferences;
+    @MockBean NicknameGenerator nicknameGenerator;
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry properties) throws Exception {
@@ -72,6 +92,29 @@ class TimedBanMySqlConcurrencyTest {
             second.get(15, TimeUnit.SECONDS);
             assertThat(users.findIdByProviderAndSocialId("test", "first")).isPresent();
             assertThat(users.findIdByProviderAndSocialId("test", "second")).isPresent();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void simultaneousLoginsForTheSameIdentityUseOneAccount() throws Exception {
+        var executor = Executors.newFixedThreadPool(2);
+        var barrier = new CyclicBarrier(2);
+        when(verifier.verify(any())).thenReturn(new SocialLoginVerifier.VerifiedUser("google", "shared", "name"));
+        when(tokens.createToken(anyLong())).thenReturn(new TokenPair("access", "refresh"));
+        when(nicknameGenerator.generateUnique()).thenAnswer(invocation -> {
+            barrier.await(5, TimeUnit.SECONDS);
+            return "test-nickname";
+        });
+        try {
+            var first = executor.submit(() -> authController.socialLogin(new SocialLoginRequestDto(), new MockHttpServletRequest()).getData());
+            var second = executor.submit(() -> authController.socialLogin(new SocialLoginRequestDto(), new MockHttpServletRequest()).getData());
+            var one = first.get(20, TimeUnit.SECONDS);
+            var two = second.get(20, TimeUnit.SECONDS);
+            assertThat(one.getUser().getId()).isEqualTo(two.getUser().getId());
+            assertThat(java.util.List.of(one.getIsNewUser(), two.getIsNewUser())).containsExactlyInAnyOrder(true, false);
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE provider='google' AND social_id='shared'", Integer.class)).isEqualTo(1);
         } finally {
             executor.shutdownNow();
         }
