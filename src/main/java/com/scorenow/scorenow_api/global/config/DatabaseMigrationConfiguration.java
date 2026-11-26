@@ -49,7 +49,9 @@ public class DatabaseMigrationConfiguration {
         public void start(Flyway flyway) {
             try {
                 DataSource dataSource = flyway.getConfiguration().getDataSource();
-                if (dataSource instanceof HikariDataSource hikari && hikari.getMaximumPoolSize() == 1) {
+                HikariDataSource hikari = dataSource instanceof HikariDataSource direct ? direct
+                        : dataSource.isWrapperFor(HikariDataSource.class) ? dataSource.unwrap(HikariDataSource.class) : null;
+                if (hikari != null && hikari.getMaximumPoolSize() == 1) {
                     throw new IllegalStateException("DB 마이그레이션에는 연결 풀 크기가 최소 2개 필요합니다.");
                 }
                 lockConnection = dataSource.getConnection();
