@@ -1,8 +1,10 @@
 package com.scorenow.scorenow_api.domain.admin.member.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import com.scorenow.scorenow_api.domain.admin.member.dto.*;
@@ -40,8 +42,17 @@ public class MemberModerationService {
         User user = lockedUser(id);
         String action = request.action().trim().toUpperCase(java.util.Locale.ROOT);
         String reason = request.reason() == null ? null : request.reason().trim();
+        SuspensionDuration duration = request.duration();
+        if (action.equals("BAN_WEEK") || action.equals("BAN_MONTH")) {
+            if (duration != null) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+            duration = action.equals("BAN_WEEK") ? SuspensionDuration.WEEK : SuspensionDuration.MONTH;
+            action = "BAN";
+        }
         if (!action.equals("RESTORE") && !StringUtils.hasText(reason))
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "사유를 입력해 주세요.");
+        if (duration != null && !action.equals("BAN")) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
+        boolean alreadyExpired = user.expireBan(nowUtc);
         UserStatus status = user.getStatus();
         switch (action) {
             case "WARN" -> {
@@ -53,6 +64,7 @@ public class MemberModerationService {
             case "BAN" -> {
                 if (status != UserStatus.ACTIVE) invalidState();
                 user.setStatus(UserStatus.BANNED);
+                user.setBanExpiresAt(duration == null ? null : duration.expiresAt(nowUtc));
                 user.revokeTokens();
             }
             case "PERMANENT_WITHDRAWAL" -> {
@@ -68,16 +80,24 @@ public class MemberModerationService {
                 user.setProfileImageUrl(null);
             }
             case "RESTORE" -> {
-                if (status == UserStatus.BANNED) user.setStatus(UserStatus.ACTIVE);
+                if (alreadyExpired) { /* Expiry raced with the administrator's manual restore. */ }
+                else if (status == UserStatus.BANNED) { user.setStatus(UserStatus.ACTIVE); user.setBanExpiresAt(null); }
                 else if (status == UserStatus.PERMANENTLY_WITHDRAWN) {
                     user.setStatus(user.getStatusBeforePermanentWithdrawal() == UserStatus.BANNED ? UserStatus.BANNED : UserStatus.ACTIVE);
                     user.setStatusBeforePermanentWithdrawal(null);
+                    user.expireBan(nowUtc);
                 } else invalidState();
             }
             default -> throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         }
-        events.save(new MemberModerationEvent(user, action, reason));
+        events.save(new MemberModerationEvent(user, action, reason, duration));
         return MemberBasicInfoResponseDto.from(user);
+    }
+
+    @Scheduled(fixedDelay = 60_000)
+    @Transactional
+    public void expireTimedBans() {
+        users.expireBans(UserStatus.ACTIVE, UserStatus.BANNED, LocalDateTime.now(ZoneOffset.UTC));
     }
 
     private User lockedUser(Long id) {

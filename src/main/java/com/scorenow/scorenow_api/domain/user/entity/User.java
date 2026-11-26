@@ -47,10 +47,19 @@ public class User extends BaseEntity {
     private LocalDateTime permanentlyWithdrawnAt;
     @Enumerated(EnumType.STRING)
     private UserStatus statusBeforePermanentWithdrawal;
+    // UTC, so all server instances agree on the expiry regardless of their local time zone.
+    private LocalDateTime banExpiresAt;
     private Long tokenVersion;
 
     public long currentTokenVersion() { return tokenVersion == null ? 0L : tokenVersion; }
     public void revokeTokens() { tokenVersion = currentTokenVersion() + 1; }
+
+    public boolean expireBan(LocalDateTime nowUtc) {
+        if (status != UserStatus.BANNED || banExpiresAt == null || banExpiresAt.isAfter(nowUtc)) return false;
+        status = UserStatus.ACTIVE;
+        banExpiresAt = null;
+        return true;
+    }
 
     @Column(name = "nickname_updated_at")
     private LocalDateTime nicknameUpdateAt; // 닉네임 마지막 업데이트일자

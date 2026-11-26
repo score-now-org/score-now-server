@@ -2,6 +2,7 @@ package com.scorenow.scorenow_api.domain.admin.member.entity;
 
 import java.time.LocalDateTime;
 import com.scorenow.scorenow_api.domain.user.entity.User;
+import com.scorenow.scorenow_api.domain.admin.member.dto.SuspensionDuration;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,12 +22,15 @@ public class MemberModerationEvent {
     private String action;
     @Column(length = 500)
     private String reason;
+    @Column(length = 16)
+    private String duration;
     @Column(nullable = false)
     private LocalDateTime createdAt;
-    public MemberModerationEvent(User user, String action, String reason) {
+    public MemberModerationEvent(User user, String action, String reason, SuspensionDuration duration) {
         this.user = user;
         this.action = action;
         this.reason = reason;
+        this.duration = duration == null ? null : duration.name();
         this.createdAt = LocalDateTime.now();
     }
 }
