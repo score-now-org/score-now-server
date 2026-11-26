@@ -27,11 +27,12 @@ public class JwtProvider {
      * @param id
      * @return
      */
-    public String createAccessToken(Long id) {
+    public String createAccessToken(Long id, long version) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(id))
                 .claim("type", "access")
+                .claim("version", version)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ACCESS_TOKEN_EXPIRE))
                 .signWith(secretKey)
@@ -44,11 +45,12 @@ public class JwtProvider {
      * @param id
      * @return
      */
-    public String createRefreshToken(Long id) {
+    public String createRefreshToken(Long id, long version) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(id))
                 .claim("type", "refresh")
+                .claim("version", version)
                 .id(UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + REFRESH_TOKEN_EXPIRE))
@@ -71,6 +73,11 @@ public class JwtProvider {
         Claims claims = getClaims(token);
         return "access".equals(claims.get("type"))
                 ? Long.valueOf(claims.getSubject()) : null;
+    }
+
+    public long getTokenVersion(String token) {
+        Number version = getClaims(token).get("version", Number.class);
+        return version == null ? 0L : version.longValue();
     }
 
     public boolean isRefreshToken(String token) {

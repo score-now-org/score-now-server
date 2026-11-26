@@ -11,13 +11,18 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
 
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
+import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
+import com.scorenow.scorenow_api.domain.user.entity.User;
+import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
+import java.util.Optional;
 import com.scorenow.scorenow_api.global.websocket.principal.StompPrincipal;
 
 class StompAuthChannelInterceptorTest {
 
 	private final JwtProvider jwtProvider = Mockito.mock(JwtProvider.class);
+	private final UserRepository users = Mockito.mock(UserRepository.class);
 	private final StompAuthChannelInterceptor interceptor = new StompAuthChannelInterceptor(
-		new StompJwtAuthenticator(jwtProvider)
+		new StompJwtAuthenticator(jwtProvider, users)
 	);
 
 	@Test
@@ -27,6 +32,7 @@ class StompAuthChannelInterceptorTest {
 		Mockito.when(jwtProvider.validateToken(token)).thenReturn(true);
 		Mockito.when(jwtProvider.isAccessToken(token)).thenReturn(true);
 		Mockito.when(jwtProvider.getUserId(token)).thenReturn(10L);
+		Mockito.when(users.findById(10L)).thenReturn(Optional.of(User.builder().status(UserStatus.ACTIVE).build()));
 
 		Message<?> result = interceptor.preSend(message, null);
 

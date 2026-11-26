@@ -30,7 +30,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 Long userId = jwtProvider.getAccessTokenUserId(token);
-                if (userId != null && userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
+                if (userId != null && userRepository.findById(userId)
+                        .filter(user -> user.getStatus() == UserStatus.ACTIVE
+                                && user.currentTokenVersion() == jwtProvider.getTokenVersion(token)).isPresent()) {
                     SecurityContextHolder.getContext().setAuthentication(
                             new UsernamePasswordAuthenticationToken(userId, null, List.of()));
                 }
