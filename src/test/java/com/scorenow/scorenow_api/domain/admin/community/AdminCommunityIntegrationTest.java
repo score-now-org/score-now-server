@@ -110,6 +110,31 @@ class AdminCommunityIntegrationTest {
                 .extracting("imageKey").containsExactly("first-key", "second-key");
     }
 
+    @Test void galleryFiltersBeforePagingAndDeletesOnlyTheSelectedPostImage() {
+        User author = user("social%gallery", "사진회원");
+        CommunityPost first = post(author, "첫 글"), second = post(author, "둘째 글"), deleted = post(author, "삭제된 글");
+        CommunityPostImage removed = CommunityPostImage.create(first, "shared-key", 0);
+        em.persist(removed);
+        em.persist(CommunityPostImage.create(first, "other-key", 1));
+        em.persist(CommunityPostImage.create(second, "shared-key", 0));
+        em.persist(CommunityPostImage.create(deleted, "hidden-key", 0));
+        deleted.delete(author.getId());
+        em.flush(); em.clear();
+        when(storage.getFileUrl(anyString())).thenAnswer(invocation -> "https://example.test/" + invocation.getArgument(0));
+
+        assertThat(service.images("%gallery", "사진", author.getId(), page).getTotalElements()).isEqualTo(3);
+        assertThat(service.images("wrong", null, null, page)).isEmpty();
+        assertThat(service.images(null, null, null, page).getContent().get(0).imageUrl()).startsWith("https://example.test/");
+        service.deleteImage(removed.getId());
+        em.flush(); em.clear();
+        assertThat(images.findByPost_IdOrderBySortOrderAsc(first.getId())).extracting("imageKey").containsExactly("other-key");
+        assertThat(images.findByPost_IdOrderBySortOrderAsc(second.getId())).extracting("imageKey").containsExactly("shared-key");
+        assertThat(service.images(null, null, null, page).getTotalElements()).isEqualTo(2);
+        assertThatThrownBy(() -> service.deleteImage(removed.getId())).isInstanceOf(BusinessException.class);
+        verify(storage, never()).deleteFile(anyString());
+        verify(storage, never()).deleteFileByUrl(anyString());
+    }
+
     private User user(String socialId, String nickname) {
         User user = User.builder().provider("test").socialId(socialId).nickname(nickname).status(UserStatus.ACTIVE).build();
         em.persist(user); return user;
