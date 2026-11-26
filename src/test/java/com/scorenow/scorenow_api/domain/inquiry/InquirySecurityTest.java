@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.test.web.servlet.MockMvc;
 import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
+import com.scorenow.scorenow_api.domain.user.entity.User;
 import com.scorenow.scorenow_api.domain.user.enums.UserStatus;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.domain.user.service.UserReferenceService;
@@ -45,6 +46,9 @@ class InquirySecurityTest {
           .andExpect(status().isUnauthorized());
   when(jwtProvider.getAccessTokenUserId("user-token")).thenReturn(1L);
   when(userRepository.existsByIdAndStatus(1L, UserStatus.ACTIVE)).thenReturn(true);
+  User activeUser = mock(User.class);
+  when(activeUser.getStatus()).thenReturn(UserStatus.ACTIVE);
+  when(userRepository.findById(1L)).thenReturn(Optional.of(activeUser));
   when(inquiries.findByUser_Id(eq(1L), any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
   mvc.perform(get("/api/v1/inquiries").header("Authorization", "Bearer user-token")).andExpect(status().isOk());
   mvc.perform(get("/admin/inquiries").header("Authorization", "Bearer user-token")).andExpect(status().isUnauthorized());
