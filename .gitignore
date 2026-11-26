@@ -44,3 +44,6 @@ src/main/resources/application.yml
 .env
 /docs/
 /logs/
+/.env.local
+/src/main/resources/application-local.yml
+/docker-compose-local.yml

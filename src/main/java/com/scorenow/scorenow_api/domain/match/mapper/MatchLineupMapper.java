@@ -9,10 +9,16 @@ import org.springframework.stereotype.Component;
 
 import com.scorenow.scorenow_api.domain.match.model.LineupPlayer;
 import com.scorenow.scorenow_api.domain.match.model.LineupSide;
+import com.scorenow.scorenow_api.domain.match.service.MatchLineupFormationCalculator;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsLineupResponse;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class MatchLineupMapper {
+
+	private final MatchLineupFormationCalculator formationCalculator;
 
 	public LineupSide toSide(
 		BetsLineupResponse.LineupSide betsLineupSide,
@@ -33,13 +39,16 @@ public class MatchLineupMapper {
 				.build();
 		}
 
+		List<LineupPlayer> starters = toPlayers(betsLineupSide.getStartinglineup(), playerIdMap);
+		List<LineupPlayer> substitutes = toPlayers(betsLineupSide.getSubstitutes(), playerIdMap);
+
 		return LineupSide.builder()
 			.teamId(teamId)
 			.apiTeamId(apiTeamId)
 			.teamEname(teamEname)
-			.formation(betsLineupSide.getFormation())
-			.startingLineup(toPlayers(betsLineupSide.getStartinglineup(), playerIdMap))
-			.substitutes(toPlayers(betsLineupSide.getSubstitutes(), playerIdMap))
+			.formation(formationCalculator.calculate(starters))
+			.startingLineup(starters)
+			.substitutes(substitutes)
 			.build();
 	}
 
@@ -83,7 +92,6 @@ public class MatchLineupMapper {
 			.eName(eName)
 			.shirtNumber(shirtNumber)
 			.position(mapPosition(betsPlayer != null ? betsPlayer.getPos() : null))
-			.goals(0)
 			.build();
 	}
 

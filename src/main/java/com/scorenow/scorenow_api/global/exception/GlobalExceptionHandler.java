@@ -16,6 +16,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.scorenow.scorenow_api.global.dto.ApiResponse;
 
@@ -199,6 +200,12 @@ public class GlobalExceptionHandler {
      * 그 외 모든 예외 처리
      * 로그 시 예외 메시지에 URL/토큰이 포함될 수 있으므로 마스킹 후 기록.
      */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        return ResponseEntity.badRequest().body(ApiResponse.error(
+                ErrorCode.INVALID_PARAMETER.getCode(), "첨부 파일 크기가 허용 범위를 초과했습니다."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
         log.error("Unexpected error occurred: {}", maskSensitiveMessage(e.getMessage()), e);

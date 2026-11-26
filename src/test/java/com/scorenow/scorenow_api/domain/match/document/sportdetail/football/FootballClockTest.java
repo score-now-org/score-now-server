@@ -25,8 +25,26 @@ class FootballClockTest {
     }
 
     @Test
-    void 타이머가_흐르지_않는_Phase는_기존_분_계산을_유지한다() {
-        assertThat(FootballClock.resolveDisplayElapsedMinutes(0, FootballPhase.HALF_TIME)).isZero();
-        assertThat(FootballClock.resolveDisplayElapsedMinutes(60, FootballPhase.FULL_TIME)).isEqualTo(1);
+    void 실제_경과_분은_표시_정책을_적용하지_않는다() {
+        FootballClock zeroSecondsClock = FootballClock.builder()
+                .phase(FootballPhase.FIRST_HALF)
+                .phaseElapsedSeconds(0)
+                .build();
+        FootballClock fiftyNineSecondsClock = zeroSecondsClock.toBuilder()
+                .phaseElapsedSeconds(59)
+                .build();
+        FootballClock sixtySecondsClock = zeroSecondsClock.toBuilder()
+                .phaseElapsedSeconds(60)
+                .build();
+
+        assertThat(zeroSecondsClock.resolvePhaseElapsedMinutes()).isZero();
+        assertThat(fiftyNineSecondsClock.resolvePhaseElapsedMinutes()).isZero();
+        assertThat(sixtySecondsClock.resolvePhaseElapsedMinutes()).isEqualTo(1);
+    }
+
+    @Test
+    void 타이머가_흐르지_않는_Phase는_표시_분을_제공하지_않는다() {
+        assertThat(FootballClock.resolveDisplayElapsedMinutes(0, FootballPhase.HALF_TIME)).isNull();
+        assertThat(FootballClock.resolveDisplayElapsedMinutes(60, FootballPhase.FULL_TIME)).isNull();
     }
 }

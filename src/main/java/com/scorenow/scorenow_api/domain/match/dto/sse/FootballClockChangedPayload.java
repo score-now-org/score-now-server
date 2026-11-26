@@ -10,18 +10,18 @@ import java.time.Instant;
 @Builder
 public class FootballClockChangedPayload {
     private String displayText;
-    private Integer displayElapsedMinutes;
     private Integer phaseElapsedSeconds;
-    private String phase;
+    private String phaseCode;
+    private String phaseName;
     private Boolean running;
     private Instant syncedAt;
 
     public static FootballClockChangedPayload from(FootballClock clock, String displayText) {
         return FootballClockChangedPayload.builder()
                 .displayText(displayText)
-                .displayElapsedMinutes(clock.resolvePhaseElapsedMinutes())
                 .phaseElapsedSeconds(clock.getPhaseElapsedSeconds())
-                .phase(clock.getPhase() != null ? clock.getPhase().getDescription() : null)
+                .phaseCode(clock.getPhase() != null ? clock.getPhase().name() : null)
+                .phaseName(clock.getPhase() != null ? clock.getPhase().getDescription() : null)
                 .running(clock.getRunning())
                 .syncedAt(clock.getClockSyncedAt())
                 .build();

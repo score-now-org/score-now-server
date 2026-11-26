@@ -19,10 +19,10 @@ public class FootballInplayStatusDisplayDetailResponse {
     @Schema(description = "축구 경기 구간명", example = "후반")
     private String phaseName;
 
-    @Schema(description = "현재 구간 기준 경과 시간 분", example = "15")
+    @Schema(description = "syncedAt 시점의 현재 구간 실제 경과 시간 분", example = "14")
     private Integer phaseElapsedMinutes;
 
-    @Schema(description = "현재 구간 기준 경과 시간 초", example = "1800 (30분 = 30*60 = 1800)")
+    @Schema(description = "syncedAt 시점의 현재 구간 실제 경과 시간 초", example = "840")
     private Integer phaseElapsedSeconds;
 
     @Schema(description = "타이머 진행 여부", example = "true")

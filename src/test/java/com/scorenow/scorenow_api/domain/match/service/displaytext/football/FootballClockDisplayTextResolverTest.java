@@ -45,4 +45,37 @@ class FootballClockDisplayTextResolverTest {
 
         assertThat(resolver.resolve(clock)).isEqualTo("하프타임");
     }
+
+    @Test
+    void 기준시각으로_계산한_표시문구를_반환한다() {
+        Instant syncedAt = Instant.parse("2026-11-11T00:00:00Z");
+        FootballClock clock = FootballClock.builder()
+                .phase(FootballPhase.FIRST_HALF)
+                .phaseElapsedSeconds(0)
+                .clockSyncedAt(syncedAt)
+                .running(true)
+                .build();
+
+        String displayText = resolver.resolve(
+                clock,
+                syncedAt.plusSeconds(60)
+        );
+
+        assertThat(displayText).isEqualTo("전반 2");
+    }
+
+    @Test
+    void 기준시각이_현재보다_미래여도_음수_시간을_더하지_않는다() {
+        Instant now = Instant.parse("2026-11-11T00:00:00Z");
+        FootballClock clock = FootballClock.builder()
+                .phase(FootballPhase.SECOND_HALF)
+                .phaseElapsedSeconds(0)
+                .clockSyncedAt(now.plusSeconds(10))
+                .running(true)
+                .build();
+
+        String displayText = resolver.resolve(clock, now);
+
+        assertThat(displayText).isEqualTo("후반 1");
+    }
 }

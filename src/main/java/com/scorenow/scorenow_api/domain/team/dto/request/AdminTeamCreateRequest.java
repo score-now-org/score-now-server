@@ -42,7 +42,7 @@ public class AdminTeamCreateRequest {
     @JsonProperty("sName")
     private String sName;
 
-    @Schema(description = "팀 이미지 URL. 이미지 업로드 기능 도입 전까지 선택값입니다.", example = "https://assets.example.com/teams/12345.png")
+    @Schema(description = "팀 이미지 URL. 선택값이며 이미지 파일과 함께 보낼 수 없습니다.", example = "https://assets.example.com/teams/12345.png")
     @Size(max = 255, message = "팀 이미지 URL은 255자를 초과할 수 없습니다.")
     @JsonProperty("imageUrl")
     private String imageUrl;
