@@ -22,7 +22,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMessage extends BaseEntity {
 
-	private static final int MAX_MESSAGE_LENGTH = 1000;
+	public static final int MAX_MESSAGE_LENGTH = 1000;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

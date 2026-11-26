@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scorenow.scorenow_api.domain.admin.member.component.AdminTokenStore;
 import com.scorenow.scorenow_api.domain.admin.chat.AdminChatController;
 import com.scorenow.scorenow_api.domain.admin.chat.AdminChatService;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordController;
+import com.scorenow.scorenow_api.domain.admin.forbiddenword.ForbiddenWordRepository;
 import com.scorenow.scorenow_api.domain.admin.member.controller.AdminLoginController;
 import com.scorenow.scorenow_api.domain.admin.member.controller.AdminMemberController;
 import com.scorenow.scorenow_api.domain.admin.member.service.AdminMemberService;
@@ -32,7 +34,7 @@ import com.scorenow.scorenow_api.domain.user.jwt.JwtProvider;
 import com.scorenow.scorenow_api.domain.user.repository.UserRepository;
 import com.scorenow.scorenow_api.global.config.SecurityConfig;
 
-@WebMvcTest({AdminLoginController.class, AdminMemberController.class, AdminChatController.class})
+@WebMvcTest({AdminLoginController.class, AdminMemberController.class, AdminChatController.class, ForbiddenWordController.class})
 @Import(SecurityConfig.class)
 class AdminAuthenticationTest {
     @Autowired MockMvc mvc;
@@ -41,6 +43,7 @@ class AdminAuthenticationTest {
     @MockBean AdminMemberService members;
     @MockBean MemberModerationService moderation;
     @MockBean AdminChatService chat;
+    @MockBean ForbiddenWordRepository forbiddenWords;
     @MockBean JwtProvider jwt;
     @MockBean UserRepository users;
     @MockBean JpaMetamodelMappingContext jpa;
@@ -94,6 +97,17 @@ class AdminAuthenticationTest {
     @Test void inputValidationRejectsBlankPassword() throws Exception {
         mvc.perform(post("/api/v1/admin/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\":\"test-admin\",\"password\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+    @Test void forbiddenWordsRequireAdminAuthentication() throws Exception {
+        mvc.perform(get("/api/v1/admin/forbidden-words")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/admin/forbidden-words").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"word\":\"test\"}")).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/v1/admin/forbidden-words/1")).andExpect(status().isUnauthorized());
+        String token = "00000000-0000-0000-0000-000000000001";
+        sessions.add(token);
+        mvc.perform(post("/api/v1/admin/forbidden-words").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"word\":\" \"}"))
                 .andExpect(status().isBadRequest());
     }
 }
