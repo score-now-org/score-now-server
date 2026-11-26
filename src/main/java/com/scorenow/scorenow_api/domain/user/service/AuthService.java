@@ -56,7 +56,8 @@ public class AuthService {
                 String country = geoService.getCountryFromIp(ip);
 
                 User user = userRepository
-                                .findByProviderAndSocialId(identity.provider(), identity.socialId())
+                                .findIdByProviderAndSocialId(identity.provider(), identity.socialId())
+                                .flatMap(userRepository::findByIdForUpdate)
                                 .orElse(null);
 
                 // A scaled-to-zero server may not have run the scheduled expiry yet.

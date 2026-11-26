@@ -21,8 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     @Query("select u from User u where u.id = :id")
     Optional<User> findByIdForUpdate(@Param("id") Long id);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<User> findByProviderAndSocialId(String provider, String socialId);
+    @Query("select u.id from User u where u.provider = :provider and u.socialId = :socialId")
+    Optional<Long> findIdByProviderAndSocialId(@Param("provider") String provider, @Param("socialId") String socialId);
 
     @Modifying(flushAutomatically = true)
     @Query("update User u set u.status = :active, u.banExpiresAt = null " +

@@ -33,7 +33,8 @@ class TimedBanLoginTest {
         when(tokens.createToken(anyLong())).thenReturn(new TokenPair("access", "refresh"));
         User user = User.builder().id(1L).provider("google").socialId("id").status(UserStatus.BANNED)
                 .banExpiresAt(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(1)).build();
-        when(users.findByProviderAndSocialId("google", "id")).thenReturn(Optional.of(user));
+        when(users.findIdByProviderAndSocialId("google", "id")).thenReturn(Optional.of(1L));
+        when(users.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         service.socialLogin(request, new MockHttpServletRequest());
         assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(user.getBanExpiresAt()).isNull();
@@ -42,5 +43,22 @@ class TimedBanLoginTest {
         assertThatThrownBy(() -> service.socialLogin(request, new MockHttpServletRequest())).isInstanceOf(BusinessException.class);
         user.setBanExpiresAt(null);
         assertThatThrownBy(() -> service.socialLogin(request, new MockHttpServletRequest())).isInstanceOf(BusinessException.class);
+    }
+
+    @Test void newUserLoginDoesNotLockAMissingIdentity() {
+        var users = mock(UserRepository.class);
+        var verifier = mock(SocialLoginVerifier.class);
+        var tokens = mock(TokenService.class);
+        var service = new AuthService(users, mock(GeoService.class), tokens, verifier,
+                mock(UserReferenceService.class), mock(NicknameGenerator.class), mock(UserLoginHistoryRepository.class));
+        var request = new SocialLoginRequestDto();
+        when(verifier.verify(request)).thenReturn(new SocialLoginVerifier.VerifiedUser("google", "new-id", "name"));
+        when(users.findIdByProviderAndSocialId("google", "new-id")).thenReturn(Optional.empty());
+        when(tokens.createToken(isNull())).thenReturn(new TokenPair("access", "refresh"));
+
+        service.socialLogin(request, new MockHttpServletRequest());
+
+        verify(users).save(any(User.class));
+        verify(users, never()).findByIdForUpdate(anyLong());
     }
 }
