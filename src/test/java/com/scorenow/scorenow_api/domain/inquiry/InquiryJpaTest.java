@@ -100,8 +100,8 @@ class InquiryJpaTest {
   User owner = User.builder().provider("test").socialId("rich-owner").build(); em.persist(owner);
   Inquiry inquiry = inquiries.save(new Inquiry(owner, "제목", "내용")); em.flush();
   InquiryController c = new InquiryController(inquiries, images, users);
-  String html = "<p style='text-align:center;background-image:url(https://evil.test/a)'>"
-    + "<span style=\"font-family:'Courier New';font-size:large;font-weight:bold;font-style:italic;"
+  String html = "<p style='text-align:center;color:#abc;background-image:url(https://evil.test/a)'>"
+    + "<span style=\"font-family:'Courier New', sans-serif;font-size:large;font-weight:bold;font-style:italic;"
     + "text-decoration:underline;color:rgb(12, 34, 56);background-color:#aabbcc;position:fixed\">글자</span></p>"
     + "<table><tbody><tr><td>첫째</td><td>둘째</td></tr></tbody></table>"
     + "<a href='https://example.test/path' onclick='evil()'>링크</a><a href='javascript:evil()'>위험</a>"
@@ -112,7 +112,7 @@ class InquiryJpaTest {
   assertThat(answer.answer()).isEqualTo("글자\n첫째\t둘째\n링크위험");
   assertThat(answer.answerHtml()).contains("font-family: 'courier new'", "font-size: large", "font-weight: bold",
     "font-style: italic", "text-decoration: underline", "color: #0c2238", "background-color: #aabbcc",
-    "text-align: center", "<table>", "https://example.test/path")
+    "text-align: center", "color: #abc;", "<table>", "https://example.test/path")
     .doesNotContain("background-image", "position", "onclick", "javascript:", "evil.test", "<img", "<script");
   assertThatThrownBy(() -> c.answer(inquiry.getId(), new InquiryController.Answer(null,
     "<table><tr><td><br></td></tr></table>"))).isInstanceOf(BusinessException.class);

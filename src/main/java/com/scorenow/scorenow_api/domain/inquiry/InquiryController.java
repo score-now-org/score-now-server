@@ -13,6 +13,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.jsoup.Jsoup;
+import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Safelist;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -172,24 +173,24 @@ public class InquiryController {
         String html = null;
         String text = request.content();
         if (request.contentHtml() != null) {
-            html = sanitizeAnswer(request.contentHtml());
-            text = plainText(html);
+            Document document = sanitizeAnswer(request.contentHtml());
+            html = document.body().html();
+            text = plainText(document.body());
             if (text.isBlank() || text.length() > 10000) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         } else if (text == null || text.isBlank() || text.length() > 10000) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         inquiry.answer(text, html);
         return ApiResponse.success(Response.of(inquiry));
     }
-    private static String sanitizeAnswer(String source) {
+    private static Document sanitizeAnswer(String source) {
         Safelist allowed = Safelist.none().addTags("p", "div", "span", "br", "strong", "b", "em", "i", "u", "s", "strike", "ul", "ol", "li", "a", "table", "thead", "tbody", "tr", "th", "td")
                 .addAttributes(":all", "style").addAttributes("a", "href").addProtocols("a", "href", "http", "https", "mailto");
-        String clean = Jsoup.clean(source, "", allowed, new Document.OutputSettings().prettyPrint(false));
-        Document document = Jsoup.parseBodyFragment(clean);
+        Document document = new Cleaner(allowed).clean(Jsoup.parseBodyFragment(source));
         document.outputSettings().prettyPrint(false);
         for (Element element : document.body().select("[style]")) {
             String style = safeStyle(element.attr("style"));
             if (style.isEmpty()) element.removeAttr("style"); else element.attr("style", style);
         }
-        return document.body().html();
+        return document;
     }
 
     private static final Set<String> ANSWER_FONTS = Set.of("arial", "verdana", "georgia", "tahoma", "courier new", "malgun gothic");
@@ -206,8 +207,12 @@ public class InquiryController {
             String lower = value.toLowerCase(Locale.ROOT);
             String safe = switch (property) {
                 case "font-family" -> {
-                    String font = lower.replace("\"", "").replace("'", "").trim();
-                    yield ANSWER_FONTS.contains(font) ? "'" + font + "'" : null;
+                    String safeFont = null;
+                    for (String candidate : lower.split(",")) {
+                        String font = candidate.replace("\"", "").replace("'", "").trim();
+                        if (ANSWER_FONTS.contains(font)) { safeFont = "'" + font + "'"; break; }
+                    }
+                    yield safeFont;
                 }
                 case "font-size" -> ANSWER_SIZES.contains(lower) || lower.matches("(?:[8-9]|[1-6][0-9]|7[0-2])px") ? lower : null;
                 case "font-weight" -> Set.of("normal", "bold", "100", "200", "300", "400", "500", "600", "700", "800", "900").contains(lower) ? lower : null;
@@ -223,17 +228,17 @@ public class InquiryController {
     }
 
     private static String safeColor(String value) {
-        if (value.matches("#[0-9a-f]{6}")) return value;
+        if (value.matches("#[0-9a-f]{3}|#[0-9a-f]{6}")) return value;
         var rgb = RGB_COLOR.matcher(value);
         if (!rgb.matches()) return null;
         int red = Integer.parseInt(rgb.group(1)), green = Integer.parseInt(rgb.group(2)), blue = Integer.parseInt(rgb.group(3));
         return red <= 255 && green <= 255 && blue <= 255 ? String.format("#%02x%02x%02x", red, green, blue) : null;
     }
 
-    private static String plainText(String html) {
+    private static String plainText(Element body) {
         var blockTags = Set.of("p", "div", "li", "tr");
         StringBuilder text = new StringBuilder();
-        Jsoup.parse(html).body().traverse(new NodeVisitor() {
+        body.traverse(new NodeVisitor() {
             private void line() { if (!text.isEmpty() && text.charAt(text.length() - 1) != '\n') text.append('\n'); }
             private boolean block(Node node) { return node instanceof Element element && blockTags.contains(element.normalName()); }
             @Override public void head(Node node, int depth) {
