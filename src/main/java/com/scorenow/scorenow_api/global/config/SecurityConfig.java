@@ -83,6 +83,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/api/test/betsapi/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/terms").permitAll()
                         // 토큰없이 접근 가능한 인증 API
                         .requestMatchers(
                                 "/api/v1/auth/social-login",

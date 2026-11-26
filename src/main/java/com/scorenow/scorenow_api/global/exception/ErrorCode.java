@@ -41,6 +41,9 @@ public enum ErrorCode {
 	// Match Statistics
 	MATCH_STATISTICS_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "MS001", "해당 종목은 경기 통계를 제공하지 않습니다."),
 
+	// Terms
+	TERMS_EDIT_CONFLICT(HttpStatus.CONFLICT, "TERMS001", "다른 관리자가 약관을 변경했습니다. 다시 조회해 주세요."),
+
 	// FeaturedMatch
 	FEATURED_MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "FM001", "상단고정/핫매치 설정을 찾을 수 없습니다."),
 	FEATURED_MATCH_ALREADY_EXISTS(HttpStatus.CONFLICT, "FM002", "이미 상단고정/핫매치로 등록된 경기입니다."),
