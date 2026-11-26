@@ -21,11 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.sql.SQLException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.hibernate.exception.ConstraintViolationException;
 
 @Service
 @Slf4j
@@ -49,6 +49,15 @@ public class AuthService {
          */
         @Transactional
         public SocialLoginDto socialLogin(SocialLoginRequestDto request, HttpServletRequest httpRequest) {
+                return socialLogin(request, httpRequest, false);
+        }
+
+        @Transactional
+        public SocialLoginDto retryExistingSocialLogin(SocialLoginRequestDto request, HttpServletRequest httpRequest) {
+                return socialLogin(request, httpRequest, true);
+        }
+
+        private SocialLoginDto socialLogin(SocialLoginRequestDto request, HttpServletRequest httpRequest, boolean existingOnly) {
 
                 SocialLoginVerifier.VerifiedUser identity = socialLoginVerifier.verify(request);
 
@@ -64,6 +73,7 @@ public class AuthService {
 
                 // A scaled-to-zero server may not have run the scheduled expiry yet.
                 if (user != null) user.expireBan(LocalDateTime.now(ZoneOffset.UTC));
+                if (user == null && existingOnly) throw new SocialIdentityAbsent();
 
                 boolean isNewUser = false;
                 // 신규 사용자 생성
@@ -81,7 +91,7 @@ public class AuthService {
                         try {
                                 userRepository.saveAndFlush(user);
                         } catch (DataIntegrityViolationException failure) {
-                                if (isSocialIdentityConflict(failure)) throw new ConcurrentSocialRegistration();
+                                if (isDuplicateKey(failure)) throw new ConcurrentSocialRegistration(failure);
                                 throw failure;
                         }
                         isNewUser = true;
@@ -133,15 +143,17 @@ public class AuthService {
                                 .build();
         }
 
-        public static class ConcurrentSocialRegistration extends RuntimeException { }
+        public static class ConcurrentSocialRegistration extends RuntimeException {
+                private final DataIntegrityViolationException originalFailure;
+                public ConcurrentSocialRegistration(DataIntegrityViolationException failure) { originalFailure = failure; }
+                public DataIntegrityViolationException originalFailure() { return originalFailure; }
+        }
 
-        private static boolean isSocialIdentityConflict(Throwable failure) {
+        public static class SocialIdentityAbsent extends RuntimeException { }
+
+        private static boolean isDuplicateKey(Throwable failure) {
                 for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
-                        if (cause instanceof ConstraintViolationException violation && violation.getConstraintName() != null) {
-                                String name = violation.getConstraintName().toLowerCase(java.util.Locale.ROOT);
-                                return name.equals(User.SOCIAL_IDENTITY_UNIQUE)
-                                                || name.endsWith("." + User.SOCIAL_IDENTITY_UNIQUE);
-                        }
+                        if (cause instanceof SQLException sql && (sql.getErrorCode() == 1062 || "23505".equals(sql.getSQLState()))) return true;
                 }
                 return false;
         }

@@ -36,7 +36,8 @@ public class AuthController {
         try { result = authService.socialLogin(request, httpRequest); }
         catch (AuthService.ConcurrentSocialRegistration conflict) {
             // The failed transaction has rolled back; the winning account is now visible.
-            result = authService.socialLogin(request, httpRequest);
+            try { result = authService.retryExistingSocialLogin(request, httpRequest); }
+            catch (AuthService.SocialIdentityAbsent absent) { throw conflict.originalFailure(); }
         }
         return ApiResponse.success(result);
     }

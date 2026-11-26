@@ -77,4 +77,16 @@ class TimedBanLoginTest {
         assertThatThrownBy(() -> service.socialLogin(request, new MockHttpServletRequest())).isSameAs(failure);
         verify(tokens, never()).createToken(anyLong());
     }
+
+    @Test void collisionRetryNeverCreatesAnAccountIfIdentityIsStillMissing() {
+        var users = mock(UserRepository.class);
+        var verifier = mock(SocialLoginVerifier.class);
+        var service = new AuthService(users, mock(GeoService.class), mock(TokenService.class), verifier,
+                mock(UserReferenceService.class), mock(NicknameGenerator.class), mock(UserLoginHistoryRepository.class));
+        var request = new SocialLoginRequestDto();
+        when(verifier.verify(request)).thenReturn(new SocialLoginVerifier.VerifiedUser("google", "missing", "name"));
+        assertThatThrownBy(() -> service.retryExistingSocialLogin(request, new MockHttpServletRequest()))
+                .isInstanceOf(AuthService.SocialIdentityAbsent.class);
+        verify(users, never()).saveAndFlush(any(User.class));
+    }
 }
