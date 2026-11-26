@@ -94,6 +94,8 @@ public class BaseballAdminMatchDetailResponse {
                     .currentInning(Inning.from(baseballDetail.getCurrentHalfInning()))
                     .inningScores(resolveInningScores(baseballDetail.getInningScores()))
                     .detailedBroadcastEnabled(baseballDetail.isDetailedBroadcastEnabled())
+                    .homeStats(Stats.from(baseballDetail.getHomeStats()))
+                    .awayStats(Stats.from(baseballDetail.getAwayStats()))
                     .build();
         }
 
