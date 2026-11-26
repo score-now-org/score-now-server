@@ -122,6 +122,61 @@ public final class SchemaMigration {
                 + "`) REFERENCES `" + referencedTable + "` (`id`) ON DELETE " + deleteRule);
     }
 
+    /** Preserve chat history when the legacy user foreign key still cascades on deletion. */
+    public static void preserveChatUserHistory(Connection connection) throws SQLException {
+        String type;
+        String nullable;
+        String defaultValue;
+        String comment;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_COMMENT, EXTRA FROM information_schema.columns "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'chat_messages' AND column_name = 'user_id'")) {
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) throw new SQLException("기존 chat_messages.user_id 컬럼이 없습니다.");
+                type = result.getString("COLUMN_TYPE");
+                nullable = result.getString("IS_NULLABLE");
+                defaultValue = result.getString("COLUMN_DEFAULT");
+                comment = result.getString("COLUMN_COMMENT");
+                if (!type.matches("(?i)bigint(?: unsigned)?") || !result.getString("EXTRA").isBlank()) {
+                    throw new SQLException("기존 chat_messages.user_id의 타입 또는 추가 속성이 예상과 다릅니다.");
+                }
+            }
+        }
+        String oldName = null;
+        String oldRule = null;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT k.CONSTRAINT_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME, r.DELETE_RULE "
+                        + "FROM information_schema.KEY_COLUMN_USAGE k JOIN information_schema.REFERENTIAL_CONSTRAINTS r "
+                        + "ON k.CONSTRAINT_SCHEMA = r.CONSTRAINT_SCHEMA AND k.TABLE_NAME = r.TABLE_NAME "
+                        + "AND k.CONSTRAINT_NAME = r.CONSTRAINT_NAME WHERE k.CONSTRAINT_SCHEMA = DATABASE() "
+                        + "AND k.TABLE_NAME = 'chat_messages' AND k.COLUMN_NAME = 'user_id' AND k.REFERENCED_TABLE_NAME IS NOT NULL")) {
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    oldName = result.getString("CONSTRAINT_NAME");
+                    oldRule = result.getString("DELETE_RULE");
+                    if (!"users".equalsIgnoreCase(result.getString("REFERENCED_TABLE_NAME"))
+                            || !"id".equalsIgnoreCase(result.getString("REFERENCED_COLUMN_NAME")) || result.next()) {
+                        throw new SQLException("기존 chat_messages.user_id 외래키가 예상과 다릅니다.");
+                    }
+                }
+            }
+        }
+        if (oldName != null && "SET NULL".equalsIgnoreCase(oldRule) && "YES".equals(nullable)) return;
+        if (oldRule != null && !java.util.Set.of("CASCADE", "RESTRICT", "NO ACTION", "SET NULL").contains(oldRule.toUpperCase(Locale.ROOT))) {
+            throw new SQLException("기존 채팅 사용자 외래키의 삭제 규칙이 예상과 다릅니다.");
+        }
+        // MySQL rejects dropping and recreating the same constraint name in one ALTER.
+        String newName = "fk_chat_messages_user".equalsIgnoreCase(oldName)
+                ? "fk_chat_messages_user_history" : "fk_chat_messages_user";
+        String sql = "ALTER TABLE chat_messages "
+                + (oldName == null ? "" : "DROP FOREIGN KEY `" + oldName.replace("`", "``") + "`, ")
+                + "MODIFY COLUMN user_id " + type + " NULL"
+                + (defaultValue == null ? "" : " DEFAULT " + quote(connection, defaultValue))
+                + (comment == null || comment.isEmpty() ? "" : " COMMENT " + quote(connection, comment))
+                + ", ADD CONSTRAINT `" + newName + "` FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL";
+        execute(connection, sql);
+    }
+
     /** Add the new enum member without removing existing values, defaults or collation. */
     public static void allowPermanentWithdrawal(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement(); ResultSet invalid = statement.executeQuery(

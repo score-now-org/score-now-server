@@ -18,6 +18,8 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,8 @@ import db.migration.SchemaMigration;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @EnabledIfEnvironmentVariable(named = "ADMIN_MIGRATION_DISPOSABLE_MYSQL", matches = "true")
@@ -88,26 +92,35 @@ class DatabaseMigrationMySqlTest {
 
     @Test
     void emptyDatabaseMigratesAfterHibernateCreatesTheCoreTables() {
-        new ApplicationContextRunner()
-                .withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class,
-                        HibernateJpaAutoConfiguration.class, FlywayAutoConfiguration.class,
-                        TransactionAutoConfiguration.class))
-                .withUserConfiguration(FixtureJpaConfiguration.class, DatabaseMigrationConfiguration.class, AdminFeatureMigrations.class)
-                .withPropertyValues("spring.datasource.url=" + ROOT_URL + schema,
-                        "spring.datasource.username=root", "spring.datasource.password=",
-                        "spring.jpa.hibernate.ddl-auto=update", "spring.flyway.enabled=true",
-                        "spring.flyway.baseline-on-migrate=true", "spring.flyway.baseline-version=0")
-                .run(context -> {
+        applicationContextRunner().run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'SQL'")).isEqualTo(1);
                     assertThat(scalar("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() "
                             + "AND table_name IN ('users', 'chat_messages', 'inquiries')")).isEqualTo(3);
                     long enabledFeatures = Arrays.stream(FEATURE_MARKERS)
                             .filter(name -> org.springframework.util.ClassUtils.isPresent(name, getClass().getClassLoader())).count();
-                    assertThat(context.getBeansOfType(JavaMigration.class)).hasSize((int) enabledFeatures);
+                    assertThat(context.getBeansOfType(JavaMigration.class)).hasSize((int) enabledFeatures + 1);
                     assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'"))
-                            .isEqualTo(enabledFeatures);
+                            .isEqualTo(enabledFeatures + 1);
                 });
+    }
+
+    @Test
+    void existingLegacyForeignKeyRemainsCorrectAfterHibernateStarts() throws Exception {
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY, status ENUM('ACTIVE','INACTIVE','BANNED','DELETED') NULL)");
+        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, "
+                + "CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
+        execute("CREATE TABLE inquiries (id BIGINT PRIMARY KEY)");
+        execute("INSERT INTO users (id, status) VALUES (42, 'ACTIVE')");
+        execute("INSERT INTO chat_messages (id, user_id) VALUES (7, 42)");
+        applicationContextRunner().run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(scalar("SELECT COUNT(*) FROM information_schema.key_column_usage WHERE table_schema = DATABASE() "
+                    + "AND table_name = 'chat_messages' AND column_name = 'user_id' AND referenced_table_name = 'users'"))
+                    .isEqualTo(1);
+            execute("DELETE FROM users WHERE id = 42");
+            assertThat(scalar("SELECT COUNT(*) FROM chat_messages WHERE id = 7 AND user_id IS NULL")).isEqualTo(1);
+        });
     }
 
     @Test
@@ -116,7 +129,8 @@ class DatabaseMigrationMySqlTest {
         try (MigrationBootstrap bootstrap = new MigrationBootstrap()) {
             assertThrows(IllegalStateException.class, () -> bootstrap.start(flyway()));
         }
-        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NULL, "
+                + "CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL)");
         execute("CREATE TABLE inquiries (id BIGINT PRIMARY KEY)");
         try (MigrationBootstrap retry = new MigrationBootstrap()) {
             retry.start(flyway());
@@ -201,6 +215,49 @@ class DatabaseMigrationMySqlTest {
         }
         assertThat(scalar("SELECT COUNT(*) FROM information_schema.referential_constraints "
                 + "WHERE constraint_schema = DATABASE() AND constraint_name = 'existing_fk' AND delete_rule = 'CASCADE'"))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void legacyCascadingUserForeignKeyIsChangedWithoutLosingChatHistory() throws Exception {
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, "
+                + "CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
+        execute("CREATE TABLE inquiries (id BIGINT PRIMARY KEY)");
+        execute("INSERT INTO users (id) VALUES (42)");
+        execute("INSERT INTO chat_messages (id, user_id) VALUES (7, 42)");
+        run(flyway(new AdminFeatureMigrations.V20261125_01__PreserveChatUserHistory()));
+        run(flyway(new AdminFeatureMigrations.V20261125_01__PreserveChatUserHistory()));
+        execute("DELETE FROM users WHERE id = 42");
+        assertThat(scalar("SELECT COUNT(*) FROM chat_messages WHERE id = 7 AND user_id IS NULL")).isEqualTo(1);
+    }
+
+    @Test
+    void missingChatUserForeignKeyIsCreatedWithoutChangingExistingRows() throws Exception {
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL)");
+        execute("INSERT INTO users (id) VALUES (42)");
+        execute("INSERT INTO chat_messages (id, user_id) VALUES (7, 42)");
+        try (Connection connection = dataSource.getConnection()) {
+            SchemaMigration.preserveChatUserHistory(connection);
+        }
+        assertThat(scalar("SELECT COUNT(*) FROM chat_messages WHERE id = 7 AND user_id = 42")).isEqualTo(1);
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = DATABASE() "
+                + "AND table_name = 'chat_messages' AND constraint_name = 'fk_chat_messages_user' AND delete_rule = 'SET NULL'"))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void unexpectedChatUserReferenceIsNotReplaced() throws Exception {
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE other_users (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NULL, "
+                + "CONSTRAINT other_user_fk FOREIGN KEY (user_id) REFERENCES other_users(id))");
+        try (Connection connection = dataSource.getConnection()) {
+            assertThrows(java.sql.SQLException.class, () -> SchemaMigration.preserveChatUserHistory(connection));
+        }
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.key_column_usage WHERE table_schema = DATABASE() "
+                + "AND table_name = 'chat_messages' AND constraint_name = 'other_user_fk' AND referenced_table_name = 'other_users'"))
                 .isEqualTo(1);
     }
 
@@ -312,6 +369,18 @@ class DatabaseMigrationMySqlTest {
             "com.scorenow.scorenow_api.domain.terms.TermsRevision"
     };
 
+    private ApplicationContextRunner applicationContextRunner() {
+        return new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class,
+                        HibernateJpaAutoConfiguration.class, FlywayAutoConfiguration.class,
+                        TransactionAutoConfiguration.class))
+                .withUserConfiguration(FixtureJpaConfiguration.class, DatabaseMigrationConfiguration.class, AdminFeatureMigrations.class)
+                .withPropertyValues("spring.datasource.url=" + ROOT_URL + schema,
+                        "spring.datasource.username=root", "spring.datasource.password=",
+                        "spring.jpa.hibernate.ddl-auto=update", "spring.flyway.enabled=true",
+                        "spring.flyway.baseline-on-migrate=true", "spring.flyway.baseline-version=0", "spring.flyway.out-of-order=true");
+    }
+
     private Flyway flyway(JavaMigration... migrations) {
         return Flyway.configure().dataSource(dataSource).baselineOnMigrate(true).baselineVersion("0")
                 .outOfOrder(true).javaMigrations(migrations).load();
@@ -355,7 +424,8 @@ class DatabaseMigrationMySqlTest {
 
     private void createCoreTables() throws Exception {
         execute("CREATE TABLE users (id BIGINT PRIMARY KEY, status ENUM('ACTIVE','INACTIVE','BANNED','DELETED') NULL)");
-        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE chat_messages (id BIGINT PRIMARY KEY, user_id BIGINT NULL, "
+                + "CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL)");
         execute("CREATE TABLE inquiries (id BIGINT PRIMARY KEY)");
     }
 
@@ -381,6 +451,9 @@ class DatabaseMigrationMySqlTest {
         @Id Long id;
         @Column(columnDefinition = "ENUM('ACTIVE','INACTIVE','BANNED','DELETED')") String status;
     }
-    @Entity @Table(name = "chat_messages") static class FixtureChat { @Id Long id; }
+    @Entity @Table(name = "chat_messages") static class FixtureChat {
+        @Id Long id;
+        @ManyToOne @JoinColumn(name = "user_id") @OnDelete(action = OnDeleteAction.SET_NULL) FixtureUser user;
+    }
     @Entity @Table(name = "inquiries") static class FixtureInquiry { @Id Long id; }
 }
