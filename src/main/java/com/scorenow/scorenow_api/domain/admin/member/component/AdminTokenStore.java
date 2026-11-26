@@ -27,9 +27,10 @@ public class AdminTokenStore {
         if (!StringUtils.hasText(authorization)) return null;
         String token = authorization.trim();
         if (token.regionMatches(true, 0, "Bearer ", 0, 7)) token = token.substring(7).trim();
+        if (token.length() != 36) return null;
         try {
             String normalized = UUID.fromString(token).toString();
-            return token.length() == 36 && normalized.equalsIgnoreCase(token) ? normalized : null;
+            return normalized.equalsIgnoreCase(token) ? normalized : null;
         } catch (IllegalArgumentException e) { return null; }
     }
 }

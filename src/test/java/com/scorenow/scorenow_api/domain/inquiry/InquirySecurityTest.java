@@ -42,5 +42,6 @@ class InquirySecurityTest {
   when(adminTokenStore.isValid("00000000-0000-0000-0000-000000000001")).thenReturn(true);
   when(inquiries.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
   mvc.perform(get("/admin/inquiries").header("Authorization", "00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(get("/admin/inquiries").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
  }
 }
