@@ -16,6 +16,9 @@ import db.migration.SchemaMigration;
 
 @Configuration(proxyBeanMethods = false)
 public class AdminFeatureMigrations {
+    @Bean
+    JavaMigration existingChatUserMigration() { return new V20261125_01__PreserveChatUserHistory(); }
+
     @Bean @ConditionalOnClass(name = "com.scorenow.scorenow_api.domain.inquiry.InquiryAttachment")
     JavaMigration inquiryMigration() { return new V20261126_01__InquiryColumns(); }
 
@@ -42,6 +45,12 @@ public class AdminFeatureMigrations {
 
     @Bean @ConditionalOnClass(name = "com.scorenow.scorenow_api.domain.terms.TermsRevision")
     JavaMigration termsMigration() { return new V20261126_09__TermsManagement(); }
+
+    public static class V20261125_01__PreserveChatUserHistory extends BaseJavaMigration {
+        @Override public void migrate(Context context) throws Exception {
+            SchemaMigration.preserveChatUserHistory(context.getConnection());
+        }
+    }
 
     public static class V20261126_01__InquiryColumns extends BaseJavaMigration {
         @Override public void migrate(Context context) throws Exception {

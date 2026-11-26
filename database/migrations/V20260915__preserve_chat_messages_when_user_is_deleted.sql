@@ -1,5 +1,5 @@
--- Apply once to existing MySQL databases before deploying the nullable ChatMessage.user mapping.
--- New databases receive the same constraint from ChatMessage's JPA mapping.
+-- Historical reference: Flyway now checks and applies this change automatically.
+-- Do not run this script manually after the automatic migration.
 ALTER TABLE chat_messages
     DROP FOREIGN KEY fk_chat_messages_user;
 
