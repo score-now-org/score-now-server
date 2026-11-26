@@ -100,6 +100,12 @@ public class CommunityComment extends BaseEntity {
 	}
 
 	public void delete(Long userId) {
+		validateDeletionBy(userId);
+		this.status = CommunityCommentStatus.DELETED;
+		this.deletedAt = LocalDateTime.now();
+	}
+
+	public void validateDeletionBy(Long userId) {
 		if (status != CommunityCommentStatus.ACTIVE) {
 			throw new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND);
 		}
@@ -108,8 +114,6 @@ public class CommunityComment extends BaseEntity {
 			throw new BusinessException(ErrorCode.COMMUNITY_FORBIDDEN);
 		}
 
-		this.status = CommunityCommentStatus.DELETED;
-		this.deletedAt = LocalDateTime.now();
 	}
 
 	public Long getPostId() {

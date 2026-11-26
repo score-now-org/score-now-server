@@ -1,5 +1,6 @@
 package com.scorenow.scorenow_api.domain.community.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +15,6 @@ import com.scorenow.scorenow_api.domain.community.entity.CommunityComment;
 import com.scorenow.scorenow_api.domain.community.entity.CommunityCommentStatus;
 
 public interface CommunityCommentRepository extends JpaRepository<CommunityComment, Long> {
-
 	Optional<CommunityComment> findByIdAndStatus(Long id, CommunityCommentStatus status);
 
 	@EntityGraph(attributePaths = "author")
@@ -67,4 +67,16 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 		where c.id = :commentId and c.status = :status
 		""")
 	int decreaseLikeCount(@Param("commentId") Long commentId, @Param("status") CommunityCommentStatus status);
+
+	@Query("select c.post.id from CommunityComment c where c.id = :id")
+	Optional<Long> findPostIdById(@Param("id") Long id);
+
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.id = :id and c.status = :active")
+	int markDeletedIfActive(@Param("id") Long id, @Param("active") CommunityCommentStatus active,
+		@Param("deleted") CommunityCommentStatus deleted, @Param("now") LocalDateTime now);
+
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update CommunityComment c set c.status = :deleted, c.deletedAt = :now where c.post.id = :postId and c.status <> :deleted")
+	int markPostCommentsDeleted(@Param("postId") Long postId, @Param("deleted") CommunityCommentStatus deleted, @Param("now") LocalDateTime now);
 }
