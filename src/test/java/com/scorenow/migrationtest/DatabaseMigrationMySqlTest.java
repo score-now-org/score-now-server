@@ -190,6 +190,20 @@ class DatabaseMigrationMySqlTest {
     }
 
     @Test
+    void conflictingExistingForeignKeyStopsWithoutReplacingIt() throws Exception {
+        execute("CREATE TABLE users (id BIGINT PRIMARY KEY)");
+        execute("CREATE TABLE member_moderation_events (id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, "
+                + "CONSTRAINT existing_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
+        try (Connection connection = dataSource.getConnection()) {
+            assertThrows(java.sql.SQLException.class, () -> SchemaMigration.ensureForeignKey(connection,
+                    "member_moderation_events", "user_id", "fk_member_moderation_user", "users", "RESTRICT"));
+        }
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.referential_constraints "
+                + "WHERE constraint_schema = DATABASE() AND constraint_name = 'existing_fk' AND delete_rule = 'CASCADE'"))
+                .isEqualTo(1);
+    }
+
+    @Test
     void singleConnectionPoolFailsImmediatelyInsteadOfWaitingForItself() {
         try (HikariDataSource pool = new HikariDataSource(); MigrationBootstrap bootstrap = new MigrationBootstrap()) {
             pool.setJdbcUrl(ROOT_URL + schema);
@@ -199,6 +213,23 @@ class DatabaseMigrationMySqlTest {
             Flyway flyway = Flyway.configure().dataSource(pool).baselineOnMigrate(true).baselineVersion("0").load();
             assertThrows(IllegalStateException.class, () -> bootstrap.start(flyway));
         }
+    }
+
+    @Test
+    void twoConnectionPoolCanRunMySqlMigrationWhileHoldingBootstrapLock() throws Exception {
+        createCoreTables();
+        try (HikariDataSource pool = new HikariDataSource(); MigrationBootstrap bootstrap = new MigrationBootstrap()) {
+            pool.setJdbcUrl(ROOT_URL + schema);
+            pool.setUsername("root");
+            pool.setPassword("");
+            pool.setMaximumPoolSize(2);
+            pool.setConnectionTimeout(3000);
+            Flyway flyway = Flyway.configure().dataSource(pool).baselineOnMigrate(true).baselineVersion("0")
+                    .javaMigrations(allFeatureMigrations()).load();
+            bootstrap.start(flyway);
+            bootstrap.finish(flyway);
+        }
+        assertThat(scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1 AND type = 'JDBC'")).isEqualTo(9);
     }
 
     @Test
@@ -215,6 +246,9 @@ class DatabaseMigrationMySqlTest {
                 + "published, published_ticker, published_sort_order) VALUES (8, 'existing', 'body', b'0', b'1', 'ALL', 1, b'0', b'0', b'1', b'0', 1)");
         execute("ALTER TABLE users ADD COLUMN warning_reason VARCHAR(500) NULL");
         execute("UPDATE users SET warning_reason = 'keep' WHERE id = 42");
+        execute("CREATE TABLE member_moderation_events (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "user_id BIGINT NOT NULL, action VARCHAR(32) NOT NULL, reason VARCHAR(500) NULL, created_at DATETIME(6) NOT NULL)");
+        execute("INSERT INTO member_moderation_events (user_id, action, created_at) VALUES (42, 'WARN', NOW())");
 
         JavaMigration[] migrations = allFeatureMigrations();
         run(flyway(migrations));
@@ -290,6 +324,10 @@ class DatabaseMigrationMySqlTest {
 
     private void assertFeatureDataAndSchema() throws Exception {
         assertThat(scalar("SELECT COUNT(*) FROM users WHERE id = 42 AND status = 'ACTIVE' AND warning_reason = 'keep'")).isEqualTo(1);
+        assertThat(scalar("SELECT COUNT(*) FROM member_moderation_events WHERE user_id = 42 AND action = 'WARN'")).isEqualTo(1);
+        assertThat(scalar("SELECT COUNT(*) FROM information_schema.key_column_usage WHERE table_schema = DATABASE() "
+                + "AND table_name = 'member_moderation_events' AND column_name = 'user_id' AND referenced_table_name = 'users'"))
+                .isEqualTo(1);
         assertThat(scalar("SELECT COUNT(*) FROM inquiries WHERE id = 11 AND answer_html = '<p>existing</p>'")).isEqualTo(1);
         assertThat(scalar("SELECT COUNT(*) FROM notices WHERE id = 8 AND title = 'existing' AND kind = 'NOTICE'")).isEqualTo(1);
         assertThat(scalar("SELECT COUNT(*) FROM notice_edit_lock WHERE id = 1")).isEqualTo(1);

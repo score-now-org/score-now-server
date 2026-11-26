@@ -95,6 +95,33 @@ public final class SchemaMigration {
         execute(connection, "CREATE " + (unique ? "UNIQUE " : "") + "INDEX `" + name + "` ON `" + table + "` (" + columns + ")");
     }
 
+    public static void ensureForeignKey(Connection connection, String table, String column, String name,
+                                        String referencedTable, String deleteRule) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME, r.DELETE_RULE "
+                        + "FROM information_schema.KEY_COLUMN_USAGE k JOIN information_schema.REFERENTIAL_CONSTRAINTS r "
+                        + "ON k.CONSTRAINT_SCHEMA = r.CONSTRAINT_SCHEMA AND k.TABLE_NAME = r.TABLE_NAME "
+                        + "AND k.CONSTRAINT_NAME = r.CONSTRAINT_NAME WHERE k.CONSTRAINT_SCHEMA = DATABASE() "
+                        + "AND k.TABLE_NAME = ? AND k.COLUMN_NAME = ? AND k.REFERENCED_TABLE_NAME IS NOT NULL")) {
+            statement.setString(1, table);
+            statement.setString(2, column);
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    String existingRule = result.getString("DELETE_RULE");
+                    boolean sameRule = deleteRule.equalsIgnoreCase(existingRule)
+                            || ("RESTRICT".equals(deleteRule) && "NO ACTION".equalsIgnoreCase(existingRule));
+                    if (!referencedTable.equalsIgnoreCase(result.getString("REFERENCED_TABLE_NAME"))
+                            || !"id".equalsIgnoreCase(result.getString("REFERENCED_COLUMN_NAME")) || !sameRule || result.next()) {
+                        throw new SQLException("기존 " + table + "." + column + " 외래키 정의가 예상과 다릅니다.");
+                    }
+                    return;
+                }
+            }
+        }
+        execute(connection, "ALTER TABLE `" + table + "` ADD CONSTRAINT `" + name + "` FOREIGN KEY (`" + column
+                + "`) REFERENCES `" + referencedTable + "` (`id`) ON DELETE " + deleteRule);
+    }
+
     /** Add the new enum member without removing existing values, defaults or collation. */
     public static void allowPermanentWithdrawal(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement(); ResultSet invalid = statement.executeQuery(

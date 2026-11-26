@@ -71,6 +71,7 @@ public class AdminFeatureMigrations {
                     """);
             SchemaMigration.requireColumns(c, "member_moderation_events", "id", "user_id", "action", "reason", "created_at");
             SchemaMigration.addIndex(c, "member_moderation_events", "idx_member_moderation_user", "`user_id`, `id`", false);
+            SchemaMigration.ensureForeignKey(c, "member_moderation_events", "user_id", "fk_member_moderation_user", "users", "RESTRICT");
         }
     }
 
@@ -96,6 +97,8 @@ public class AdminFeatureMigrations {
             SchemaMigration.requireColumns(c, "chat_message_reports", "id", "message_id", "reporter_id", "reason", "created_at");
             SchemaMigration.addIndex(c, "chat_message_reports", "uk_chat_report_user", "`message_id`, `reporter_id`", true);
             SchemaMigration.addIndex(c, "chat_message_reports", "idx_chat_report_message", "`message_id`", false);
+            SchemaMigration.ensureForeignKey(c, "chat_message_reports", "message_id", "fk_chat_report_message", "chat_messages", "CASCADE");
+            SchemaMigration.ensureForeignKey(c, "chat_message_reports", "reporter_id", "fk_chat_report_user", "users", "SET NULL");
         }
     }
 
