@@ -39,4 +39,15 @@ class AdminAppVersionSecurityTest {
         mvc.perform(delete("/api/v1/admin/app-versions/1").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
         verify(versions).delete(1L);
     }
+
+    @Test void trimsBeforeValidatingAndSavingVersion() throws Exception {
+        String token = "00000000-0000-0000-0000-000000000001";
+        when(tokens.isValid(token)).thenReturn(true);
+        String version = "x".repeat(40);
+        mvc.perform(post("/api/v1/admin/app-versions").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"versionName\":\" " + version + " \",\"platform\":\"IOS\",\"releaseDate\":\"2025-01-01\",\"content\":\" 내용 \"}"))
+                .andExpect(status().isOk());
+        verify(versions).create(argThat(request -> version.equals(request.versionName()) && "내용".equals(request.content())));
+    }
 }

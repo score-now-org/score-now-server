@@ -19,7 +19,12 @@ public class AdminAppVersionService {
     public record Request(@NotBlank @Size(max = 40) String versionName,
                           @NotNull AppVersionRelease.Platform platform,
                           @NotNull LocalDate releaseDate,
-                          @NotBlank @Size(max = 3000) String content) { }
+                          @NotBlank @Size(max = 3000) String content) {
+        public Request {
+            versionName = versionName == null ? null : versionName.trim();
+            content = content == null ? null : content.trim();
+        }
+    }
     public record Response(Long id, String versionName, AppVersionRelease.Platform platform,
                            LocalDate releaseDate, String content) {
         static Response from(AppVersionRelease release) {
@@ -37,14 +42,14 @@ public class AdminAppVersionService {
 
     @Transactional
     public Response create(Request request) {
-        return Response.from(releases.save(new AppVersionRelease(request.versionName().trim(), request.platform(),
-                request.releaseDate(), request.content().trim())));
+        return Response.from(releases.save(new AppVersionRelease(request.versionName(), request.platform(),
+                request.releaseDate(), request.content())));
     }
 
     @Transactional
     public Response update(Long id, Request request) {
         AppVersionRelease release = find(id);
-        release.update(request.versionName().trim(), request.platform(), request.releaseDate(), request.content().trim());
+        release.update(request.versionName(), request.platform(), request.releaseDate(), request.content());
         return Response.from(release);
     }
 
