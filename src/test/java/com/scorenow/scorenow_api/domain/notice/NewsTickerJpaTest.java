@@ -30,6 +30,7 @@ class NewsTickerJpaTest {
         assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData()).isEmpty();
         var visible = c.news(Notice.Platform.IOS, 0, 20).getData().getContent();
         assertThat(visible).extracting(NoticeController.NewsResponse::id).containsExactly(otherNews, news);
+        assertThat(c.news(null, 0, 20).getData().getContent()).extracting(NoticeController.NewsResponse::id).containsExactly(otherNews);
         assertThat(visible.get(1).titleColor()).isEqualTo("#112233");
         assertThat(c.news(Notice.Platform.ANDROID, 0, 20).getData().getContent()).extracting(NoticeController.NewsResponse::id).containsExactly(otherNews);
         c.updateNews(news, new NewsTickerRequest("새 뉴스", "본문 변경", true, Notice.Platform.IOS, null, "#ffffff", "#000000"));
@@ -44,5 +45,16 @@ class NewsTickerJpaTest {
         c.deleteNews(news); c.publishNews();
         assertThat(c.news(Notice.Platform.IOS, 0, 20).getData().getContent()).extracting(NoticeController.NewsResponse::id).containsExactly(otherNews);
         assertThat(c.list(false, Notice.Platform.IOS, 0, 20).getData().getTotalElements()).isEqualTo(1);
+    }
+
+    @Test void blankOptionalUrlIsValidAndInvalidUrlIsRejected() {
+        try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            var blank = new NewsTickerRequest("뉴스", "본문", true, Notice.Platform.ALL, "  ", "#000000", "#000000");
+            var invalid = new NewsTickerRequest("뉴스", "본문", true, Notice.Platform.ALL, "javascript:alert(1)", "#000000", "#000000");
+            assertThat(blank.url()).isNull();
+            assertThat(validator.validate(blank)).isEmpty();
+            assertThat(validator.validate(invalid)).isNotEmpty();
+        }
     }
 }

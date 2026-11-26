@@ -143,7 +143,7 @@ public class NoticeController {
     private static void reorder(List<Notice> notices) { for (int i = 0; i < notices.size(); i++) notices.get(i).setSortOrder(i + 1); }
     private void lockForEdit() { noticeLock.lockForEdit().orElseThrow(() -> new IllegalStateException("공지 관리 DB 마이그레이션이 필요합니다.")); }
     private Notice requireDraft(Notice.Kind kind, Long id) { return notices.findByIdAndKindAndDeletedFalse(id, kind).orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)); }
-    private static List<Notice.Platform> platforms(Notice.Platform platform) { return platform == Notice.Platform.ALL ? List.of(platform) : List.of(Notice.Platform.ALL, platform); }
+    private static List<Notice.Platform> platforms(Notice.Platform platform) { return platform == null || platform == Notice.Platform.ALL ? List.of(Notice.Platform.ALL) : List.of(Notice.Platform.ALL, platform); }
     private static PageRequest pagination(int page, int size) {
         if (page < 0 || size < 1 || size > 100) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         return PageRequest.of(page, size);

@@ -10,5 +10,9 @@ public record NewsTickerRequest(@NotBlank @Size(max = 200) String title,
                                 @Size(max = 2048) @URL @Pattern(regexp = "(?i)https?://[^\\s]+") String url,
                                 @NotNull @Pattern(regexp = "#[0-9a-fA-F]{6}") String titleColor,
                                 @NotNull @Pattern(regexp = "#[0-9a-fA-F]{6}") String contentColor) {
+    public NewsTickerRequest {
+        if (url != null) url = url.isBlank() ? null : url.trim();
+    }
+
     NoticeRequest asNotice() { return new NoticeRequest(title, content, true, visible, platform, null, url); }
 }
