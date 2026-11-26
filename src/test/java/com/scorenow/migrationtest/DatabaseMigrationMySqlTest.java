@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfigu
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy;
 
 import com.scorenow.scorenow_api.global.config.DatabaseMigrationConfiguration;
 import com.scorenow.scorenow_api.global.config.DatabaseMigrationConfiguration.MigrationBootstrap;
@@ -180,13 +181,13 @@ class DatabaseMigrationMySqlTest {
     }
 
     @Test
-    void unknownExistingStatusStopsWithoutChangingTheData() throws Exception {
+    void nonCanonicalExistingStatusStopsWithoutChangingTheData() throws Exception {
         execute("CREATE TABLE users (id BIGINT PRIMARY KEY, status VARCHAR(30) NULL)");
-        execute("INSERT INTO users (id, status) VALUES (42, 'UNKNOWN')");
+        execute("INSERT INTO users (id, status) VALUES (42, 'active')");
         try (Connection connection = dataSource.getConnection()) {
             assertThrows(java.sql.SQLException.class, () -> SchemaMigration.allowPermanentWithdrawal(connection));
         }
-        assertThat(scalar("SELECT COUNT(*) FROM users WHERE id = 42 AND status = 'UNKNOWN'")).isEqualTo(1);
+        assertThat(scalar("SELECT COUNT(*) FROM users WHERE id = 42 AND status = 'active'")).isEqualTo(1);
     }
 
     @Test
@@ -211,7 +212,22 @@ class DatabaseMigrationMySqlTest {
             pool.setPassword("");
             pool.setMaximumPoolSize(1);
             Flyway flyway = Flyway.configure().dataSource(pool).baselineOnMigrate(true).baselineVersion("0").load();
-            assertThrows(IllegalStateException.class, () -> bootstrap.start(flyway));
+            IllegalStateException error = assertThrows(IllegalStateException.class, () -> bootstrap.start(flyway));
+            assertThat(error.getCause()).hasMessageContaining("최소 2개");
+        }
+    }
+
+    @Test
+    void proxiedSingleConnectionPoolAlsoFailsImmediately() {
+        try (HikariDataSource pool = new HikariDataSource(); MigrationBootstrap bootstrap = new MigrationBootstrap()) {
+            pool.setJdbcUrl(ROOT_URL + schema);
+            pool.setUsername("root");
+            pool.setPassword("");
+            pool.setMaximumPoolSize(1);
+            DataSource proxy = new LazyConnectionDataSourceProxy(pool);
+            Flyway flyway = Flyway.configure().dataSource(proxy).baselineOnMigrate(true).baselineVersion("0").load();
+            IllegalStateException error = assertThrows(IllegalStateException.class, () -> bootstrap.start(flyway));
+            assertThat(error.getCause()).hasMessageContaining("최소 2개");
         }
     }
 
