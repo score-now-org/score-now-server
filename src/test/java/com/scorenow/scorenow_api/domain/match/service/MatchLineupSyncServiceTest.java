@@ -58,6 +58,126 @@ class MatchLineupSyncServiceTest {
 	private MatchLineupSyncService matchLineupSyncService;
 
 	@Test
+	void 라인업_API_데이터가_없으면_기본_라인업을_생성한다() {
+		// given
+		Long matchId = 1L;
+		Long sportId = 1L;
+		String apiMatchId = "10119802";
+
+		Long homeId = 17170L;
+		Long awayId = 23451L;
+
+		Match match = Match.builder()
+			.id(matchId)
+			.sportId(sportId)
+			.apiMatchId(apiMatchId)
+			.homeId(homeId)
+			.awayId(awayId)
+			.build();
+
+		Team homeTeam = Team.builder()
+			.id(homeId)
+			.eName("Fulham")
+			.build();
+
+		Team awayTeam = Team.builder()
+			.id(awayId)
+			.eName("Liverpool")
+			.build();
+
+		TeamExternalMapping homeMapping = TeamExternalMapping.builder()
+			.provider(DataOrigin.BETS)
+			.apiTeamId("17170")
+			.internalTeamId(homeId)
+			.build();
+
+		TeamExternalMapping awayMapping = TeamExternalMapping.builder()
+			.provider(DataOrigin.BETS)
+			.apiTeamId("23451")
+			.internalTeamId(awayId)
+			.build();
+
+		// BetsApiClient에서 results: []를 빈 Result로 변환한 상태
+		BetsLineupResponse lineupResponse = new BetsLineupResponse();
+		lineupResponse.setSuccess(1);
+		lineupResponse.setResults(new BetsLineupResponse.Result());
+
+		when(matchRepo.findById(matchId))
+			.thenReturn(Optional.of(match));
+
+		when(teamRepo.findAllById(List.of(homeId, awayId)))
+			.thenReturn(List.of(homeTeam, awayTeam));
+
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(
+			DataOrigin.BETS, homeId
+		)).thenReturn(Optional.of(homeMapping));
+
+		when(teamExternalMappingRepository.findByProviderAndInternalTeamId(
+			DataOrigin.BETS, awayId
+		)).thenReturn(Optional.of(awayMapping));
+
+		when(betsApiClient.getLineup(apiMatchId))
+			.thenReturn(lineupResponse);
+
+		when(matchLineupRepo.findById(matchId))
+			.thenReturn(Optional.empty());
+
+		when(matchLineupRepo.save(any(MatchLineupDocument.class)))
+			.thenAnswer(invocation -> invocation.getArgument(0));
+
+		doCallRealMethod().when(lineupMapper).toSide(
+			isNull(),
+			eq(homeId),
+			eq("17170"),
+			eq("Fulham"),
+			anyMap()
+		);
+
+		doCallRealMethod().when(lineupMapper).toSide(
+			isNull(),
+			eq(awayId),
+			eq("23451"),
+			eq("Liverpool"),
+			anyMap()
+		);
+
+		// when
+		MatchLineupDocument result =
+			matchLineupSyncService.syncMatchLineup("1", "1");
+
+		// then
+		ArgumentCaptor<MatchLineupDocument> captor =
+			ArgumentCaptor.forClass(MatchLineupDocument.class);
+
+		verify(matchLineupRepo).save(captor.capture());
+
+		MatchLineupDocument saved = captor.getValue();
+
+		assertThat(result).isSameAs(saved);
+		assertThat(saved.getId()).isEqualTo(matchId);
+		assertThat(saved.getSportId()).isEqualTo(sportId);
+		assertThat(saved.getApiMatchId()).isEqualTo(apiMatchId);
+
+		// 홈팀 기본 라인업
+		assertThat(saved.getHome().getTeamId()).isEqualTo(homeId);
+		assertThat(saved.getHome().getApiTeamId()).isEqualTo("17170");
+		assertThat(saved.getHome().getTeamEname()).isEqualTo("Fulham");
+		assertThat(saved.getHome().getFormation()).isNull();
+		assertThat(saved.getHome().getStartingLineup()).isEmpty();
+		assertThat(saved.getHome().getSubstitutes()).isEmpty();
+
+		// 원정팀 기본 라인업
+		assertThat(saved.getAway().getTeamId()).isEqualTo(awayId);
+		assertThat(saved.getAway().getApiTeamId()).isEqualTo("23451");
+		assertThat(saved.getAway().getTeamEname()).isEqualTo("Liverpool");
+		assertThat(saved.getAway().getFormation()).isNull();
+		assertThat(saved.getAway().getStartingLineup()).isEmpty();
+		assertThat(saved.getAway().getSubstitutes()).isEmpty();
+
+		verify(betsApiClient).getLineup(apiMatchId);
+	}
+
+	@Test
 	void 라인업_문서를_자동_생성하고_저장한다() {
 		// given
 		Long matchId = 1L;

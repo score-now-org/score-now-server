@@ -1,8 +1,8 @@
 # 문의 API
 
-모든 JSON 응답은 기존 `ApiResponse` 형식이다. 관리자 API는 로그인에서 발급된 토큰을 `Authorization` 헤더에 그대로 전달하고, 문의 API는 사용자 Bearer 토큰을 사용한다. 목록은 Spring `Page` 형식이며 `page`는 0부터 시작하고 `size`는 1~100이다.
+모든 JSON 응답은 기존 `ApiResponse` 형식이다. 관리자 API는 로그인에서 발급된 관리자 토큰을 `Authorization: Bearer <관리자 토큰>` 또는 기존 토큰 원문으로 전달한다. 사용자 문의 API는 사용자 Bearer 토큰을 사용한다. 목록은 Spring `Page` 형식이며 `page`는 0부터 시작하고 `size`는 1~100이다.
 
-현재 관리자 API는 기존 인증과 동일하게 `Authorization: <관리자 토큰 원문>`을 사용한다. 관리자 인증이 Bearer 방식으로 변경되면 이 API의 관리자 인증 테스트와 호출 방식도 함께 변경해야 한다. 관리자 문의 화면은 별도로 구현해야 한다.
+관리자 문의 화면은 별도로 구현해야 한다.
 
 ## 문의
 

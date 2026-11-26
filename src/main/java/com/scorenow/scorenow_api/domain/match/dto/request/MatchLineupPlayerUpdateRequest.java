@@ -9,6 +9,5 @@ public class MatchLineupPlayerUpdateRequest {
 
 	private String position;
 	private String shirtNumber;
-	private Integer goals;
 
 }

@@ -7,6 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MatchLineupSideUpdateRequest {
 
-	private String formation;
 	private String uniformColor;
 }

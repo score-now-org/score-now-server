@@ -141,7 +141,7 @@ public class InquiryController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String status) {
-        if ((from != null && to != null && from.isAfter(to)) || (userId != null && userId < 1)
+        if (LocalDate.MAX.equals(to) || (from != null && to != null && from.isAfter(to)) || (userId != null && userId < 1)
                 || (status != null && !status.isBlank() && !status.equals("WAITING") && !status.equals("ANSWERED")))
             throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         Specification<Inquiry> spec = (root, query, cb) -> {

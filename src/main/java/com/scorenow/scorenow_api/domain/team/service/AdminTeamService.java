@@ -3,6 +3,8 @@ package com.scorenow.scorenow_api.domain.team.service;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 import com.scorenow.scorenow_api.domain.sport.entity.Sport;
 import com.scorenow.scorenow_api.domain.sport.repository.SportRepository;
@@ -16,6 +18,7 @@ import com.scorenow.scorenow_api.domain.team.entity.TeamType;
 import com.scorenow.scorenow_api.domain.team.repository.TeamRepository;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
+import com.scorenow.scorenow_api.global.infra.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,7 +26,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.MANUAL;
 
@@ -33,14 +39,25 @@ import static com.scorenow.scorenow_api.domain.common.enums.DataOrigin.MANUAL;
 @Transactional(readOnly = true)
 public class AdminTeamService {
 
+    private static final String TEAM_EMBLEM_DIRECTORY = "team-emblems";
+
     private final TeamRepository teamRepository;
     private final SportRepository sportRepository;
+    private final FileStorage fileStorage;
 
     /**
      * 팀 수동 등록
      */
     @Transactional
     public AdminTeamResponse createTeam(AdminTeamCreateRequest request) {
+        return createTeam(request, null);
+    }
+
+    @Transactional
+    public AdminTeamResponse createTeam(AdminTeamCreateRequest request, MultipartFile image) {
+        String imageUrl = normalizeImageUrl(request.getImageUrl());
+        validateEmblemUpdate(imageUrl, image, false);
+
         Sport sport = sportRepository.findById(request.getSportId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SPORT_NOT_FOUND));
 
@@ -50,11 +67,15 @@ public class AdminTeamService {
                 .kName(requireText(request.getKName(), "한글 팀명"))
                 .eName(requireText(request.getEName(), "영문 팀명"))
                 .sName(requireText(request.getSName(), "축약 팀명").toUpperCase(Locale.ROOT))
-                .imageUrl(normalizeImageUrl(request.getImageUrl()))
+                .imageUrl(imageUrl)
                 .dataOrigin(MANUAL)
                 .build();
 
-        return AdminTeamResponse.from(teamRepository.save(team));
+        Team savedTeam = teamRepository.save(team);
+        if (image != null) {
+            savedTeam.updateImageUrl(uploadEmblem(savedTeam.getId(), image));
+        }
+        return AdminTeamResponse.from(savedTeam);
     }
 
     /**
@@ -101,10 +122,25 @@ public class AdminTeamService {
      */
     @Transactional
     public void updateTeam(Long teamId, AdminTeamUpdateRequest request) {
-        Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
+        updateTeam(teamId, request, null);
+    }
+
+    @Transactional
+    public void updateTeam(Long teamId, AdminTeamUpdateRequest request, MultipartFile image) {
+        Team team = teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
 
+        if (request == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "수정할 팀 정보가 없습니다.");
+        }
+        boolean removeEmblem = Boolean.TRUE.equals(request.getRemoveEmblem());
+        validateEmblemUpdate(request.getImageUrl(), image, removeEmblem);
+        if (!hasAnyUpdate(request) && image == null && !removeEmblem) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "수정할 값이 하나 이상 필요합니다.");
+        }
+
         applyUpdates(team, request);
+        updateEmblem(team, request.getImageUrl(), image, removeEmblem);
 
         log.info("팀 정보 수정 완료 - teamId: {}", teamId);
     }
@@ -114,7 +150,7 @@ public class AdminTeamService {
      */
     @Transactional
     public void deleteTeam(Long teamId) {
-        Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
+        Team team = teamRepository.findForUpdateByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
 
         if (team.getDataOrigin() != MANUAL) {
@@ -127,13 +163,6 @@ public class AdminTeamService {
     }
 
     private void applyUpdates(Team team, AdminTeamUpdateRequest request) {
-        if (request == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "수정할 팀 정보가 없습니다.");
-        }
-        if (!hasAnyUpdate(request)) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "수정할 값이 하나 이상 필요합니다.");
-        }
-
         if (request.getTeamType() != null) {
             team.updateType(request.getTeamType());
         }
@@ -146,12 +175,86 @@ public class AdminTeamService {
         if (request.getSName() != null) {
             team.updateSName(requireText(request.getSName(), "축약 팀명").toUpperCase(Locale.ROOT));
         }
-        if (request.getImageUrl() != null) {
-            team.updateImageUrl(requireImageUrl(request.getImageUrl()));
-        }
         if (request.getCc() != null) {
             String cc = normalize(request.getCc());
             team.updateCountryCode(cc != null ? cc.toUpperCase(Locale.ROOT) : null);
+        }
+    }
+
+    private void validateEmblemUpdate(String imageUrl, MultipartFile image, boolean removeEmblem) {
+        if (image != null && image.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "빈 이미지 파일은 등록할 수 없습니다.");
+        }
+        if (removeEmblem && (image != null || imageUrl != null)) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "엠블럼 제거와 새 이미지 등록을 동시에 요청할 수 없습니다.");
+        }
+        if (image != null && imageUrl != null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "이미지 파일과 이미지 URL을 동시에 요청할 수 없습니다.");
+        }
+    }
+
+    private void updateEmblem(Team team, String requestedImageUrl, MultipartFile image, boolean removeEmblem) {
+        if (requestedImageUrl == null && image == null && !removeEmblem) {
+            return;
+        }
+
+        String previousImageUrl = team.getImageUrl();
+        String nextImageUrl = null;
+        if (image != null) {
+            nextImageUrl = uploadEmblem(team.getId(), image);
+        } else if (requestedImageUrl != null) {
+            nextImageUrl = requireImageUrl(requestedImageUrl);
+        }
+
+        if (!Objects.equals(previousImageUrl, nextImageUrl)) {
+            team.updateImageUrl(nextImageUrl);
+            deletePreviousEmblemAfterCommit(team.getId(), previousImageUrl);
+        }
+    }
+
+    private String uploadEmblem(Long teamId, MultipartFile image) {
+        String key = fileStorage.uploadFileAndReturnKey(image, emblemDirectory(teamId));
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        deleteEmblem(key, fileStorage::deleteFile);
+                    }
+                }
+            });
+        }
+        return fileStorage.getFileUrl(key);
+    }
+
+    private void deletePreviousEmblemAfterCommit(Long teamId, String previousImageUrl) {
+        if (previousImageUrl == null || !TransactionSynchronizationManager.isSynchronizationActive()
+                || !fileStorage.isManagedFileUrl(previousImageUrl)) {
+            return;
+        }
+
+        String ownedUrlPrefix = fileStorage.getFileUrl(emblemDirectory(teamId) + "/");
+        if (!previousImageUrl.startsWith(ownedUrlPrefix) || previousImageUrl.length() == ownedUrlPrefix.length()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deleteEmblem(previousImageUrl, fileStorage::deleteFileByUrl);
+            }
+        });
+    }
+
+    private String emblemDirectory(Long teamId) {
+        return TEAM_EMBLEM_DIRECTORY + "/" + teamId;
+    }
+
+    private void deleteEmblem(String location, Consumer<String> deleteFile) {
+        try {
+            deleteFile.accept(location);
+        } catch (RuntimeException exception) {
+            log.error("GCS 팀 엠블럼 정리 실패. location={}", location, exception);
         }
     }
 

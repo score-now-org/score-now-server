@@ -19,6 +19,8 @@ public class MatchMapper {
     public MatchListResponse toResponse(Match match) {
         return MatchListResponse.builder()
                 .id(match.getId())
+                .dataOrigin(match.getDataOrigin())
+                .apiMatchId(match.getApiMatchId())
                 .sportId(match.getSportId())
                 .sportCode(match.getSport() != null ? match.getSport().getSportCode() : null)
                 .sportName(getSportName(match.getSport()))
