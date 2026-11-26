@@ -3,6 +3,8 @@ package com.scorenow.scorenow_api.domain.inquiry;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.*;
@@ -35,6 +37,7 @@ public class InquiryController {
     private final UserReferenceService users;
     public record Request(@NotBlank @Size(max = 200) String title, @NotBlank @Size(max = 10000) String content) {}
     public record Answer(@Size(max = 10000) String content, @Size(max = 10000) String contentHtml) {}
+    public record FormattingCapabilities(boolean richFormatting) {}
     public record Response(Long id, String title, String content, String status, String answer,
                            String answerHtml, LocalDateTime createdAt, LocalDateTime answeredAt, boolean hasImage,
                            boolean hasAttachment, String attachmentName) {
@@ -116,6 +119,10 @@ public class InquiryController {
     public ApiResponse<AdminResponse> adminDetail(@PathVariable Long id) {
         return ApiResponse.success(AdminResponse.of(inquiries.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND))));
     }
+    @GetMapping({"/admin/inquiries/formatting-capabilities", "/api/v1/admin/inquiries/formatting-capabilities"})
+    public ApiResponse<FormattingCapabilities> formattingCapabilities() {
+        return ApiResponse.success(new FormattingCapabilities(true));
+    }
     private ResponseEntity<byte[]> imageResponse(Long id, boolean download) {
         InquiryImage image = images.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         if (!"image/png".equals(image.getContentType()) && !"image/jpeg".equals(image.getContentType()))
@@ -165,17 +172,66 @@ public class InquiryController {
         String html = null;
         String text = request.content();
         if (request.contentHtml() != null) {
-            Safelist allowed = Safelist.none().addTags("p", "div", "br", "strong", "b", "em", "i", "u", "s", "strike", "ul", "ol", "li", "a")
-                    .addAttributes("a", "href").addProtocols("a", "href", "http", "https", "mailto");
-            html = Jsoup.clean(request.contentHtml(), "", allowed, new Document.OutputSettings().prettyPrint(false));
+            html = sanitizeAnswer(request.contentHtml());
             text = plainText(html);
             if (text.isBlank() || text.length() > 10000) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         } else if (text == null || text.isBlank() || text.length() > 10000) throw new BusinessException(ErrorCode.INVALID_PARAMETER);
         inquiry.answer(text, html);
         return ApiResponse.success(Response.of(inquiry));
     }
+    private static String sanitizeAnswer(String source) {
+        Safelist allowed = Safelist.none().addTags("p", "div", "span", "br", "strong", "b", "em", "i", "u", "s", "strike", "ul", "ol", "li", "a", "table", "thead", "tbody", "tr", "th", "td")
+                .addAttributes(":all", "style").addAttributes("a", "href").addProtocols("a", "href", "http", "https", "mailto");
+        String clean = Jsoup.clean(source, "", allowed, new Document.OutputSettings().prettyPrint(false));
+        Document document = Jsoup.parseBodyFragment(clean);
+        document.outputSettings().prettyPrint(false);
+        for (Element element : document.body().select("[style]")) {
+            String style = safeStyle(element.attr("style"));
+            if (style.isEmpty()) element.removeAttr("style"); else element.attr("style", style);
+        }
+        return document.body().html();
+    }
+
+    private static final Set<String> ANSWER_FONTS = Set.of("arial", "verdana", "georgia", "tahoma", "courier new", "malgun gothic");
+    private static final Set<String> ANSWER_SIZES = Set.of("xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large", "xxx-large");
+    private static final Pattern RGB_COLOR = Pattern.compile("(?i)^rgb\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*\\)$");
+
+    private static String safeStyle(String source) {
+        StringBuilder result = new StringBuilder();
+        for (String declaration : source.split(";")) {
+            String[] parts = declaration.split(":", 2);
+            if (parts.length != 2) continue;
+            String property = parts[0].trim().toLowerCase(Locale.ROOT);
+            String value = parts[1].trim();
+            String lower = value.toLowerCase(Locale.ROOT);
+            String safe = switch (property) {
+                case "font-family" -> {
+                    String font = lower.replace("\"", "").replace("'", "").trim();
+                    yield ANSWER_FONTS.contains(font) ? "'" + font + "'" : null;
+                }
+                case "font-size" -> ANSWER_SIZES.contains(lower) || lower.matches("(?:[8-9]|[1-6][0-9]|7[0-2])px") ? lower : null;
+                case "font-weight" -> Set.of("normal", "bold", "100", "200", "300", "400", "500", "600", "700", "800", "900").contains(lower) ? lower : null;
+                case "font-style" -> Set.of("normal", "italic").contains(lower) ? lower : null;
+                case "text-decoration", "text-decoration-line" -> Set.of("none", "underline", "line-through", "underline line-through", "line-through underline").contains(lower) ? lower : null;
+                case "text-align" -> Set.of("left", "center", "right", "justify").contains(lower) ? lower : null;
+                case "color", "background-color" -> safeColor(lower);
+                default -> null;
+            };
+            if (safe != null) result.append(property).append(": ").append(safe).append("; ");
+        }
+        return result.toString().trim();
+    }
+
+    private static String safeColor(String value) {
+        if (value.matches("#[0-9a-f]{6}")) return value;
+        var rgb = RGB_COLOR.matcher(value);
+        if (!rgb.matches()) return null;
+        int red = Integer.parseInt(rgb.group(1)), green = Integer.parseInt(rgb.group(2)), blue = Integer.parseInt(rgb.group(3));
+        return red <= 255 && green <= 255 && blue <= 255 ? String.format("#%02x%02x%02x", red, green, blue) : null;
+    }
+
     private static String plainText(String html) {
-        var blockTags = java.util.Set.of("p", "div", "li");
+        var blockTags = Set.of("p", "div", "li", "tr");
         StringBuilder text = new StringBuilder();
         Jsoup.parse(html).body().traverse(new NodeVisitor() {
             private void line() { if (!text.isEmpty() && text.charAt(text.length() - 1) != '\n') text.append('\n'); }
@@ -185,7 +241,10 @@ public class InquiryController {
                 if (node instanceof TextNode value) text.append(value.getWholeText());
                 else if (node instanceof Element element && element.normalName().equals("br")) text.append('\n');
             }
-            @Override public void tail(Node node, int depth) { if (block(node)) line(); }
+            @Override public void tail(Node node, int depth) {
+                if (node instanceof Element element && Set.of("td", "th").contains(element.normalName()) && element.nextElementSibling() != null) text.append('\t');
+                if (block(node)) line();
+            }
         });
         return text.toString().trim();
     }

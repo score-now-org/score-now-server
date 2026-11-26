@@ -40,6 +40,7 @@ class InquirySecurityTest {
   mvc.perform(get("/admin/inquiries")).andExpect(status().isUnauthorized());
   mvc.perform(get("/admin/inquiries/1/image")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/admin/inquiries")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/api/v1/admin/inquiries/formatting-capabilities")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/admin/inquiries/1/image")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/v1/admin/inquiries/1/attachment")).andExpect(status().isUnauthorized());
   mvc.perform(put("/api/v1/admin/inquiries/1/answer").contentType("application/json").content("{\"content\":\"답변\"}"))
@@ -61,6 +62,8 @@ class InquirySecurityTest {
   mvc.perform(get("/api/v1/admin/inquiries").header("Authorization", "00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
   mvc.perform(get("/admin/inquiries").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
   mvc.perform(get("/api/v1/admin/inquiries").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")).andExpect(status().isOk());
+  mvc.perform(get("/api/v1/admin/inquiries/formatting-capabilities").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001"))
+          .andExpect(status().isOk()).andExpect(jsonPath("$.data.richFormatting").value(true));
   mvc.perform(get("/api/v1/admin/inquiries").header("Authorization", "Bearer 00000000-0000-0000-0000-000000000001")
           .param("to", "+999999999-12-31")).andExpect(status().isBadRequest());
   when(inquiries.findForUpdate(1L)).thenReturn(Optional.of(mock(Inquiry.class)));
