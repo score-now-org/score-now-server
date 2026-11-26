@@ -29,6 +29,10 @@ public class TermsService {
 
     @Transactional
     public Snapshot publish(PublishRequest request) {
+        if (request == null || request.expectedVersion() == null || request.content() == null
+                || request.content().isBlank() || request.content().length() > 100000) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER);
+        }
         lock.lockForPublish().orElseThrow(() -> new IllegalStateException("약관 관리 DB 마이그레이션이 필요합니다."));
         Snapshot current = current();
         if (current.version() != request.expectedVersion()) throw new BusinessException(ErrorCode.TERMS_EDIT_CONFLICT);

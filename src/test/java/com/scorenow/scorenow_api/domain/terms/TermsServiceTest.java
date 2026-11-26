@@ -34,4 +34,13 @@ class TermsServiceTest {
             .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.TERMS_EDIT_CONFLICT));
         assertThat(service.current()).isEqualTo(second);
     }
+
+    @Test void rejectsInvalidRequestsBeforeAccessingTheDatabase() {
+        assertThatThrownBy(() -> service.publish(null))
+            .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_PARAMETER));
+        assertThatThrownBy(() -> service.publish(new TermsService.PublishRequest(0L, null)))
+            .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_PARAMETER));
+        assertThatThrownBy(() -> service.publish(new TermsService.PublishRequest(null, "약관")))
+            .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_PARAMETER));
+    }
 }
