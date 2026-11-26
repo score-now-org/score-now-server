@@ -32,7 +32,13 @@ public class AuthController {
     public ApiResponse<SocialLoginDto> socialLogin(
             @Valid @RequestBody SocialLoginRequestDto request,
             HttpServletRequest httpRequest) {
-        SocialLoginDto result = authService.socialLogin(request, httpRequest);
+        SocialLoginDto result;
+        try { result = authService.socialLogin(request, httpRequest); }
+        catch (AuthService.ConcurrentSocialRegistration conflict) {
+            // The failed transaction has rolled back; the winning account is now visible.
+            try { result = authService.retryExistingSocialLogin(request, httpRequest); }
+            catch (AuthService.SocialIdentityAbsent absent) { throw conflict.originalFailure(); }
+        }
         return ApiResponse.success(result);
     }
 

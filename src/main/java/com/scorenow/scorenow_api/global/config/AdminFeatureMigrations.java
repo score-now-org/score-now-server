@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import db.migration.SchemaMigration;
+import com.scorenow.scorenow_api.domain.user.entity.User;
 
 @Configuration(proxyBeanMethods = false)
 public class AdminFeatureMigrations {
@@ -48,6 +49,23 @@ public class AdminFeatureMigrations {
 
     @Bean @ConditionalOnClass(name = "com.scorenow.scorenow_api.domain.admin.member.dto.SuspensionDuration")
     JavaMigration timedBanMigration() { return new V20261126_10__TimedMemberBans(); }
+
+    @Bean @ConditionalOnClass(name = "com.scorenow.scorenow_api.domain.user.controller.AuthController")
+    JavaMigration socialIdentityMigration() { return new V20261126_11__UniqueSocialIdentity(); }
+
+    public static class V20261126_11__UniqueSocialIdentity extends BaseJavaMigration {
+        @Override public void migrate(Context context) throws Exception {
+            Connection c = context.getConnection();
+            SchemaMigration.requireColumns(c, "users", "provider", "social_id");
+            try (PreparedStatement statement = c.prepareStatement(
+                    "SELECT 1 FROM users WHERE provider IS NOT NULL AND social_id IS NOT NULL "
+                            + "GROUP BY provider, social_id HAVING COUNT(*) > 1 LIMIT 1");
+                 ResultSet duplicates = statement.executeQuery()) {
+                if (duplicates.next()) throw new SQLException("중복 소셜 계정이 있어 유일성 제약을 추가할 수 없습니다.");
+            }
+            SchemaMigration.addIndex(c, "users", User.SOCIAL_IDENTITY_UNIQUE, "`provider`, `social_id`", true);
+        }
+    }
 
     public static class V20261126_10__TimedMemberBans extends BaseJavaMigration {
         @Override public void migrate(Context context) throws Exception {
