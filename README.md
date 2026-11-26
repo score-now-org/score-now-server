@@ -108,7 +108,7 @@ docker-compose up -d
 
 Google/Apple 토큰은 공급자 공개키로 서명, 발급자, 대상 앱, 만료를 검증합니다. Kakao 토큰은 토큰 정보 API에서 대상 앱, 만료, 회원번호를 확인합니다. 회원 조회에 사용하는 `socialId`는 검증 결과에서 가져오며 요청 본문의 `socialId`는 사용하지 않습니다. 이름은 표시용 정보입니다.
 
-`POST /api/v1/auth/register-nickname`은 앱 AccessToken을 Bearer 헤더로 보내고 본문에는 `{"nickname":"새닉네임"}`을 전달합니다. 기존 `provider/socialId` 필드를 보내도 변경 대상 선정에는 사용하지 않습니다. 닉네임은 1~30자이며 기존 60일 변경 제한을 유지합니다.
+`POST /api/v1/auth/register-nickname`은 앱 AccessToken을 Bearer 헤더로 보내고 본문에는 `{"nickname":"새닉네임"}`을 전달합니다. 기존 `provider/socialId` 필드를 보내도 변경 대상 선정에는 사용하지 않습니다. 닉네임은 1~8자이며 기존 60일 변경 제한을 유지합니다.
 
 로그인·닉네임 변경·프로필 응답의 `user.id`/`data.id`에는 내부 회원 ID가 포함됩니다. RefreshToken은 로그인과 갱신 모두 14일이며, 계정당 한 개의 RefreshToken을 저장합니다. 탈퇴 시 RefreshToken을 삭제하고 비활성·정지·탈퇴 계정의 기존 AccessToken도 보호된 HTTP API에서 허용하지 않습니다.
 
@@ -118,15 +118,13 @@ AccessToken 인증 시 DB에서 회원 상태를 조회해 탈퇴·정지를 즉
 
 - 로그인: `POST /api/v1/admin/login`, 본문 `{"id":"<관리자 ID>","password":"<비밀번호>"}`
 - 로그인 성공 응답은 기존 `{"token":"<UUID 토큰>"}` 형식을 유지합니다.
-- 로그인은 변경 전 관리자 계정을 사용하며 별도 관리자 환경변수 설정이 필요하지 않습니다.
-- `/api/v1/admin/test`와 `/admin/**` 요청에는 `Authorization: <UUID 토큰>`을 전달합니다.
+- 관리자 계정은 `ADMIN_ID`와 `ADMIN_PASSWORD_HASH`에 설정합니다. 기존 계정을 유지하려면 기존 ID와 해당 비밀번호의 BCrypt 해시를 사용합니다.
+- 로그인 외 `/api/v1/admin/**`와 `/admin/**` 요청에는 `Authorization: Bearer <UUID 토큰>` 또는 기존 `Authorization: <UUID 토큰>`을 전달합니다.
 - 회원 목록: `GET /admin/members?page=0&size=15`
 - 회원 기본정보: `GET /admin/members/{id}`
 - 회원 로그인 이력: `GET /admin/members/{id}/security`
 
-관리자 인증은 PR #163 이전 방식으로 복원했습니다. `/api/v1/admin/**`는 Spring Security에서 접근을 허용하며, `/api/v1/admin/test`는 컨트롤러에서 토큰을 검증합니다. `/admin/**`는 기존 인터셉터에서 토큰을 검증합니다.
-
-관리자 토큰은 서버 인스턴스별 메모리에 저장하며 서버 재시작 시 다시 로그인해야 합니다. 존재하지 않는 회원의 기본정보·보안정보 조회는 모두 404를 반환합니다. 앱 로그인 검증과 회원 정보 응답 개선은 유지합니다.
+관리자 토큰은 Redis에 저장되며 기본 8시간 후 만료됩니다. `GET /api/v1/admin/session`으로 세션을 확인하고 `POST /api/v1/admin/logout`으로 폐기합니다. 존재하지 않는 회원의 기본정보·보안정보 조회는 모두 404를 반환합니다.
 
 관리자 로그인과 `/api/v1/admin/test`는 기존 직접 응답 형식을 사용하며, 회원 API는 `ApiResponse` 형식을 사용합니다.
 
@@ -212,3 +210,14 @@ fix: 인플레이 감지 스케줄러 NPE 수정
 Feat: 예정 경기 동기화 배치 구현
 Fix: 인플레이 감지 스케줄러 NPE 수정
 ```
+
+
+## 관리자 로그인 설정
+
+- `ADMIN_ID`: 관리자 아이디
+- `ADMIN_PASSWORD_HASH`: 관리자 비밀번호의 BCrypt 해시 (평문을 저장하지 않음)
+- `admin.token-ttl-seconds`: 관리자 세션 만료 시간(초, 기본 28800). 토큰은 Redis에 저장됩니다.
+
+두 관리자 계정 설정이 없으면 관리자 로그인은 503을 반환합니다. dev 배포 워크플로는 GitHub Actions 비밀 설정 `ADMIN_ID`, `ADMIN_PASSWORD_HASH`를 Cloud Run 환경변수로 전달하며, 두 값 중 하나라도 누락되면 배포를 중단합니다. 관리자 API는 `/api/v1/admin/**`과 `/admin/**`에서 관리자 토큰이 필요하며, 로그인 요청만 예외입니다. 로그인 응답의 토큰은 `Authorization: Bearer <token>` 또는 기존 `Authorization: <token>`으로 전달합니다. `GET /api/v1/admin/session`으로 세션을 확인하고 `POST /api/v1/admin/logout`으로 폐기합니다.
+
+Redis 세션 통합 테스트는 기본적으로 건너뜁니다. 별도의 임시 Redis를 127.0.0.1:16379에 띄운 뒤 `ADMIN_REDIS_DISPOSABLE_TEST=true`로 `AdminTokenRedisIntegrationTest`를 실행합니다. 개발·운영 Redis에서는 실행하지 않습니다.
