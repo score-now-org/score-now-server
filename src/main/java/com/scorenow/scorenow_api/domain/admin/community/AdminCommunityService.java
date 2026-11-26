@@ -34,6 +34,39 @@ public class AdminCommunityService {
     public record CommentItem(Long id, Long postId, Long memberId, String socialId, String nickname, Integer warningCount,
             String imageUrl, String postTitle, String content, long likeCount, String status, String postStatus, LocalDateTime createdAt) { }
     public record PostList(Page<PostItem> page, long todayCount) { }
+    public record ImageItem(Long imageId, Long postId, Long memberId, String socialId, String nickname, String imageUrl) { }
+
+    @Transactional(readOnly = true)
+    public Page<ImageItem> images(String socialId, String nickname, Long memberId, Pageable pageable) {
+        validate(pageable, null, socialId, nickname, memberId);
+        String socialPattern = pattern(socialId), nicknamePattern = pattern(nickname);
+        Specification<CommunityPostImage> spec = (image, query, cb) -> {
+            var post = image.join("post");
+            var author = post.join("author");
+            var predicates = new ArrayList<Predicate>();
+            predicates.add(cb.equal(post.get("status"), CommunityPostStatus.ACTIVE));
+            if (socialPattern != null) predicates.add(cb.like(cb.lower(author.get("socialId")), socialPattern, '!'));
+            if (nicknamePattern != null) predicates.add(cb.like(cb.lower(displayNickname(cb, author.get("nickname"), post.get("authorNickname"))), nicknamePattern, '!'));
+            if (memberId != null) predicates.add(cb.equal(author.get("id"), memberId));
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+        return images.findAll(spec, pageable).map(image -> {
+            var post = image.getPost();
+            var author = post.getAuthor();
+            return new ImageItem(image.getId(), post.getId(), author.getId(), author.getSocialId(),
+                    nickname(author, post.getAuthorNickname()), storage.getFileUrl(image.getImageKey()));
+        });
+    }
+
+    @Transactional
+    public void deleteImage(Long imageId) {
+        Long postId = images.findPostIdByImageId(imageId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        posts.findByIdAndStatusForUpdate(postId, CommunityPostStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
+        // Only remove this post's reference; the upload may be shared with other posts or chats.
+        if (images.deleteFromPost(imageId, postId) == 0) throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+    }
 
     @Transactional(readOnly = true)
     public PostList posts(String title, String socialId, String nickname, Long memberId, boolean hotOnly, Pageable pageable) {

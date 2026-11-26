@@ -30,11 +30,15 @@ class AdminCommunitySecurityTest {
     @Test void communityManagementRequiresAdmin() throws Exception {
         mvc.perform(get("/api/v1/admin/community/posts")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/admin/community/comments")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/admin/community/images")).andExpect(status().isUnauthorized());
         mvc.perform(delete("/api/v1/admin/community/posts/1")).andExpect(status().isUnauthorized());
         mvc.perform(delete("/api/v1/admin/community/comments/1")).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/v1/admin/community/images/1")).andExpect(status().isUnauthorized());
         String token = "00000000-0000-0000-0000-000000000001";
         when(tokens.isValid(token)).thenReturn(true);
         mvc.perform(delete("/api/v1/admin/community/posts/1").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
         verify(community).deletePost(1L);
+        mvc.perform(delete("/api/v1/admin/community/images/1").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        verify(community).deleteImage(1L);
     }
 }
