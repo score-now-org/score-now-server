@@ -23,12 +23,10 @@ public record BaseballAppMatchDetailResponse(
         @JsonInclude(JsonInclude.Include.NON_NULL) DetailedResponse detailed
 ) implements MatchAppSportDetailResponse {
 
-    public static BaseballAppMatchDetailResponse from(BaseballDetail baseballDetail) {
+    public static BaseballAppMatchDetailResponse from(BaseballDetail baseballDetail, boolean detailedBroadcastEnabled) {
         if (baseballDetail == null) {
             return empty();
         }
-
-        boolean detailedBroadcastEnabled = baseballDetail.isDetailedBroadcastEnabled();
 
         return new BaseballAppMatchDetailResponse(
                 CurrentInningResponse.from(baseballDetail.getCurrentHalfInning()),

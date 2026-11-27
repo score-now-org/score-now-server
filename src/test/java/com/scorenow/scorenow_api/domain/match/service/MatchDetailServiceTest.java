@@ -9,7 +9,10 @@ import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.Base
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballHalfInning;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballInningScores;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballStats;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballClock;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballPhase;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballShootOutScore;
 import com.scorenow.scorenow_api.domain.match.dto.response.statusdisplay.MatchStatusDisplayResponse;
 import com.scorenow.scorenow_api.domain.match.dto.sync.MatchDetailSyncSnapshot;
 import com.scorenow.scorenow_api.domain.match.dto.sync.MatchDetailSyncStadium;
@@ -32,6 +35,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -65,6 +70,109 @@ class MatchDetailServiceTest {
     @Mock
     private TeamExternalLookupService teamExternalLookupService;
 
+    @ParameterizedTest
+    @CsvSource({
+            "EXTRA_SECOND_HALF, 2, 1, 1, 1",
+            "EXTRA_SECOND_HALF, 2, 1, 3, 0",
+            "SECOND_HALF, 1, 1, 2, 1"
+    })
+    void 첫_종료_View의_유효한_총점을_저장하고_승부차기_점수는_별도로_관리한다(
+            FootballPhase phase, int previousHome, int previousAway, int incomingHome, int incomingAway) {
+        Long matchId = 10L;
+        Match match = Match.builder()
+                .id(matchId)
+                .statusCode(MatchStatus.IN_PLAY)
+                .homeScore(previousHome)
+                .awayScore(previousAway)
+                .build();
+        FootballDetail currentDetail = FootballDetail.builder()
+                .clock(FootballClock.builder().phase(phase).build())
+                .build();
+        FootballShootOutScore penalties = FootballShootOutScore.builder().homeScore(5).awayScore(4).build();
+        FootballDetail incomingDetail = FootballDetail.builder().shootOutScore(penalties).build();
+        MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
+                DataOrigin.BETS, SportCode.FOOTBALL, matchId, "1", null, null,
+                incomingHome, incomingAway, MatchStatus.ENDED, null, incomingDetail);
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
+        given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(footballDocument(matchId, currentDetail)));
+        given(matchStatusDisplayResolver.resolve(eq(match), any(MatchDetailDocument.class)))
+                .willReturn(MatchStatusDisplayResponse.builder().displayText("종료").build());
+
+        matchDetailService.updateInplayMatchDetail(snapshot);
+
+        assertThat(match.getStatusCode()).isEqualTo(MatchStatus.ENDED);
+        assertThat(match.getHomeScore()).isEqualTo(incomingHome);
+        assertThat(match.getAwayScore()).isEqualTo(incomingAway);
+        ArgumentCaptor<MatchDetailDocument> captor = ArgumentCaptor.forClass(MatchDetailDocument.class);
+        then(matchDetailRepository).should().upsertMatchDetail(captor.capture());
+        FootballDetail mergedDetail = (FootballDetail) captor.getValue().getSportDetail();
+        assertThat(mergedDetail.getShootOutScore().getHomeScore()).isEqualTo(5);
+        assertThat(mergedDetail.getShootOutScore().getAwayScore()).isEqualTo(4);
+        then(eventPublisher).should().publishScoreChanged(matchId, incomingHome, incomingAway);
+        then(eventPublisher).should().publishMatchStatusChanged(matchId, MatchStatus.ENDED, "종료");
+        then(eventPublisher).shouldHaveNoMoreInteractions();
+    }
+
+    @ParameterizedTest
+    @CsvSource({", , 2, 1", "0, 0, 0, 0"})
+    void 종료_View의_점수가_없으면_기존_총점을_유지하고_명시적인_0은_저장한다(
+            Integer incomingHome, Integer incomingAway, int expectedHome, int expectedAway) {
+        Long matchId = 10L;
+        Match match = Match.builder()
+                .id(matchId)
+                .statusCode(MatchStatus.IN_PLAY)
+                .homeScore(2)
+                .awayScore(1)
+                .build();
+        MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
+                DataOrigin.BETS, SportCode.FOOTBALL, matchId, "1", null, null,
+                incomingHome, incomingAway, MatchStatus.ENDED, null, FootballDetail.empty());
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
+        given(matchDetailRepository.findById(matchId))
+                .willReturn(Optional.of(footballDocument(matchId, FootballDetail.empty())));
+        given(matchStatusDisplayResolver.resolve(eq(match), any(MatchDetailDocument.class)))
+                .willReturn(MatchStatusDisplayResponse.builder().displayText("종료").build());
+
+        matchDetailService.updateInplayMatchDetail(snapshot);
+
+        assertThat(match.getStatusCode()).isEqualTo(MatchStatus.ENDED);
+        assertThat(match.getHomeScore()).isEqualTo(expectedHome);
+        assertThat(match.getAwayScore()).isEqualTo(expectedAway);
+        if (incomingHome != null) {
+            then(eventPublisher).should().publishScoreChanged(matchId, expectedHome, expectedAway);
+        }
+        then(eventPublisher).should().publishMatchStatusChanged(matchId, MatchStatus.ENDED, "종료");
+        then(eventPublisher).shouldHaveNoMoreInteractions();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"ENDED, false", "POSTPONED, false", "IN_PLAY, true"})
+    void 쓰기_잠금_후_진행_중_자동_경기가_아니면_View_응답을_저장하지_않는다(
+            MatchStatus status, boolean manual) {
+        Long matchId = 10L;
+        Match match = Match.builder()
+                .id(matchId)
+                .statusCode(status)
+                .isManual(manual)
+                .homeScore(2)
+                .awayScore(1)
+                .build();
+        MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
+                DataOrigin.BETS, SportCode.BASEBALL, matchId, "3", "view-home", "view-away",
+                1, 1, MatchStatus.IN_PLAY, null, BaseballDetail.empty());
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
+
+        matchDetailService.updateInplayMatchDetail(snapshot);
+
+        assertThat(match.getStatusCode()).isEqualTo(status);
+        assertThat(match.getHomeScore()).isEqualTo(2);
+        assertThat(match.getAwayScore()).isEqualTo(1);
+        then(matchDetailRepository).shouldHaveNoInteractions();
+        then(teamExternalLookupService).shouldHaveNoInteractions();
+        then(eventProcessorRegistry).shouldHaveNoInteractions();
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
     @Test
     void 진행중_경기_상세_동기화시_MatchDetailDocument가_없으면_예외가_발생한다() {
         Long matchId = 10L;
@@ -88,7 +196,7 @@ class MatchDetailServiceTest {
                 FootballDetail.empty()
         );
 
-        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> matchDetailService.updateInplayMatchDetail(snapshot))
@@ -153,7 +261,7 @@ class MatchDetailServiceTest {
                 null,
                 incomingDetail);
 
-        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
         givenBaseballTeamMapping();
 
@@ -217,7 +325,7 @@ class MatchDetailServiceTest {
                 .displayText("경기 종료")
                 .build();
 
-        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
         givenBaseballTeamMapping();
         given(stadiumCacheService.getOrCreateStadiumId(
@@ -270,7 +378,7 @@ class MatchDetailServiceTest {
                 null,
                 BaseballDetail.empty());
 
-        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
         givenBaseballTeamMapping();
 
@@ -309,7 +417,7 @@ class MatchDetailServiceTest {
                 null,
                 BaseballDetail.empty());
 
-        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
         givenBaseballTeamMapping();
 
         assertThatThrownBy(() -> matchDetailService.updateInplayMatchDetail(snapshot))
@@ -371,7 +479,7 @@ class MatchDetailServiceTest {
                 null,
                 incomingDetail);
 
-        given(matchRepository.findById(matchId)).willReturn(Optional.of(match));
+        given(matchRepository.findByIdForUpdate(matchId)).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(matchId)).willReturn(Optional.of(currentDocument));
         givenBaseballTeamMapping();
 
@@ -395,6 +503,14 @@ class MatchDetailServiceTest {
                 .id(matchId)
                 .type(SportCode.BASEBALL)
                 .sportDetail(baseballDetail)
+                .build();
+    }
+
+    private MatchDetailDocument footballDocument(Long matchId, FootballDetail footballDetail) {
+        return MatchDetailDocument.builder()
+                .id(matchId)
+                .type(SportCode.FOOTBALL)
+                .sportDetail(footballDetail)
                 .build();
     }
 

@@ -11,6 +11,8 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -49,6 +51,23 @@ class FootballInplayMatchDetailSynchronizerTest {
 
 	@Mock
 	private FootballDetailNormalizer normalizer;
+
+	@ParameterizedTest
+	@CsvSource({"0-0, 0, 0", "2-1, 2, 1", "2-, ,", "'', ,", ", ,", "-1-0, ,", "2-오류, ,"})
+	void 원본_ss에서_완전한_점수_쌍만_동기화에_전달한다(String ss, Integer home, Integer away) {
+		Match match = createMatch(1L, 10L, "api-1");
+		BetsFootballViewResponse.ViewResult viewResult = createViewResult("api-1", false);
+		viewResult.setSs(ss);
+		given(betsApiClient.getFootballEventView("api-1")).willReturn(createResponse(viewResult));
+		given(normalizer.normalize(viewResult)).willReturn(FootballDetail.empty());
+
+		synchronizer.sync(SportCode.FOOTBALL, List.of(match));
+
+		ArgumentCaptor<MatchDetailSyncSnapshot> captor = ArgumentCaptor.forClass(MatchDetailSyncSnapshot.class);
+		verify(matchDetailService).updateInplayMatchDetail(captor.capture());
+		assertThat(captor.getValue().homeScore()).isEqualTo(home);
+		assertThat(captor.getValue().awayScore()).isEqualTo(away);
+	}
 
 	@Test
 	@DisplayName("경기가 10개를 초과하면 View API를 10개 단위로 호출한다.")

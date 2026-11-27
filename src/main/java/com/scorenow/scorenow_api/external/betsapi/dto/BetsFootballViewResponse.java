@@ -141,11 +141,11 @@ public class BetsFootballViewResponse {
         }
 
         public Integer homeOffTarget() {
-            return parseDetailStats(getOffTarget(), HOME);
+            return parseShotCount(getOffTarget(), HOME);
         }
 
         public Integer homeOnTarget() {
-            return parseDetailStats(getOnTarget(), HOME);
+            return parseShotCount(getOnTarget(), HOME);
         }
 
         public Integer homePossession() {
@@ -177,11 +177,11 @@ public class BetsFootballViewResponse {
         }
 
         public Integer awayOffTarget() {
-            return parseDetailStats(getOffTarget(), AWAY);
+            return parseShotCount(getOffTarget(), AWAY);
         }
 
         public Integer awayOnTarget() {
-            return parseDetailStats(getOnTarget(), AWAY);
+            return parseShotCount(getOnTarget(), AWAY);
         }
 
         public Integer awayPossession() {
@@ -205,7 +205,20 @@ public class BetsFootballViewResponse {
         }
 
         private Integer parseDetailStats(List<String> detailStats, int teamIndex) {
-            if (detailStats == null || detailStats.isEmpty() || detailStats.size() < 2) {
+            if (detailStats == null || detailStats.size() < 2) {
+                return null;
+            }
+
+            return parseTeamStat(detailStats, teamIndex);
+        }
+
+        private Integer parseShotCount(List<String> shotCounts, int teamIndex) {
+            Integer value = parseTeamStat(shotCounts, teamIndex);
+            return value != null && value >= 0 ? value : null;
+        }
+
+        private Integer parseTeamStat(List<String> detailStats, int teamIndex) {
+            if (detailStats == null || detailStats.size() <= teamIndex) {
                 return null;
             }
 

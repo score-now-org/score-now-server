@@ -17,6 +17,7 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
@@ -87,7 +88,7 @@ class BaseballMatchAppSportResponseMapperTest {
                 .build();
 
         BaseballAppMatchDetailResponse response =
-                (BaseballAppMatchDetailResponse) mapper.toDetail(baseballDetail);
+                (BaseballAppMatchDetailResponse) mapper.toDetail(MatchStatus.IN_PLAY, baseballDetail);
 
         assertThat(response.currentInning().code()).isEqualTo("SECOND_INNING_TOP");
         assertThat(response.inningScores().get(0).homeScore()).isEqualTo(2);
@@ -106,14 +107,45 @@ class BaseballMatchAppSportResponseMapperTest {
 
         JsonNode detail = new ObjectMapper()
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .valueToTree(mapper.toDetail(baseballDetail));
+                .valueToTree(mapper.toDetail(MatchStatus.IN_PLAY, baseballDetail));
 
         assertThat(detail.at("/homeStats/hits")).isEqualTo(IntNode.valueOf(4));
         assertThat(detail.at("/homeStats/errors")).isEqualTo(IntNode.valueOf(0));
         assertThat(detail.at("/homeStats/basesOnBalls")).isEqualTo(IntNode.valueOf(2));
         assertThat(detail.path("awayStats").isNull()).isTrue();
+        assertThat(detail.path("detailedBroadcastEnabled").booleanValue()).isEqualTo(detailedBroadcastEnabled);
         assertThat(detail.has("detailed")).isEqualTo(detailedBroadcastEnabled);
         assertThat(detail.at("/detailed/homeStats").isMissingNode()).isTrue();
         assertThat(detail.at("/detailed/awayStats").isMissingNode()).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchStatus.class, names = {"ENDED", "CANCELLED", "ABANDONED", "POSTPONED"})
+    void 종료_취소_연기_경기의_중계판은_JSON에서_생략하고_팀별_기록과_이닝_점수는_반환한다(MatchStatus status) {
+        BaseballDetail baseballDetail = BaseballDetail.builder()
+                .detailedBroadcastEnabled(true)
+                .pitcher("홈 투수")
+                .inningScores(BaseballInningScores.of(Map.of(
+                        BaseballHalfInning.FIRST_INNING_TOP, 1,
+                        BaseballHalfInning.FIRST_INNING_BOTTOM, 2
+                )))
+                .homeStats(new BaseballStats(4, 0, 2))
+                .awayStats(new BaseballStats(3, 1, 1))
+                .build();
+
+        JsonNode detail = new ObjectMapper().valueToTree(mapper.toDetail(status, baseballDetail));
+
+        assertThat(detail.path("detailedBroadcastEnabled").isBoolean()).isTrue();
+        assertThat(detail.path("detailedBroadcastEnabled").booleanValue()).isFalse();
+        assertThat(detail.has("detailed")).isFalse();
+        assertThat(detail.at("/inningScores/0/homeScore").intValue()).isEqualTo(2);
+        assertThat(detail.at("/inningScores/0/awayScore").intValue()).isEqualTo(1);
+        assertThat(detail.at("/homeStats/hits").intValue()).isEqualTo(4);
+        assertThat(detail.at("/homeStats/errors").intValue()).isZero();
+        assertThat(detail.at("/homeStats/basesOnBalls").intValue()).isEqualTo(2);
+        assertThat(detail.at("/awayStats/hits").intValue()).isEqualTo(3);
+        assertThat(detail.at("/awayStats/errors").intValue()).isEqualTo(1);
+        assertThat(detail.at("/awayStats/basesOnBalls").intValue()).isEqualTo(1);
+        assertThat(baseballDetail.isDetailedBroadcastEnabled()).isTrue();
     }
 }

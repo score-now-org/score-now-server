@@ -4,6 +4,7 @@ import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppSportDetailResponse;
 import com.scorenow.scorenow_api.domain.match.dto.response.MatchAppSportLiveSummaryResponse;
 import com.scorenow.scorenow_api.domain.match.entity.Match;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import org.springframework.stereotype.Component;
 
@@ -36,13 +37,13 @@ public class MatchAppSportResponseMapperRegistry {
         return mapper.toLiveSummary(match, matchDetailDocument.getSportDetail());
     }
 
-    public MatchAppSportDetailResponse mapDetail(MatchDetailDocument matchDetailDocument) {
+    public MatchAppSportDetailResponse mapDetail(MatchStatus status, MatchDetailDocument matchDetailDocument) {
         MatchAppSportResponseMapper mapper = findMapper(matchDetailDocument);
         if (mapper == null) {
             return null;
         }
 
-        return mapper.toDetail(matchDetailDocument.getSportDetail());
+        return mapper.toDetail(status, matchDetailDocument.getSportDetail());
     }
 
     private MatchAppSportResponseMapper findMapper(MatchDetailDocument matchDetailDocument) {

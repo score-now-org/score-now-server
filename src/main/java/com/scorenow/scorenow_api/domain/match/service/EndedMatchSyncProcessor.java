@@ -5,7 +5,11 @@ import com.scorenow.scorenow_api.domain.match.entity.Match;
 import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.realtime.MatchRealtimeEventPublisher;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
+import com.scorenow.scorenow_api.domain.sport.model.SportCode;
+import com.scorenow.scorenow_api.domain.team.entity.Team;
+import com.scorenow.scorenow_api.domain.team.service.TeamExternalLookupService;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsEventResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsScorePair;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
 import com.scorenow.scorenow_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -23,17 +32,21 @@ public class EndedMatchSyncProcessor {
 
     private final MatchRepository matchRepository;
     private final MatchRealtimeEventPublisher eventPublisher;
+    private final TeamExternalLookupService teamExternalLookupService;
 
     /**
-     * Ended API는 기존 경기의 최종 상태만 보정한다.
-     * 응답에는 종료, 연기, 취소 등 실제 경기 종료로 분류된 상태만 포함된다고 간주한다.
-     * 팀, 점수, 시작 시각, 상세 정보는 View API에서 관리하므로 변경하지 않는다.
+     * Ended API로 기존 자동 관리 경기의 상태와 확인된 종료 총점을 보정한다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean process(MatchSyncLeagueTarget leagueTarget, BetsEventResponse.Event event) {
         validateEvent(leagueTarget, event);
 
-        Optional<Match> existingMatch = matchRepository.findByExternalInfo(leagueTarget.dataOrigin(), event.getId());
+        if (event.getId() == null || event.getId().isBlank()) {
+            return false;
+        }
+
+        Optional<Match> existingMatch = matchRepository.findForUpdateByDataOriginAndApiMatchId(
+                leagueTarget.dataOrigin(), event.getId());
 
         if (existingMatch.isEmpty()) {
             log.warn(
@@ -45,23 +58,93 @@ public class EndedMatchSyncProcessor {
         }
 
         Match match = existingMatch.get();
-        MatchStatus previousStatus = match.getStatusCode();
-        MatchStatus newStatus = MatchStatus.fromCode(event.getTimeStatus());
-        if (previousStatus == newStatus) {
+        if (match.isManual()) {
             return false;
         }
 
-        match.updateStatus(newStatus);
-        eventPublisher.publishMatchStatusChanged(match.getId(), newStatus, newStatus.getDescription());
+        MatchStatus previousStatus = match.getStatusCode();
+        MatchStatus newStatus = MatchStatus.fromCode(event.getTimeStatus());
+        BetsScorePair finalScore = resolveFinalScore(leagueTarget, event, match);
+        boolean statusChanged = previousStatus != newStatus;
+        boolean scoreChanged = finalScore != null
+                && (!Objects.equals(match.getHomeScore(), finalScore.home())
+                || !Objects.equals(match.getAwayScore(), finalScore.away()));
+        if (!statusChanged && !scoreChanged) {
+            return false;
+        }
+
+        if (scoreChanged) {
+            match.updateHomeScore(finalScore.home());
+            match.updateAwayScore(finalScore.away());
+        }
+        if (statusChanged) {
+            match.updateStatus(newStatus);
+        }
+        publishChangesAfterCommit(match.getId(), scoreChanged ? finalScore : null, statusChanged ? newStatus : null);
 
         log.info(
-                "Ended API 상태 갱신 완료. matchId:{}, apiMatchId:{}, previousStatus:{}, newStatus:{}",
+                "Ended API 경기 갱신. matchId:{}, apiMatchId:{}, previousStatus:{}, newStatus:{}, scoreChanged:{}",
                 match.getId(),
                 match.getApiMatchId(),
                 previousStatus,
-                newStatus
+                newStatus,
+                scoreChanged
         );
         return true;
+    }
+
+    private void publishChangesAfterCommit(Long matchId, BetsScorePair changedScore, MatchStatus changedStatus) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                if (changedScore != null) {
+                    eventPublisher.publishScoreChanged(matchId, changedScore.home(), changedScore.away());
+                }
+                if (changedStatus != null) {
+                    eventPublisher.publishMatchStatusChanged(matchId, changedStatus, changedStatus.getDescription());
+                }
+            }
+        });
+    }
+
+    private BetsScorePair resolveFinalScore(MatchSyncLeagueTarget target, BetsEventResponse.Event event, Match match) {
+        if (!MatchStatus.ENDED.getCode().equals(event.getTimeStatus())) {
+            return null;
+        }
+
+        BetsScorePair score = BetsScorePair.parse(event.getSs());
+        if (score == null || target.sportCode() != SportCode.BASEBALL) {
+            return score;
+        }
+
+        String externalHomeId = event.getHome() == null ? null : event.getHome().getId();
+        String externalAwayId = event.getAway() == null ? null : event.getAway().getId();
+        if (externalHomeId == null || externalHomeId.isBlank()
+                || externalAwayId == null || externalAwayId.isBlank()
+                || externalHomeId.equals(externalAwayId)) {
+            return null;
+        }
+
+        Map<String, Team> teams = teamExternalLookupService.findTeamsByExternalInfo(
+                target.dataOrigin(), List.of(externalHomeId, externalAwayId));
+        Team homeTeam = teams.get(externalHomeId);
+        Team awayTeam = teams.get(externalAwayId);
+        if (homeTeam == null || awayTeam == null) {
+            return null;
+        }
+
+        Long homeId = homeTeam.getId();
+        Long awayId = awayTeam.getId();
+        if (homeId == null || awayId == null || homeId.equals(awayId)) {
+            return null;
+        }
+        if (homeId.equals(match.getHomeId()) && awayId.equals(match.getAwayId())) {
+            return score;
+        }
+        if (homeId.equals(match.getAwayId()) && awayId.equals(match.getHomeId())) {
+            return new BetsScorePair(score.away(), score.home());
+        }
+        return null;
     }
 
     private void validateEvent(MatchSyncLeagueTarget leagueTarget, BetsEventResponse.Event event) {
