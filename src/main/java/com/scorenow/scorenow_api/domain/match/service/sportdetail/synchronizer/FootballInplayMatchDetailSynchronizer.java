@@ -22,6 +22,7 @@ import com.scorenow.scorenow_api.domain.match.service.sportdetail.normalizer.Foo
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.external.betsapi.BetsApiClient;
 import com.scorenow.scorenow_api.external.betsapi.dto.BetsFootballViewResponse;
+import com.scorenow.scorenow_api.external.betsapi.dto.BetsScorePair;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +96,7 @@ public class FootballInplayMatchDetailSynchronizer implements InplayMatchDetailS
 
 			try {
 				MatchDetailSyncStadium stadium = resolveStadium(footballViewResult.getExtra());
+				BetsScorePair score = BetsScorePair.parse(footballViewResult.getSs());
 				FootballDetail normalizedFootballDetail = normalizer.normalize(footballViewResult);
 
 				MatchDetailSyncSnapshot snapshot = new MatchDetailSyncSnapshot(
@@ -104,8 +106,8 @@ public class FootballInplayMatchDetailSynchronizer implements InplayMatchDetailS
 					footballViewResult.getSportId(),
 					null,
 					null,
-					footballViewResult.getHomeScore(),
-					footballViewResult.getAwayScore(),
+					score == null ? null : score.home(),
+					score == null ? null : score.away(),
 					MatchStatus.fromCode(footballViewResult.getTimeStatus()),
 					stadium,
 					normalizedFootballDetail

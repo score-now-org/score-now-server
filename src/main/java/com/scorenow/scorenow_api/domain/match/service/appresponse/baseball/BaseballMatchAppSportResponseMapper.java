@@ -37,8 +37,15 @@ public class BaseballMatchAppSportResponseMapper implements MatchAppSportRespons
     }
 
     @Override
-    public MatchAppSportDetailResponse toDetail(SportDetail sportDetail) {
-        return BaseballAppMatchDetailResponse.from(resolveBaseballDetail(sportDetail));
+    public MatchAppSportDetailResponse toDetail(MatchStatus status, SportDetail sportDetail) {
+        BaseballDetail baseballDetail = resolveBaseballDetail(sportDetail);
+        boolean broadcastEnabled = baseballDetail != null
+                && baseballDetail.isDetailedBroadcastEnabled()
+                && status != MatchStatus.ENDED
+                && status != MatchStatus.CANCELLED
+                && status != MatchStatus.ABANDONED
+                && status != MatchStatus.POSTPONED;
+        return BaseballAppMatchDetailResponse.from(baseballDetail, broadcastEnabled);
     }
 
     private BaseballDetail resolveBaseballDetail(SportDetail sportDetail) {

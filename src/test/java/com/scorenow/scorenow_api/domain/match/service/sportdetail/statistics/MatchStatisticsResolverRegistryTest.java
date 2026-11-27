@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.service.sportdetail.statistics;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballDetail;
+import com.scorenow.scorenow_api.domain.match.document.sportdetail.football.FootballStats;
 import com.scorenow.scorenow_api.domain.match.dto.response.statistics.football.FootballStatisticsResponse;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import com.scorenow.scorenow_api.global.exception.BusinessException;
@@ -20,14 +21,21 @@ class MatchStatisticsResolverRegistryTest {
             new MatchStatisticsResolverRegistry(List.of(new FootballStatisticsResolver()));
 
     @Test
-    void 등록된_축구_통계를_반환한다() {
+    void 저장된_축구_슈팅_통계를_재계산하지_않고_반환한다() {
         MatchDetailDocument matchDetail = MatchDetailDocument.builder()
                 .type(SportCode.FOOTBALL)
-                .sportDetail(FootballDetail.empty())
+                .sportDetail(FootballDetail.builder()
+                        .homeStats(FootballStats.builder().shots(7).shotsOnTarget(5).build())
+                        .awayStats(FootballStats.builder().shots(2).shotsOnTarget(3).build())
+                        .build())
                 .build();
 
-        assertThat(registry.resolve(matchDetail))
-                .isInstanceOf(FootballStatisticsResponse.class);
+        FootballStatisticsResponse response = (FootballStatisticsResponse) registry.resolve(matchDetail);
+
+        assertThat(response.getHomeStats().getShots()).isEqualTo(7);
+        assertThat(response.getHomeStats().getShotsOnTarget()).isEqualTo(5);
+        assertThat(response.getAwayStats().getShots()).isEqualTo(2);
+        assertThat(response.getAwayStats().getShotsOnTarget()).isEqualTo(3);
     }
 
     @Test

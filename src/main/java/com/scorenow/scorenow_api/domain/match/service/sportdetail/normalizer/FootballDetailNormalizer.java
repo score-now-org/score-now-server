@@ -60,11 +60,12 @@ public class FootballDetailNormalizer {
             return null;
         }
 
+        Integer shotsOnTarget = stats.homeOnTarget();
         return FootballStats.builder()
                 .yellowCards(stats.homeYellowCards())
                 .redCards(stats.homeRedCards())
-                .shots(stats.homeOffTarget())
-                .shotsOnTarget(stats.homeOnTarget())
+                .shots(totalShots(stats.homeOffTarget(), shotsOnTarget))
+                .shotsOnTarget(shotsOnTarget)
                 .possession(stats.homePossession())
                 .offsides(stats.homeOffsides())
                 .fouls(stats.homeFouls())
@@ -79,17 +80,26 @@ public class FootballDetailNormalizer {
             return null;
         }
 
+        Integer shotsOnTarget = stats.awayOnTarget();
         return FootballStats.builder()
                 .yellowCards(stats.awayYellowCards())
                 .redCards(stats.awayRedCards())
-                .shots(stats.awayOffTarget())
-                .shotsOnTarget(stats.awayOnTarget())
+                .shots(totalShots(stats.awayOffTarget(), shotsOnTarget))
+                .shotsOnTarget(shotsOnTarget)
                 .possession(stats.awayPossession())
                 .offsides(stats.awayOffsides())
                 .fouls(stats.awayFouls())
                 .corners(stats.awayCorners())
                 .freeKicks(stats.awayFreeKicks())
                 .build();
+    }
+
+    private Integer totalShots(Integer offTarget, Integer onTarget) {
+        if (offTarget == null || onTarget == null || offTarget > Integer.MAX_VALUE - onTarget) {
+            return null;
+        }
+
+        return offTarget + onTarget;
     }
 
     private FootballClock normalizeClock(BetsFootballViewResponse.ViewResult externalData, FootballPhase phase) {

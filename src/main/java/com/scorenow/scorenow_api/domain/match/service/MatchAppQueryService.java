@@ -87,7 +87,7 @@ public class MatchAppQueryService {
                 matchStatusDisplayResolver.resolve(match, matchDetailDocument),
                 homeTeamStandings,
                 awayTeamStandings,
-                matchAppSportResponseMapperRegistry.mapDetail(matchDetailDocument),
+                matchAppSportResponseMapperRegistry.mapDetail(match.getStatusCode(), matchDetailDocument),
                 createOddsResponses(matchId, overseasOddsByMatchId)
         );
     }

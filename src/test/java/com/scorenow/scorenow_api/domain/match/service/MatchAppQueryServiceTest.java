@@ -1,5 +1,7 @@
 package com.scorenow.scorenow_api.domain.match.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scorenow.scorenow_api.domain.common.enums.TeamDisplayOrder;
 import com.scorenow.scorenow_api.domain.league.entity.League;
 import com.scorenow.scorenow_api.domain.league.service.standings.TeamStandingLookupService;
@@ -33,6 +35,7 @@ import com.scorenow.scorenow_api.domain.match.repository.MatchDetailRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.FeaturedMatchRepository;
 import com.scorenow.scorenow_api.domain.match.repository.jpa.MatchRepository;
 import com.scorenow.scorenow_api.domain.match.service.appresponse.MatchAppSportResponseMapperRegistry;
+import com.scorenow.scorenow_api.domain.match.service.appresponse.baseball.BaseballMatchAppSportResponseMapper;
 import com.scorenow.scorenow_api.domain.match.service.statusdisplay.MatchStatusDisplayResolver;
 import com.scorenow.scorenow_api.domain.odds.dto.response.MatchOddsCategoryResponse;
 import com.scorenow.scorenow_api.domain.odds.enums.OddsCategory;
@@ -120,13 +123,14 @@ class MatchAppQueryServiceTest {
                 .sportDetail(baseballDetail)
                 .build();
         MatchStatusDisplayResponse statusDisplay = statusDisplay("1회말");
-        BaseballAppMatchDetailResponse sportDetailResponse = BaseballAppMatchDetailResponse.from(baseballDetail);
+        BaseballAppMatchDetailResponse sportDetailResponse = BaseballAppMatchDetailResponse.from(baseballDetail, true);
         MatchOddsCategoryResponse odds = MatchOddsCategoryResponse.of(OddsCategory.OVERSEAS, List.of());
 
         given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
         given(matchDetailRepository.findById(match.getId())).willReturn(Optional.of(matchDetail));
         given(matchStatusDisplayResolver.resolve(match, matchDetail)).willReturn(statusDisplay);
-        given(matchAppSportResponseMapperRegistry.mapDetail(matchDetail)).willReturn(sportDetailResponse);
+        given(matchAppSportResponseMapperRegistry.mapDetail(MatchStatus.IN_PLAY, matchDetail))
+                .willReturn(sportDetailResponse);
         given(matchOddsAppQueryService.getOverseasWinDrawLossOddsByMatchIds(Set.of(match.getId())))
                 .willReturn(Map.of(match.getId(), odds));
         given(teamStandingLookupService.getTeamStandings(
@@ -170,12 +174,46 @@ class MatchAppQueryServiceTest {
                 .pitcher("노출하지 않을 투수")
                 .build();
 
-        BaseballAppMatchDetailResponse response = BaseballAppMatchDetailResponse.from(baseballDetail);
+        BaseballAppMatchDetailResponse response = BaseballAppMatchDetailResponse.from(baseballDetail, false);
 
         assertThat(response.currentInning().code()).isEqualTo("SECOND_INNING_TOP");
         assertThat(response.inningScores()).hasSize(20);
         assertThat(response.detailedBroadcastEnabled()).isFalse();
         assertThat(response.detailed()).isNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchStatus.class, names = {"ENDED", "CANCELLED", "ABANDONED", "POSTPONED"})
+    void 종료_취소_연기_상태를_야구_상세_매퍼에_전달한다(MatchStatus status) {
+        Match match = createBaseballMatch(100L, status);
+        BaseballDetail baseballDetail = BaseballDetail.builder()
+                .detailedBroadcastEnabled(true)
+                .pitcher("홈 투수")
+                .inningScores(BaseballInningScores.of(Map.of(BaseballHalfInning.FIRST_INNING_BOTTOM, 2)))
+                .homeStats(new BaseballStats(4, 0, 2))
+                .awayStats(new BaseballStats(3, 1, 1))
+                .build();
+        MatchDetailDocument matchDetail = MatchDetailDocument.builder()
+                .type(SportCode.BASEBALL)
+                .sportDetail(baseballDetail)
+                .build();
+        MatchAppSportResponseMapperRegistry registry =
+                new MatchAppSportResponseMapperRegistry(List.of(new BaseballMatchAppSportResponseMapper()));
+        MatchAppQueryService queryService = new MatchAppQueryService(
+                matchStatusDisplayResolver, registry, teamStandingLookupService, matchOddsAppQueryService,
+                matchRepository, matchDetailRepository, featuredMatchRepository, stadiumRepository);
+        given(matchRepository.findById(match.getId())).willReturn(Optional.of(match));
+        given(matchDetailRepository.findById(match.getId())).willReturn(Optional.of(matchDetail));
+
+        JsonNode detail = new ObjectMapper().valueToTree(queryService.getMatch(match.getId()).sportDetail());
+
+        assertThat(detail.path("detailedBroadcastEnabled").isBoolean()).isTrue();
+        assertThat(detail.path("detailedBroadcastEnabled").booleanValue()).isFalse();
+        assertThat(detail.has("detailed")).isFalse();
+        assertThat(detail.at("/inningScores/0/homeScore").intValue()).isEqualTo(2);
+        assertThat(detail.at("/homeStats/hits").intValue()).isEqualTo(4);
+        assertThat(detail.at("/awayStats/errors").intValue()).isEqualTo(1);
+        assertThat(baseballDetail.isDetailedBroadcastEnabled()).isTrue();
     }
 
     @ParameterizedTest
@@ -771,6 +809,10 @@ class MatchAppQueryServiceTest {
     }
 
     private Match createBaseballMatch(Long id) {
+        return createBaseballMatch(id, MatchStatus.IN_PLAY);
+    }
+
+    private Match createBaseballMatch(Long id, MatchStatus status) {
         return Match.builder()
                 .id(id)
                 .sportId(2L)
@@ -796,7 +838,7 @@ class MatchAppQueryServiceTest {
                         .sName("원정팀")
                         .build())
                 .startAt(LocalDateTime.of(2026, 10, 14, 18, 30))
-                .statusCode(MatchStatus.IN_PLAY)
+                .statusCode(status)
                 .homeScore(2)
                 .awayScore(1)
                 .isActive(true)

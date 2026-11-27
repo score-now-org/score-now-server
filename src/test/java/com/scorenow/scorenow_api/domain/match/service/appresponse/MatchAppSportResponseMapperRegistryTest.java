@@ -3,6 +3,7 @@ package com.scorenow.scorenow_api.domain.match.service.appresponse;
 import com.scorenow.scorenow_api.domain.match.document.MatchDetailDocument;
 import com.scorenow.scorenow_api.domain.match.document.sportdetail.baseball.BaseballDetail;
 import com.scorenow.scorenow_api.domain.match.dto.response.BaseballAppMatchDetailResponse;
+import com.scorenow.scorenow_api.domain.match.entity.MatchStatus;
 import com.scorenow.scorenow_api.domain.match.service.appresponse.baseball.BaseballMatchAppSportResponseMapper;
 import com.scorenow.scorenow_api.domain.sport.model.SportCode;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class MatchAppSportResponseMapperRegistryTest {
                 .sportDetail(BaseballDetail.empty())
                 .build();
 
-        assertThat(registry.mapDetail(matchDetail))
+        assertThat(registry.mapDetail(MatchStatus.IN_PLAY, matchDetail))
                 .isInstanceOf(BaseballAppMatchDetailResponse.class);
     }
 
@@ -33,7 +34,7 @@ class MatchAppSportResponseMapperRegistryTest {
                 .type(SportCode.FOOTBALL)
                 .build();
 
-        assertThat(registry.mapDetail(matchDetail)).isNull();
+        assertThat(registry.mapDetail(MatchStatus.IN_PLAY, matchDetail)).isNull();
         assertThat(registry.mapLiveSummary(null, matchDetail)).isNull();
     }
 }

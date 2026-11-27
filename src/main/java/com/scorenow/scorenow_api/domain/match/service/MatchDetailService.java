@@ -55,8 +55,12 @@ public class MatchDetailService {
         SportCode sportCode = snapshot.sportCode();
         Long matchId = snapshot.matchId();
 
-        Match inplayMatch = matchRepository.findById(matchId)
+        Match inplayMatch = matchRepository.findByIdForUpdate(matchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATCH_NOT_FOUND));
+
+        if (inplayMatch.getStatusCode() != MatchStatus.IN_PLAY || inplayMatch.isManual()) {
+            return;
+        }
 
         validateAndCorrectBaseballSides(inplayMatch, snapshot);
 
@@ -81,7 +85,6 @@ public class MatchDetailService {
                 .sportDetail(mergedSportDetail)
                 .build();
 
-        // 종목 공통 : 점수 업데이트 및 이벤트 발행
         updateMatchScoreAndPublishEvent(inplayMatch, snapshot.homeScore(), snapshot.awayScore());
 
         // 경기장 정보 생성 및 변경 (로컬 캐시 활용 + 더티체킹)
@@ -230,8 +233,6 @@ public class MatchDetailService {
     private FootballDetail mergeFootballDetail(SportDetail currentSportDetail, SportDetail newSportDetail) {
         FootballDetail currentFootballDetail = resolveFootballDetail(currentSportDetail);
         FootballDetail newFootballDetail = resolveFootballDetail(newSportDetail);
-
-
         return FootballDetail.builder()
                 .shootOutScore(resolveIncomingOrCurrent(currentFootballDetail.getShootOutScore(), newFootballDetail.getShootOutScore()))
                 .clock(resolveIncomingOrCurrent(currentFootballDetail.getClock(), newFootballDetail.getClock()))
@@ -272,7 +273,7 @@ public class MatchDetailService {
             Integer newHomeScore,
             Integer newAwayScore) {
 
-        // 정규시간 점수 변경
+        // 홈·원정 총점 변경
         boolean scoreChanged = false;
 
         if (newHomeScore != null && !newHomeScore.equals(match.getHomeScore())) {
